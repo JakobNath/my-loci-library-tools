@@ -38,6 +38,11 @@ export function parseDating(text) {
     certainty = { 'c.': 'circa', 'ca.': 'circa', circa: 'circa', 'fl.': 'circa', after: 'after', before: 'before' }[prefix[1]];
     rest = rest.slice(prefix[0].length);
   }
+  // "1554–": from a year on, with no end, is the same as "after 1554".
+  if (/^\d{1,4}\s*-$/.test(rest)) {
+    certainty = 'after';
+    rest = rest.replace(/\s*-$/, '');
+  }
 
   const read = readCenturies(rest, isBc) || readYears(rest, isBc);
   if (!read) return failure(original);

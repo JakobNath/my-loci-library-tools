@@ -33,6 +33,7 @@ export const tests = [
   reads('c. 1200 BC', -1200, -1200, 'circa'),
   reads('fl. 1150', 1150, 1150, 'circa'),
   reads('before 1517', null, 1517, 'open'),
+  reads('1554–', 1554, null, 'open'),
   reads('c. 50–70', 50, 70, 'circa'),
   reads('1565-73', 1565, 1573, 'range'),
   reads('1849 to 1850', 1849, 1850, 'range'),
