@@ -6,9 +6,10 @@ My Loci Library is a lightweight, open-source catalog of Jakob and his wife's ph
 
 1. This file.
 2. `PLAN.md`, the master plan. It is the source of truth. If anything here or in `BUILD_PLAN.md` seems to disagree with it, follow `PLAN.md` and note the conflict in `HOW_IT_WORKS.md` under "Decisions".
-3. `BUILD_PLAN.md`: find the first unchecked step and continue from there.
-4. `DATA_FORMAT.md` and `HOW_IT_WORKS.md`, once they exist.
-5. `SAMPLE_BOOKS.md` when you need test data or prototype content.
+3. `CODE_STYLE.md`: how code is written from phase 3 onward. Prototypes are exempt, but no prototype code enters the app or the tools without being rewritten to it.
+4. `BUILD_PLAN.md`: find the first unchecked step and continue from there.
+5. `DATA_FORMAT.md` and `HOW_IT_WORKS.md`, once they exist.
+6. `SAMPLE_BOOKS.md` when you need test data or prototype content.
 
 Then run the self-tests before changing anything.
 
@@ -31,6 +32,7 @@ When you change this file, update the copies in both public repos in the same st
 - If something fails, use the fallback the plan names. If none is named, choose the simplest one, note it under "Decisions", and continue.
 - Anything that can only be checked on a real phone goes on `DEVICE_CHECKS.md`, as a short checklist item saying what to try and what should happen. Never wait on it.
 - Don't add features that aren't in `PLAN.md`.
+- Every step must meet the definition of done in CODE_STYLE.md.
 
 ## Hard rules
 
