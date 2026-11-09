@@ -42,7 +42,7 @@ When you change this file, update the copies in both public repos in the same st
 - Tools run on Node using only built-in modules (`node:fs`, `node:path`, `node:test`, global `fetch`, and so on).
 - Third-party code goes only in a `vendor/` folder, each file with its version, license and source URL in `vendor/README.md`. One library is expected (the barcode decoder), and never more than two.
 - Use only web features that are "Baseline widely available". Anything newer must sit behind a feature check with a working fallback. No Chromium-only APIs, no push notifications, nothing experimental.
-- Size budget: the app's own HTML, CSS and JS stay under about 150 KB, not counting the vendored barcode decoder, which loads only on the scan screen.
+- Size budget: the app's own HTML, CSS and JS stay under about 100 KB, not counting the vendored barcode decoder, which loads only on the scan screen. Heavy work (bulk covers, re-cropping, the HTML catalog, building `catalog.json`) belongs on the laptop, never in the phone app.
 - All styling comes from the design tokens file (`styles/tokens.css`). Don't hard-code colors, fonts or spacing elsewhere.
 - All GitHub-specific code lives in one sync module. No other file talks to GitHub.
 - The app never talks to Zotero, Obsidian, Logos or any AI service. Its only outside calls are the optional Open Library and Google Books lookups, and GitHub through the sync module.
