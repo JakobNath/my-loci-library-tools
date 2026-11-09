@@ -58,7 +58,7 @@ When you change this file, update the copies in both public repos in the same st
 
 **Tests**
 
-- Run the self-tests before and after every change: the browser test page (`tests/index.html`) in the app repo, and `node --test` in the tools repo.
+- Run the self-tests before and after every change: the browser test page (`tests/index.html`) and `node --test` in the app repo (the same core tests, plus the architecture checks), and `node --test` in the tools repo.
 - Tests are short and plain, so a person can read and fix them without any AI tool.
 - Keep the speed targets from `PLAN.md` covered by tests.
 
