@@ -1,0 +1,138 @@
+// Turning what a person typed in the entry form into records: new authors
+// and works where needed, the edition, and its copy. For an existing book,
+// only the fields that changed are stamped, so merging stays precise.
+
+import { newRecord, withField } from './records.js';
+import { parseDating } from './dating.js';
+import { parseContentsLines } from './contents.js';
+import { normalizeForSearch } from './search.js';
+
+/**
+ * An ISBN as 13 digits, from what was typed or scanned (ISBN-10 is converted).
+ * @returns {string|null} null when there is no valid ISBN in the text
+ */
+export function isbn13(text) {
+  const plain = String(text ?? '').toUpperCase().replace(/[^0-9X]/g, '');
+  if (/^\d{13}$/.test(plain)) return plain;
+  if (!/^\d{9}[\dX]$/.test(plain)) return null;
+  const body = '978' + plain.slice(0, 9);
+  let sum = 0;
+  for (let i = 0; i < 12; i++) sum += Number(body[i]) * (i % 2 ? 3 : 1);
+  return body + ((10 - (sum % 10)) % 10);
+}
+
+const key = text => normalizeForSearch(text);
+
+/**
+ * Datings from the form's rows, read with the date parser.
+ * @returns {{ datings: object[], problems: string[] }}
+ */
+export function datingsFromRows(rows) {
+  const datings = [];
+  const problems = [];
+  for (const row of rows) {
+    if (!row.text.trim()) continue;
+    const read = parseDating(row.text);
+    if (!read.ok) { problems.push(read.problem); continue; }
+    datings.push({ ...read.dating, kind: row.kind || null, note: row.note || '', working: !!row.working });
+  }
+  if (datings.length && datings.filter(dating => dating.working).length !== 1) {
+    datings.forEach((dating, i) => { dating.working = i === 0; });
+  }
+  return { datings, problems };
+}
+
+// Change a record field by field, stamping only what differs.
+function update(record, values, now) {
+  let result = record;
+  for (const [name, value] of Object.entries(values)) {
+    if (JSON.stringify(result[name]) !== JSON.stringify(value)) result = withField(result, name, value, now);
+  }
+  return result;
+}
+
+/**
+ * Build the records for one book from the form.
+ * @param {object} form the values typed (see ui/edit.js for its shape)
+ * @param {{ edition: object, copy: object|null, works: object[] }|null} existing the book being edited, or null for a new one
+ * @param {{ newId: () => string, now: string, today: string, authors: object[] }} context
+ * @returns {{ records: object[], editionId: string|null, problems: string[] }}
+ */
+export function recordsFromForm(form, existing, { newId, now, today, authors }) {
+  const problems = [];
+  const records = [];
+  if (!form.title.trim()) problems.push('A title is needed.');
+  const isbn = form.isbn.trim() ? isbn13(form.isbn) : null;
+  if (form.isbn.trim() && !isbn) problems.push(`"${form.isbn}" is not an ISBN (10 or 13 digits).`);
+
+  // Authors: an existing record with the same name or name form, or a new one.
+  const known = new Map();
+  for (const author of authors) for (const name of [author.name, ...author.otherNames]) known.set(key(name), author.id);
+  const authorIds = names => names.map(name => name.trim()).filter(Boolean).map(name => {
+    if (!known.has(key(name))) {
+      const author = newRecord('author', newId(), now, { name });
+      records.push(author);
+      known.set(key(name), author.id);
+    }
+    return known.get(key(name));
+  });
+
+  // Works: one for a single book, or one per contents line for an anthology.
+  const oldWorks = existing ? existing.works : [];
+  let contents;
+  if (form.contents !== null) {
+    contents = [];
+    for (const line of parseContentsLines(form.contents)) {
+      const ids = authorIds(line.author ? line.author.split(/\s+and\s+/) : []);
+      const reading = line.date ? datingsFromRows([{ text: line.date, working: true }]) : { datings: [], problems: [] };
+      problems.push(...reading.problems);
+      const match = oldWorks.find(work => key(work.title) === key(line.title));
+      const values = { title: line.title, authors: ids, ...(line.date ? { datings: reading.datings } : {}) };
+      const work = match ? update(match, values, now) : newRecord('work', newId(), now, values);
+      if (work !== match) records.push(work);
+      contents.push({ work: work.id, extent: 'complete', translator: null, pages: null });
+    }
+    if (!contents.length) problems.push('List at least one work in the contents, one per line.');
+  } else {
+    const reading = datingsFromRows(form.work.datings);
+    problems.push(...reading.problems);
+    const values = {
+      title: form.work.title || form.title.trim(), authors: authorIds(form.authors),
+      originalTitle: form.work.originalTitle || null, originalLanguage: form.work.originalLanguage || null,
+      datings: reading.datings, category: form.work.category || null, tags: form.work.tags,
+    };
+    const old = oldWorks.length === 1 ? oldWorks[0] : null;
+    const work = old ? update(old, values, now) : newRecord('work', newId(), now, values);
+    if (work !== old) records.push(work);
+    contents = [{ work: work.id, extent: 'complete', translator: null, pages: null }];
+  }
+  if (problems.length) return { records: [], editionId: null, problems };
+
+  const editionValues = {
+    title: form.title.trim(), subtitle: form.subtitle || null, contents, contributors: form.contributors.filter(person => person.name.trim()),
+    publisher: form.publisher || null, place: form.place || null, year: form.year ? Number(form.year) : null,
+    editionStatement: form.editionStatement || null, translationFirstPublished: form.translationFirstPublished ? Number(form.translationFirstPublished) : null,
+    series: form.series || null, seriesNumber: form.seriesNumber || null, set: form.set || null, volume: form.volume || null,
+    isbn, languages: form.languages, pages: form.pages || null, medium: form.medium, logosId: form.logosId || null,
+  };
+  const edition = existing ? update(existing.edition, editionValues, now) : newRecord('edition', newId(), now, editionValues);
+  if (!existing || edition !== existing.edition) records.push(edition);
+
+  const copyForm = form.copy;
+  const value = copyForm.value === '' ? null : Number(copyForm.value);
+  const oldCopy = existing && existing.copy;
+  let history = oldCopy ? oldCopy.valueHistory : [];
+  if (value !== null && (!oldCopy || oldCopy.value !== value)) {
+    // One value per day: a second change today replaces today's entry.
+    history = [...history.filter(point => point.date !== today), { date: today, value }];
+  }
+  const copyValues = {
+    binding: copyForm.binding || null, location: copyForm.location.filter(Boolean), acquired: copyForm.acquired || null,
+    price: copyForm.price === '' ? null : Number(copyForm.price), value, valueHistory: history,
+    markings: copyForm.markings, notes: copyForm.notes, status: copyForm.status,
+  };
+  const copy = oldCopy ? update(oldCopy, copyValues, now) : newRecord('copy', newId(), now, { ...copyValues, edition: edition.id, added: today });
+  if (copy !== oldCopy) records.push(copy);
+  return { records, editionId: edition.id, problems };
+}
+

@@ -15,10 +15,13 @@ const LIGATURES = { æ: 'ae', œ: 'oe', ß: 'ss', ø: 'o', đ: 'd', ł: 'l', þ:
  * @returns {string}
  */
 export function normalizeForSearch(text) {
-  const plain = String(text ?? '')
+  const raw = String(text ?? '');
+  // Plain English text needs no accent or Greek handling: the quick way.
+  if (/^[\x20-\x7e]*$/.test(raw)) return raw.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  const plain = raw
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, ''); // combining accent marks
+    .replace(/[\u0300-\u036f]/g, ''); // combining accent marks
   let out = '';
   for (const letter of plain) out += GREEK[letter] ?? LIGATURES[letter] ?? letter;
   return out.replace(/[^a-z0-9]+/g, ' ').trim();

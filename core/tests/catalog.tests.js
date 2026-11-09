@@ -4,6 +4,8 @@ import { anthologyRange } from '../anthology.js';
 import { countPages } from '../pages.js';
 import { estimateSize } from '../sizes.js';
 import { normalizeForSearch, searchTextOf, matchesSearch } from '../search.js';
+import { parseContentsLines, contentsLine } from '../contents.js';
+import { buildLibrary, viewEntries, searchEntries, authorLineOf } from '../library.js';
 import { equal, same, ok } from './check.js';
 import { na28, na28Works, triglotta, triglottaWorks, loeb36, loebWorks, plato, augustine, confessions, chadwick, work, edition, byId } from './samples.js';
 
@@ -103,6 +105,33 @@ export const tests = [
       ok(matchesSearch(text, 'confessiones'), 'original title');
       ok(matchesSearch(text, '9780199537822'), 'ISBN');
       ok(matchesSearch(text, 'chadwick'), 'translator');
+    },
+  },
+  {
+    name: 'pasted contents read as author, title and an optional date (Loeb 36, #9)',
+    fn() {
+      const pasted = ['Plato — Euthyphro — c. 399 BC', 'Plato -- Apology', '', 'Romans 1–8', 'The Didache | c. 100–120'].join('\n');
+      same(parseContentsLines(pasted), [
+        { author: 'Plato', title: 'Euthyphro', date: 'c. 399 BC' },
+        { author: 'Plato', title: 'Apology', date: null },
+        { author: null, title: 'Romans 1–8', date: null },
+        { author: null, title: 'The Didache', date: 'c. 100–120' },
+      ]);
+      equal(contentsLine(loebWorks[1], ['Plato']), 'Plato — Phaedo — c. 385 BC');
+    },
+  },
+  {
+    name: 'the library shows owned physical books by default, sorted by title',
+    fn() {
+      const copy = (id, edition, status = 'owned') => ({ type: 'copy', id, edition, status, location: [], binding: null, added: '2026-11-09', value: null, notes: '', trashed: null });
+      const library = buildLibrary([...na28Works, na28, ...loebWorks, loeb36, plato, confessions, augustine, chadwick,
+        copy('c0py00000001', na28.id), copy('c0py00000002', loeb36.id), copy('c0py00000003', chadwick.id, 'given away')]);
+      same(viewEntries(library.entries).map(entry => entry.edition.title), ['Euthyphro. Apology. Crito. Phaedo. Phaedrus.', 'Novum Testamentum Graece']);
+      equal(viewEntries(library.entries, { sort: 'originalDate' })[0].edition.title, 'Euthyphro. Apology. Crito. Phaedo. Phaedrus.', 'BC sorts first');
+      equal(searchEntries(library.entries, 'chadwick').length, 1, 'search finds books no longer owned');
+      equal(library.entries.find(entry => entry.id === na28.id).authorLine, '', 'no authors and no editors');
+      equal(library.entries.find(entry => entry.id === loeb36.id).authorLine, 'Plato', 'the shared author of an anthology');
+      equal(authorLineOf([{ authors: ['a'] }, { authors: ['b'] }], [{ name: 'Clement' }, { name: 'Polycarp' }], ['Michael W. Holmes']), 'ed. Michael W. Holmes', 'editors when authors differ');
     },
   },
 ];
