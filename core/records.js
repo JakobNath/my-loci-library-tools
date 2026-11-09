@@ -28,7 +28,7 @@ const NESTED_ORDER = {
   datings: ['text', 'earliest', 'latest', 'certainty', 'kind', 'note', 'working'],
   contents: ['work', 'extent', 'translator', 'pages'],
   contributors: ['name', 'role'],
-  images: ['id', 'kind', 'source', 'color', 'master'],
+  images: ['id', 'kind', 'source', 'color', 'master', 'waiting'],
   valueHistory: ['date', 'value'],
 };
 
