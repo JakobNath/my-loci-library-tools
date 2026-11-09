@@ -16,3 +16,7 @@ Run `node --test` in this folder.
 ## License
 
 MIT. See `LICENSE`.
+
+## Tests
+
+Run `node --test` in this folder. It runs the shared core's tests and checks that `core/` here matches `core/` in the app repository (`my-loci-library`, expected next to this folder). Never edit `core/` here: edit it in the app repository, then run `update-core.cmd` (Windows) or `update-core.sh` (Linux).
