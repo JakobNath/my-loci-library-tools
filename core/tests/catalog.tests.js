@@ -5,7 +5,7 @@ import { countPages } from '../pages.js';
 import { estimateSize } from '../sizes.js';
 import { normalizeForSearch, searchTextOf, matchesSearch } from '../search.js';
 import { parseContentsLines, contentsLine } from '../contents.js';
-import { buildLibrary, viewEntries, searchEntries, authorLineOf } from '../library.js';
+import { buildLibrary, viewEntries, searchEntries, authorLineOf, sortEntries } from '../library.js';
 import { equal, same, ok } from './check.js';
 import { na28, na28Works, triglotta, triglottaWorks, loeb36, loebWorks, plato, augustine, confessions, chadwick, work, edition, byId } from './samples.js';
 
@@ -128,10 +128,20 @@ export const tests = [
         copy('c0py00000001', na28.id), copy('c0py00000002', loeb36.id), copy('c0py00000003', chadwick.id, 'given away')]);
       same(viewEntries(library.entries).map(entry => entry.edition.title), ['Euthyphro. Apology. Crito. Phaedo. Phaedrus.', 'Novum Testamentum Graece']);
       equal(viewEntries(library.entries, { sort: 'originalDate' })[0].edition.title, 'Euthyphro. Apology. Crito. Phaedo. Phaedrus.', 'BC sorts first');
-      equal(searchEntries(library.entries, 'chadwick').length, 1, 'search finds books no longer owned');
+      equal(searchEntries(library, 'chadwick').length, 1, 'search finds books no longer owned');
+      equal(searchEntries(buildLibrary([...na28Works, na28], { searchText: false }), 'romans').length, 1, 'search works before the search text is built');
       equal(library.entries.find(entry => entry.id === na28.id).authorLine, '', 'no authors and no editors');
       equal(library.entries.find(entry => entry.id === loeb36.id).authorLine, 'Plato', 'the shared author of an anthology');
       equal(authorLineOf([{ authors: ['a'] }, { authors: ['b'] }], [{ name: 'Clement' }, { name: 'Polycarp' }], ['Michael W. Holmes']), 'ed. Michael W. Holmes', 'editors when authors differ');
+    },
+  },
+  {
+    name: 'titles sort with numbers in order and without "The", and books with no value go last',
+    fn() {
+      const entry = (title, value = null) => ({ edition: { title, year: null, series: null, set: null }, authorSort: '', location: [], value, sortYear: null, added: '' });
+      const sorted = sortEntries([entry('Volume 10'), entry('The Volume 9'), entry('Apology'), entry('Écrits')], 'title');
+      same(sorted.map(e => e.edition.title), ['Apology', 'Écrits', 'The Volume 9', 'Volume 10']);
+      same(sortEntries([entry('A', null), entry('B', 50), entry('C', 90)], 'value').map(e => e.edition.title), ['C', 'B', 'A']);
     },
   },
 ];

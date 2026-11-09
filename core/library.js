@@ -9,9 +9,12 @@ import { searchTextOf, normalizeForSearch } from './search.js';
 /**
  * Build the library from all records.
  * @param {object[]} records every record, of every type
+ * @param {{ searchText?: boolean }} [options] searchText: false leaves the
+ *   search text out, so the first screen appears sooner; add it afterwards
+ *   with withSearchText (searching works either way).
  * @returns {{ entries: object[], worksById: Map, authorsById: Map, editionsById: Map, wishlist: { item: object, searchText: string }[] }}
  */
-export function buildLibrary(records) {
+export function buildLibrary(records, { searchText = true } = {}) {
   const worksById = new Map();
   const authorsById = new Map();
   const editionsById = new Map();
@@ -30,7 +33,7 @@ export function buildLibrary(records) {
   }
   const entries = [];
   for (const edition of editionsById.values()) {
-    entries.push(entryOf(edition, copiesByEdition.get(edition.id) || [], worksById, authorsById));
+    entries.push(entryOf(edition, copiesByEdition.get(edition.id) || [], worksById, authorsById, searchText));
   }
   // Wishlist items get their own search text, kept beside the record.
   const wishes = wishlist.map(item => ({
@@ -41,7 +44,7 @@ export function buildLibrary(records) {
 }
 
 /** One edition with what the screens need, worked out once. */
-export function entryOf(edition, copies, worksById, authorsById) {
+export function entryOf(edition, copies, worksById, authorsById, withSearch = true) {
   const works = edition.contents.map(entry => worksById.get(entry.work)).filter(Boolean);
   const authorIds = [...new Set(works.flatMap(work => work.authors))];
   const authors = authorIds.map(id => authorsById.get(id)).filter(Boolean);
@@ -65,7 +68,7 @@ export function entryOf(edition, copies, worksById, authorsById) {
     value: copies.filter(copy => copy.status === 'owned').reduce((sum, copy) => sum + (copy.value || 0), 0),
     location: (copies.find(copy => copy.location.length) || { location: [] }).location,
     binding: (copies.find(copy => copy.binding) || { binding: '' }).binding,
-    searchText: searchTextOf(edition, worksById, authorsById, copies),
+    searchText: withSearch ? searchTextOf(edition, worksById, authorsById, copies) : null,
   };
 }
 
@@ -81,6 +84,13 @@ export function authorLineOf(works, authors, editors) {
   return names.length ? `${names[0]} and others` : '';
 }
 
+/** The library with every entry's search text filled in. Never changes its input. */
+export function withSearchText(library) {
+  const entries = library.entries.map(entry => (entry.searchText !== null ? entry
+    : { ...entry, searchText: searchTextOf(entry.edition, library.worksById, library.authorsById, entry.copies) }));
+  return { ...library, entries };
+}
+
 /** How an author sorts: their sort form, or their last name first. */
 export function sortNameOf(author) {
   if (author.sortName) return author.sortName;
@@ -88,28 +98,40 @@ export function sortNameOf(author) {
   return words.length > 1 ? `${words[words.length - 1]}, ${words.slice(0, -1).join(' ')}` : author.name;
 }
 
-// The ways the library can be sorted, each with a label for the screen.
-// Entries with no value for the chosen field always go last.
-const collator = new Intl.Collator('en', { sensitivity: 'base', numeric: true });
-const byText = pick => (a, b) => collator.compare(pick(a), pick(b));
-const byNumber = (pick, descending = false) => (a, b) => {
-  const x = pick(a);
-  const y = pick(b);
-  if (x === null || y === null) return x === null ? (y === null ? 0 : 1) : -1;
-  return descending ? y - x : x - y;
-};
-const titleOf = entry => entry.edition.title.replace(/^(the|a|an) /i, '');
+// The ways the library can be sorted, each with a label for the screen and
+// a key worked out once per book. Comparing ready-made keys is several times
+// faster than comparing titles with the browser's language rules on every
+// step of the sort. Books with no value for the chosen field go last.
+const textKey = text => (text ? normalizeForSearch(text).replace(/\d+/g, digits => digits.padStart(6, '0')) : null);
 export const SORTS = {
-  title: { label: 'Title', compare: byText(titleOf) },
-  author: { label: 'Author', compare: byText(entry => entry.authorSort || '￿') },
-  originalDate: { label: 'Original date', compare: byNumber(entry => entry.sortYear) },
-  year: { label: 'Edition year', compare: byNumber(entry => entry.edition.year) },
-  added: { label: 'Date added', compare: byText(entry => entry.added), descending: true },
-  value: { label: 'Value', compare: byNumber(entry => entry.value || null, true) },
-  location: { label: 'Location', compare: byText(entry => entry.location.join(' ') || '￿') },
-  binding: { label: 'Binding', compare: byText(entry => entry.binding || '￿') },
-  series: { label: 'Series', compare: byText(entry => `${entry.edition.series || entry.edition.set || '￿'} ${entry.edition.seriesNumber || entry.edition.volume || ''}`) },
+  title: { label: 'Title', key: entry => textKey(entry.edition.title.replace(/^(the|a|an) /i, '')) },
+  author: { label: 'Author', key: entry => textKey(entry.authorSort) },
+  originalDate: { label: 'Original date', key: entry => entry.sortYear },
+  year: { label: 'Edition year', key: entry => entry.edition.year },
+  added: { label: 'Date added', key: entry => entry.added || null, descending: true },
+  value: { label: 'Value', key: entry => entry.value || null, descending: true },
+  location: { label: 'Location', key: entry => textKey(entry.location.join(' ')) },
+  binding: { label: 'Binding', key: entry => textKey(entry.binding) },
+  series: { label: 'Series', key: entry => textKey([entry.edition.series || entry.edition.set, entry.edition.seriesNumber || entry.edition.volume].filter(Boolean).join(' ')) },
 };
+
+function compareKeys(x, y, descending) {
+  if (x === y) return 0;
+  if (x === null || y === null) return x === null ? 1 : -1;
+  return (x < y ? -1 : 1) * (descending ? -1 : 1);
+}
+
+/**
+ * Entries in the order of a sort, ties broken by title. Never changes its input.
+ * @param {object[]} entries
+ * @param {string} sort a key of SORTS
+ */
+export function sortEntries(entries, sort) {
+  const order = SORTS[sort] || SORTS.title;
+  const keyed = entries.map(entry => ({ entry, key: order.key(entry), title: SORTS.title.key(entry) }));
+  keyed.sort((a, b) => compareKeys(a.key, b.key, order.descending) || compareKeys(a.title, b.title, false));
+  return keyed.map(item => item.entry);
+}
 
 /**
  * The entries to show, filtered and sorted. Never changes its input.
@@ -117,13 +139,7 @@ export const SORTS = {
  * @param {{ medium?: 'physical'|'logos'|'all', sort?: string, showGone?: boolean }} view
  */
 export function viewEntries(entries, { medium = 'physical', sort = 'title', showGone = false } = {}) {
-  const chosen = entries.filter(entry => (medium === 'all' || entry.edition.medium === medium) && (showGone || entry.owned));
-  const order = SORTS[sort] || SORTS.title;
-  chosen.sort((a, b) => {
-    const result = order.compare(a, b);
-    return result === 0 ? SORTS.title.compare(a, b) : order.descending ? -result : result;
-  });
-  return chosen;
+  return sortEntries(entries.filter(entry => (medium === 'all' || entry.edition.medium === medium) && (showGone || entry.owned)), sort);
 }
 
 /**
@@ -131,17 +147,20 @@ export function viewEntries(entries, { medium = 'physical', sort = 'title', show
  * grouped by work, so several editions of one work sit together.
  * @returns {object[]} matching entries, at most `limit`
  */
-export function searchEntries(entries, query, limit = 50) {
+export function searchEntries(library, query, limit = 50) {
   const words = normalizeForSearch(query).split(' ').filter(Boolean);
   if (!words.length) return [];
   const found = [];
-  for (const entry of entries) {
-    if (words.every(word => entry.searchText.includes(word))) {
+  for (const entry of library.entries) {
+    const text = entry.searchText ?? searchTextOf(entry.edition, library.worksById, library.authorsById, entry.copies);
+    if (words.every(word => text.includes(word))) {
       found.push(entry);
       if (found.length >= limit) break;
     }
   }
   // Editions of one work sit together: order by the first work's title, then its ID.
-  const firstWork = entry => (entry.works[0] ? `${entry.works[0].title} ${entry.works[0].id}` : entry.edition.title);
-  return found.sort((a, b) => collator.compare(firstWork(a), firstWork(b)) || SORTS.title.compare(a, b));
+  const firstWork = entry => (entry.works[0] ? `${textKey(entry.works[0].title)} ${entry.works[0].id}` : textKey(entry.edition.title));
+  const keyed = found.map(entry => ({ entry, key: firstWork(entry), title: SORTS.title.key(entry) }));
+  keyed.sort((a, b) => compareKeys(a.key, b.key, false) || compareKeys(a.title, b.title, false));
+  return keyed.map(item => item.entry);
 }
