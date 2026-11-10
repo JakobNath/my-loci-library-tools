@@ -5,7 +5,7 @@ import { newRecord, withField, validateRecord, recordToFileText, FIELDS } from '
 import { mergeRecords } from '../merge.js';
 import { keyBetween, keysForShelf } from '../shelf-order.js';
 import { escapeHtml } from '../html.js';
-import { editionToCsl, cslName, volumeOfSet } from '../zotero.js';
+import { editionToCsl, cslName, volumeOfSet, editionForCitation } from '../zotero.js';
 import { equal, same, ok, throws } from './check.js';
 import { SHARED_DEFAULTS, settingsToFileText } from '../settings.js';
 import { trashBook, restoreBook, trashedItems } from '../trash.js';
@@ -146,6 +146,10 @@ export const tests = [
       equal(item['volume-title'], 'The Apostolic Fathers, Justin Martyr, Irenaeus');
       equal(editionToCsl(loeb36, byId(loebWorks), byId([plato])).author[0].literal, 'Plato', 'a collection by one author keeps its author');
       equal(volumeOfSet({ ...anf, subtitle: 'Volume 1' }).volumeTitle, '', 'a volume with no title of its own');
+      equal(editionForCitation('3rd edition'), '3', 'printed as "3rd ed."');
+      equal(editionForCitation('Third edition'), '3');
+      equal(editionForCitation('28th revised edition'), '28th rev. ed.');
+      equal(editionForCitation('Revised and expanded edition'), 'rev. and exp. ed.', 'lowercase: the style capitalizes it where Chicago does');
     },
   },
   {

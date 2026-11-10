@@ -56,6 +56,23 @@ export function freeCitationKey(base, taken) {
 
 const plain = text => String(text || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
+const ORDINALS = { first: 1, second: 2, third: 3, fourth: 4, fifth: 5, sixth: 6, seventh: 7, eighth: 8, ninth: 9, tenth: 10 };
+// Chicago's abbreviations for edition statements (Chicago Manual of Style, "Abbreviations").
+const EDITION_WORDS = [[/\beditions?\b/gi, 'ed.'], [/\brevised\b/gi, 'rev.'], [/\benlarged\b/gi, 'enl.'], [/\bexpanded\b/gi, 'exp.']];
+
+/**
+ * An edition statement as citation styles want it: a plain number when it is
+ * only an ordinal ("3rd edition" or "Third edition" is "3", which styles
+ * print as "3rd ed."), otherwise Chicago's abbreviations ("28th revised
+ * edition" is "28th rev. ed.").
+ */
+export function editionForCitation(statement) {
+  const text = String(statement || '').trim();
+  const match = text.match(/^(\d+)(st|nd|rd|th)?\.?\s+(ed\.?|edition)$/i) || text.match(/^(first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth)\s+(ed\.?|edition)$/i);
+  if (match) return String(ORDINALS[match[1].toLowerCase()] || Number(match[1]));
+  return EDITION_WORDS.reduce((result, [word, short]) => result.replace(word, short), text);
+}
+
 /**
  * A volume of a multivolume set (The Ante-Nicene Fathers, vol. 1): the set's
  * title, the volume number, and the volume's own title, if it has one. CSL
@@ -102,7 +119,7 @@ export function editionToCsl(edition, worksById, authorsById) {
   if (edition.publisher) item.publisher = edition.publisher;
   if (edition.place) item['publisher-place'] = edition.place;
   if (edition.year) item.issued = { 'date-parts': [[edition.year]] };
-  if (edition.editionStatement) item.edition = edition.editionStatement;
+  if (edition.editionStatement) item.edition = editionForCitation(edition.editionStatement);
   if (edition.series) item['collection-title'] = edition.series;
   if (edition.seriesNumber) item['collection-number'] = edition.seriesNumber;
   if (edition.volume) item.volume = edition.volume;

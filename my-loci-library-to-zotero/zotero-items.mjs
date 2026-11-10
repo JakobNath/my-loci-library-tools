@@ -7,7 +7,7 @@
 // only bibliographic data. The book's permanent Loci link, with its shelf in
 // the title, is a link attached under the book (HOW_IT_WORKS.md, "Zotero fields").
 
-import { editionToCsl, cslName, volumeOfSet } from '../core/zotero.js';
+import { editionToCsl, cslName, volumeOfSet, editionForCitation } from '../core/zotero.js';
 import { sortYearOf } from '../core/dating.js';
 import { normalizeForSearch } from '../core/search.js';
 
@@ -96,7 +96,7 @@ export function itemsFor(entry, library, { appUrl = APP_URL } = {}) {
       itemType: 'book',
       title: csl.title,
       creators: people,
-      edition: edition.editionStatement || '',
+      edition: editionForCitation(edition.editionStatement),
       series: set ? edition.series || '' : edition.series || edition.set || '',
       seriesNumber: edition.seriesNumber || '',
       volume: edition.volume || '',
@@ -126,7 +126,7 @@ export function itemsFor(entry, library, { appUrl = APP_URL } = {}) {
           bookTitle: csl.title,
           volume: edition.volume || '',
           creators: [...authors.map(name => creator(name, 'author')), ...editors, ...(piece.translator ? [creator(cslName(piece.translator), 'translator')] : translators)],
-          edition: edition.editionStatement || '',
+          edition: editionForCitation(edition.editionStatement),
           pages: piece.pages || '',
           series: edition.series || '',
           seriesNumber: edition.seriesNumber || '',
