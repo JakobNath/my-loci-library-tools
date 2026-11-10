@@ -1,7 +1,7 @@
 // The entry form's records: sample books entered from scratch, editing
 // that stamps only what changed, and ISBNs.
 
-import { recordsFromForm, isbn13, anotherCopy, isBookBarcode } from '../entry.js';
+import { recordsFromForm, isbn13, anotherCopy, isBookBarcode, wishFromForm, formFromWish } from '../entry.js';
 import { validateRecord } from '../records.js';
 import { equal, same, ok } from './check.js';
 
@@ -109,6 +109,21 @@ export const tests = [
       ok(isBookBarcode('9780199537822'), 'a real ISBN');
       ok(!isBookBarcode('9780199537823'), 'a wrong check digit');
       ok(!isBookBarcode('4006381333931'), 'a product barcode, not a book');
+    },
+  },
+  {
+    name: 'a wishlist item is made from its small form, edited field by field, and fills the entry form when bought',
+    fn() {
+      equal(wishFromForm({ title: ' ' }, null, context()).problems.length, 1, 'a title is needed');
+      const { record } = wishFromForm({ title: 'Theological Commonplaces', authors: 'Johann Gerhard', translator: 'Richard J. Dinda', publisher: 'Concordia Publishing House', isbn: '', notes: 'Any volume; about $45 new.' }, null, context());
+      same(validateRecord(record), []);
+      same(record.contributors, [{ name: 'Richard J. Dinda', role: 'translator' }]);
+      const edited = wishFromForm({ title: 'Theological Commonplaces', authors: 'Johann Gerhard', translator: 'Richard J. Dinda', publisher: 'Concordia Publishing House', notes: 'Volume 1 first.' }, record, { ...context(), now: '2026-11-10T09:00:00Z' }).record;
+      same(Object.keys(edited.changed), ['notes'], 'only the note changed');
+      const start = formFromWish(edited);
+      equal(start.edition.title, 'Theological Commonplaces');
+      equal(start.authorsText, 'Johann Gerhard');
+      equal(start.notes, 'Volume 1 first.', 'the note goes to the new copy');
     },
   },
 ];

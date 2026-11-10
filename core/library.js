@@ -158,15 +158,22 @@ function matchesStatus(entry, status) {
  * @param {object[]} entries
  * @param {Partial<typeof VIEW_DEFAULTS>} view status: 'owned', 'gone', 'all' or one
  *   copy status; location: a path, matching books there or further inside
+ * @param {{ anthologies?: 'once'|'each' }} [options] anthologies: sorted by
+ *   original date, an anthology shows once at its earliest date, or once under
+ *   each work it holds (settings.json, "anthologiesInShelfLists")
  */
-export function viewEntries(entries, view = {}) {
+export function viewEntries(entries, view = {}, { anthologies = 'once' } = {}) {
   const { medium, sort, status, location, category, tag, needsDate } = { ...VIEW_DEFAULTS, ...view };
-  return sortEntries(entries.filter(entry => (medium === 'all' || entry.edition.medium === medium)
+  const chosen = entries.filter(entry => (medium === 'all' || entry.edition.medium === medium)
     && matchesStatus(entry, status)
     && (!location.length || entry.copies.some(copy => isInside(copy.location, location)))
     && (!category || entry.categories.includes(category))
     && (!tag || entry.tags.includes(tag))
-    && (!needsDate || entry.needsDate)), sort);
+    && (!needsDate || entry.needsDate));
+  if (sort !== 'originalDate' || anthologies !== 'each') return sortEntries(chosen, sort);
+  return sortEntries(chosen.flatMap(entry => (entry.works.length > 1
+    ? [...new Set(entry.works.map(sortYearOf))].map(year => ({ ...entry, sortYear: year }))
+    : [entry])), sort);
 }
 
 /** What the filters can offer: every location (and each place containing one), category and tag in use. */

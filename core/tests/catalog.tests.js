@@ -179,4 +179,15 @@ export const tests = [
       ok(['title', 'subtitle', 'author', 'originalDate', 'year', 'binding', 'series', 'category', 'location', 'value', 'added'].every(key => key in SORTS), 'every sort PLAN.md names');
     },
   },
+  {
+    name: 'sorted by original date, an anthology shows once, or under each work it holds when the setting says so',
+    fn() {
+      const copy = newRecord('copy', 'c0py00000009', '2026-11-10T10:00:00Z', { edition: loeb36.id, added: '2026-11-10' });
+      const { entries } = buildLibrary([...loebWorks, loeb36, plato, copy]);
+      equal(viewEntries(entries, { sort: 'originalDate' }).length, 1);
+      const years = new Set(loebWorks.map(work => work.datings.find(dating => dating.working)?.earliest));
+      equal(viewEntries(entries, { sort: 'originalDate' }, { anthologies: 'each' }).length, years.size, 'once for each distinct date');
+      equal(viewEntries(entries, { sort: 'title' }, { anthologies: 'each' }).length, 1, 'other sorts show it once');
+    },
+  },
 ];

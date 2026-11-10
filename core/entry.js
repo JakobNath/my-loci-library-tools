@@ -52,6 +52,46 @@ function update(record, values, now) {
 }
 
 /**
+ * A wishlist item from its small form (PLAN.md, "Wishlist"): new, or the
+ * existing item with only what changed stamped.
+ * @param {{ title: string, subtitle?: string, authors?: string, translator?: string, publisher?: string, isbn?: string, notes?: string }} form
+ *   authors: names separated by ";"
+ * @param {object|null} existing
+ * @returns {{ record: object|null, problems: string[] }}
+ */
+export function wishFromForm(form, existing, { newId, now }) {
+  const text = value => String(value ?? '').trim();
+  if (!text(form.title)) return { record: null, problems: ['A wishlist item needs a title.'] };
+  const values = {
+    title: text(form.title),
+    subtitle: text(form.subtitle) || null,
+    authors: text(form.authors).split(';').map(name => name.trim()).filter(Boolean),
+    contributors: text(form.translator) ? [{ name: text(form.translator), role: 'translator' }] : [],
+    publisher: text(form.publisher) || null,
+    isbn: isbn13(form.isbn) || text(form.isbn) || null,
+    notes: text(form.notes),
+  };
+  if (existing) {
+    // Other contributors (an editor, say) are kept; only the translator comes from the form.
+    values.contributors = [...existing.contributors.filter(person => person.role !== 'translator'), ...values.contributors];
+    return { record: update(existing, values, now), problems: [] };
+  }
+  return { record: newRecord('wishlist', newId(), now, values), problems: [] };
+}
+
+/**
+ * The entry form's starting values for a wishlist item just bought: its
+ * details, and its note on the new copy (PLAN.md, "Wishlist").
+ */
+export function formFromWish(wish) {
+  return {
+    edition: { title: wish.title, subtitle: wish.subtitle, contributors: wish.contributors, publisher: wish.publisher, isbn: wish.isbn, languages: [], medium: 'physical', images: [] },
+    authorsText: wish.authors.join('; '),
+    notes: wish.notes,
+  };
+}
+
+/**
  * Build the records for one book from the form.
  * @param {object} form the values typed (see ui/edit.js for its shape)
  * @param {{ edition: object, copy: object|null, works: object[] }|null} existing the book being edited, or null for a new one
