@@ -64,6 +64,11 @@ function update(record, values, now) {
   return result;
 }
 
+/** A copy's value history without the entries of the given dates. */
+export function valueHistoryWithout(history, dates) {
+  return history.filter(point => !dates.includes(point.date));
+}
+
 /**
  * A wishlist item from its small form (PLAN.md, "Wishlist"): new, or the
  * existing item with only what changed stamped.
@@ -187,7 +192,8 @@ export function recordsFromForm(form, existing, context) {
   const copyForm = form.copy;
   const value = copyForm.value === '' ? null : Number(copyForm.value);
   const oldCopy = existing && existing.copy;
-  let history = oldCopy ? oldCopy.valueHistory : [];
+  // Entries ticked for deletion in the form go first (PLAN.md: "history can be deleted").
+  let history = valueHistoryWithout(oldCopy ? oldCopy.valueHistory : [], copyForm.dropHistory || []);
   if (value !== null && (!oldCopy || oldCopy.value !== value)) {
     // One value per day: a second change today replaces today's entry.
     history = [...history.filter(point => point.date !== today), { date: today, value }];
