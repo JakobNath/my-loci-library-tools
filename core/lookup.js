@@ -55,8 +55,8 @@ export function fromOpenLibrary(answer, isbn, coverUrl) {
   const book = answer && answer[`ISBN:${isbn}`];
   if (!book || !book.title) return null;
   const found = emptyFound('openlibrary');
-  found.title = tidy(book.title);
-  found.subtitle = tidy(book.subtitle);
+  found.title = titleCase(tidy(book.title));
+  found.subtitle = titleCase(tidy(book.subtitle));
   found.authors = (book.authors || []).map(author => tidy(author.name)).filter(Boolean);
   found.contributors = contributorsFrom(book.by_statement);
   found.publisher = (book.publishers && book.publishers[0] && book.publishers[0].name) || '';
@@ -80,8 +80,8 @@ export function fromGoogleBooks(answer, isbn) {
   const volume = answer && answer.items && answer.items[0] && answer.items[0].volumeInfo;
   if (!volume || !volume.title) return null;
   const found = emptyFound('googlebooks');
-  found.title = volume.title;
-  found.subtitle = volume.subtitle || '';
+  found.title = titleCase(tidy(volume.title));
+  found.subtitle = titleCase(tidy(volume.subtitle));
   found.authors = volume.authors || [];
   found.publisher = volume.publisher || '';
   found.year = yearOf(volume.publishedDate);
@@ -178,3 +178,22 @@ export function suggestOriginalDates(work, editionYear) {
 
 const yearText = year => (year < 0 ? `${-year} BC` : String(year));
 const lifeText = (born, died) => (born < 0 && died < 0 ? `${-born}–${-died} BC` : born < 0 ? `${-born} BC – ${died}` : `${born}–${died}`);
+
+// Small words stay lower case inside a title (Chicago style).
+const SMALL_WORDS = new Set(['a', 'an', 'the', 'and', 'but', 'or', 'nor', 'for', 'so', 'yet', 'as', 'at', 'by', 'in', 'of', 'on', 'to', 'up', 'via', 'with', 'from', 'into', 'over']);
+
+/**
+ * Title case for a title written all in lower case ("The cost of
+ * discipleship" becomes "The Cost of Discipleship"). A title that already
+ * has capitals inside it is left exactly as it is, since its capitals were
+ * chosen by someone ("Greek New Testament: UBS5", "iPhone").
+ */
+export function titleCase(text) {
+  const words = String(text || '').split(' ');
+  if (words.slice(1).some(word => /[A-Z]/.test(word))) return text;
+  return words.map((word, i) => {
+    const afterColon = i > 0 && /[:—]$/.test(words[i - 1]);
+    const keepSmall = i > 0 && i < words.length - 1 && !afterColon && SMALL_WORDS.has(word.toLowerCase());
+    return keepSmall ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1);
+  }).join(' ');
+}

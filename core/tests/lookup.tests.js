@@ -1,7 +1,7 @@
 // Reading lookup answers (recorded from Open Library on 9 November 2026, and
 // in Google Books' documented format), and the matching suggestions.
 
-import { fromOpenLibrary, fromGoogleBooks, combineFound, candidatesFromSearch, workFromOpenLibrary, suggestOriginalDates, yearFromText } from '../lookup.js';
+import { fromOpenLibrary, fromGoogleBooks, combineFound, candidatesFromSearch, workFromOpenLibrary, suggestOriginalDates, yearFromText, titleCase } from '../lookup.js';
 import { editionsWithIsbn, suggestWorks } from '../matching.js';
 import { buildLibrary } from '../library.js';
 import { equal, same, ok } from './check.js';
@@ -39,7 +39,7 @@ export const tests = [
       const found = fromOpenLibrary(OPEN_LIBRARY, '9780199537822', COVER);
       equal(found.title, 'Confessions');
       same(found.authors, ['Augustine of Hippo']);
-      equal(fromOpenLibrary({ 'ISBN:1': { title: 'The  cost of  discipleship ' } }, '1', '').title, 'The cost of discipleship', 'spaces tidied');
+      equal(fromOpenLibrary({ 'ISBN:1': { title: 'The  cost of  discipleship ' } }, '1', '').title, 'The Cost of Discipleship', 'spaces tidied and title case');
       same(found.contributors, [{ name: 'Henry Chadwick', role: 'translator' }]);
       same([found.publisher, found.place, found.year, found.pages], ['Oxford University Press', 'Oxford', '2008', 'xxviii, 311']);
       equal(found.cover.url, COVER);
@@ -139,6 +139,17 @@ export const tests = [
       ok(suggestions[0].label.includes('check'), 'asks for a check');
       equal(yearFromText('c. 427 BC'), -427);
       same(suggestOriginalDates({ firstPublished: 1514, author: { name: 'Plato', born: -428, died: -348 } }, 1914).map(s => s.text), ['428–348 BC']);
+    },
+  },
+  {
+    name: 'titles in lower case get title case; titles with chosen capitals are left alone',
+    fn() {
+      equal(titleCase('The cost of discipleship'), 'The Cost of Discipleship');
+      equal(titleCase('confessions'), 'Confessions');
+      equal(titleCase('the dangers of christian practice: on wayward gifts'), 'The Dangers of Christian Practice: On Wayward Gifts');
+      equal(titleCase('a history of the world in'), 'A History of the World In', 'a last word is capitalized');
+      equal(titleCase('Greek New Testament: UBS5'), 'Greek New Testament: UBS5');
+      equal(titleCase('Basics of Biblical Hebrew Grammar'), 'Basics of Biblical Hebrew Grammar');
     },
   },
 ];
