@@ -17,8 +17,18 @@ Created by Jakob Nath.
 2. Copy `config.example.json` to `config.json` in this folder and fill it in:
    - `dataRepo`: the data repository's folder (relative paths start from this folder).
    - `backupFolder`: the folder that receives the daily copy, such as "My Loci Library backup" inside Google Drive for desktop.
+   - `googleBooksKey` (optional): a free Google Books key, so the tools can ask Google Books too (see "A Google Books key" below).
    `config.json` stays on this laptop; it is never committed.
 3. Run `loci-backup/loci-backup.cmd` (Windows) or `loci-backup/loci-backup.sh` (Linux) once by hand and read what it reports.
+
+## A Google Books key
+
+Google Books refuses most requests without a key. One free key, made once, serves the laptop and every phone (each phone pastes it in Settings › Advanced, which has the same steps and a "Test the key" button). It takes about two minutes:
+
+1. Open https://console.cloud.google.com/apis/library/books.googleapis.com and sign in with any Google account. If it asks for a project, make one (any name, such as "My Loci Library"). Click **Enable**.
+2. Open https://console.cloud.google.com/apis/credentials, click **Create credentials**, then **API key**.
+3. In the form that opens (or, if a key appears at once, by clicking its name), choose **Restrict key** under **API restrictions** and tick **Books API**, so the key is good for nothing else. Leave **Application restrictions** at **None**. Click **Create** or **Save**, and copy the key (it starts with `AIza`).
+4. Put it in `config.json` as `"googleBooksKey": "AIza..."`. It stays on this laptop and is never committed.
 
 ## loci-backup
 
