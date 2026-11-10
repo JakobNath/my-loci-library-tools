@@ -9,6 +9,7 @@
 
 import { editionToCsl, cslName } from '../core/zotero.js';
 import { sortYearOf } from '../core/dating.js';
+import { normalizeForSearch } from '../core/search.js';
 
 export const APP_URL = 'https://jakobnath.github.io/my-loci-library/';
 export const TAG_GONE = 'Loci: no longer owned';
@@ -24,6 +25,33 @@ const creator = (name, creatorType) => (name.literal ? { creatorType, name: name
 /** The permanent link to a book in the app: a fixed pattern holding only the record ID. */
 export const lociLink = (editionId, appUrl = APP_URL) => `${appUrl}#/book/${editionId}`;
 
+// The books of the Bible, with the deuterocanonical books and other common
+// names, as plain lowercase words ("1 corinthians", "song of songs").
+const BIBLE_BOOKS = new Set([
+  'genesis', 'exodus', 'leviticus', 'numbers', 'deuteronomy', 'joshua', 'judges', 'ruth', '1 samuel', '2 samuel', '1 kings', '2 kings',
+  '1 chronicles', '2 chronicles', 'ezra', 'nehemiah', 'esther', 'job', 'psalms', 'psalm', 'proverbs', 'ecclesiastes', 'qoheleth',
+  'song of songs', 'song of solomon', 'canticles', 'isaiah', 'jeremiah', 'lamentations', 'ezekiel', 'daniel', 'hosea', 'joel', 'amos',
+  'obadiah', 'jonah', 'micah', 'nahum', 'habakkuk', 'zephaniah', 'haggai', 'zechariah', 'malachi',
+  'tobit', 'judith', 'wisdom of solomon', 'wisdom', 'sirach', 'ecclesiasticus', 'baruch', '1 maccabees', '2 maccabees', '3 maccabees', '4 maccabees',
+  '1 esdras', '2 esdras', 'prayer of manasseh', 'additions to esther', 'letter of jeremiah',
+  'matthew', 'mark', 'luke', 'john', 'acts', 'acts of the apostles', 'romans', '1 corinthians', '2 corinthians', 'galatians', 'ephesians',
+  'philippians', 'colossians', '1 thessalonians', '2 thessalonians', '1 timothy', '2 timothy', 'titus', 'philemon', 'hebrews', 'james',
+  '1 peter', '2 peter', '1 john', '2 john', '3 john', 'jude', 'revelation', 'apocalypse',
+]);
+
+/**
+ * Whether a book is a Bible (or a Testament), whose parts are cited by book,
+ * chapter and verse, never as sections of a book (Chicago Manual of Style;
+ * SBL Handbook): marked as one by its category or by Logos, or an anthology
+ * at least half of whose works are books of the Bible (NA28, BHS, a study Bible).
+ */
+export function isBible(entry) {
+  if (entry.edition.logosExtra && entry.edition.logosExtra['Resource Type'] === 'Bible') return true;
+  if (entry.works.some(work => /^bibles?$/i.test(work.category || ''))) return true;
+  const biblical = entry.works.filter(work => BIBLE_BOOKS.has(normalizeForSearch(work.title).replace(/^the /, '').replace(/^(first|second|third) /, word => ({ 'first ': '1 ', 'second ': '2 ', 'third ': '3 ' })[word]))).length;
+  return entry.works.length > 1 && biblical * 2 >= entry.works.length;
+}
+
 /**
  * Which editions go to Zotero: every physical edition, and Logos editions marked "cite".
  * Wishlist items are not editions and never go.
@@ -32,7 +60,8 @@ export const isSent = edition => !edition.trashed && (edition.medium === 'physic
 
 /**
  * The Zotero items for one library entry: the book, and a section for each
- * work when it is an anthology. Keys: the edition ID, and "<edition id>/<work id>".
+ * work when it is an anthology, except a Bible (decided with Jakob, 2026-11-10).
+ * Keys: the edition ID, and "<edition id>/<work id>".
  * Citation keys are filled in by the caller (they must stay pinned).
  * @returns {{ linkId: string, base: string, data: object }[]} base: the key's author-and-year part
  */
@@ -72,7 +101,7 @@ export function itemsFor(entry, library, { appUrl = APP_URL } = {}) {
     },
   };
   const items = [book];
-  if (entry.works.length > 1) {
+  if (entry.works.length > 1 && !isBible(entry)) {
     const editors = edition.contributors.filter(person => person.role === 'editor').map(person => creator(cslName(person.name), 'editor'));
     for (const piece of edition.contents) {
       const work = library.worksById.get(piece.work);

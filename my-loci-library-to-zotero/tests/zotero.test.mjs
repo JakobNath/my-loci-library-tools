@@ -10,7 +10,9 @@ import { newRecord, withField } from '../../core/records.js';
 import { connectToZotero } from '../zotero-api.mjs';
 import { sendToZotero } from '../zotero-sync.mjs';
 import { fakeZotero } from './fake-zotero.mjs';
-import { plato, augustine, confessions, chadwick, loebWorks, loeb36 } from '../../core/tests/samples.js';
+import { plato, augustine, confessions, chadwick, loebWorks, loeb36, na28, na28Works, triglotta, triglottaWorks } from '../../core/tests/samples.js';
+import { isBible } from '../zotero-items.mjs';
+import { buildLibrary } from '../../core/library.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const NOW = '2026-11-10T12:00:00Z';
@@ -167,6 +169,16 @@ test('on the first run only a real match is linked: a book, with an ISBN in comm
   assert.deepEqual(copies, [real], 'a full copy was kept before it was changed');
   assert.equal(Object.values(fresh.items).filter(link => link.key === real).length, 1, 'linked to one Loci book only');
   void second;
+});
+
+test('a Bible is sent as one book, never as a section per biblical book; other anthologies keep their sections', async () => {
+  const { fake, zotero, links } = setup();
+  await sendToZotero([...na28Works, na28, copy('c0py0000000r', na28.id), ...triglottaWorks, triglotta, copy('c0py0000000s', triglotta.id)], links, zotero);
+  assert.equal(fake.byTitle('Novum Testamentum Graece').length, 1);
+  assert.equal(mainItems(fake).filter(item => item.data.bookTitle === 'Novum Testamentum Graece').length, 0, 'no "Romans, in NA28"');
+  assert.equal(mainItems(fake).filter(item => item.data.bookTitle && item.data.bookTitle.startsWith('Concordia Triglotta')).length, triglottaWorks.length, 'the Book of Concord keeps a section per document');
+  const { entries } = buildLibrary([...loebWorks, loeb36, plato]);
+  assert.equal(isBible(entries[0]), false, 'Plato is not a Bible');
 });
 
 test('the companion has matching .cmd and .sh launchers', () => {
