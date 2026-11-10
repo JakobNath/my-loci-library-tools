@@ -5,6 +5,7 @@ import { buildLibrary } from '../library.js';
 import { valueSummary } from '../value.js';
 import { catalogCsv, valueCsv, catalogJson, cslJson, bibtex } from '../exports.js';
 import { valueHistoryWithout } from '../entry.js';
+import { archiveReminder, lastBackupLine } from '../backup-status.js';
 import { equal, same, ok } from './check.js';
 import { na28, na28Works, loeb36, loebWorks, plato, augustine, confessions, chadwick } from './samples.js';
 
@@ -72,6 +73,18 @@ export const tests = [
       ok(bib.includes('title = {Confessions}'));
       equal((bib.match(/@book\{/g) || []).length, library.entries.length, 'one entry per edition');
       equal(new Set(bib.match(/@book\{[^,]+/g)).size, library.entries.length, 'keys are unique');
+    },
+  },
+  {
+    name: 'the yearly archive reminder appears a year after the last archive (or the first backup), not before',
+    fn() {
+      const status = { format: 1, firstBackup: '2026-11-10T03:00:00Z', lastMirror: '2027-03-01T03:00:00Z', lastSnapshot: '2027-03', lastArchive: null };
+      equal(archiveReminder(status, '2027-11-09'), null, 'one day short of a year');
+      ok(archiveReminder(status, '2027-11-10'), 'a year after the first backup, with no archive yet');
+      equal(archiveReminder({ ...status, lastArchive: '2027-11-12T10:00:00Z' }, '2028-06-01'), null, 'an archive resets it');
+      ok(archiveReminder({ ...status, lastArchive: '2027-11-12T10:00:00Z' }, '2028-11-12'));
+      equal(archiveReminder(null, '2030-01-01'), null, 'no laptop backup yet: no reminder');
+      equal(lastBackupLine(status), 'Last backup to the backup folder: 2027-03-01.');
     },
   },
 ];
