@@ -1,8 +1,11 @@
 // What Loci sends to Zotero (PLAN.md, "my-loci-library-to-zotero"): one book
 // item per edition, and one book section per work inside an anthology that is
-// sent. Each carries the original date and the pinned citation key in Extra
-// (where Zotero and Better BibTeX read them), the shelf location in "Loc. in
-// Archive", and the book's permanent Loci link (record ID only) as its URL.
+// sent. The original date and the pinned citation key go in Zotero's own
+// Original Date and Citation Key fields. Nothing goes in URL, Loc. in Archive
+// or Extra, because Chicago prints URL and Loc. in Archive in citations, and
+// Better BibTeX may export stray Extra lines as a note: citations must hold
+// only bibliographic data. The book's permanent Loci link, with its shelf in
+// the title, is a link attached under the book (HOW_IT_WORKS.md, "Zotero fields").
 
 import { editionToCsl, cslName } from '../core/zotero.js';
 import { sortYearOf } from '../core/dating.js';
@@ -10,6 +13,7 @@ import { sortYearOf } from '../core/dating.js';
 export const APP_URL = 'https://jakobnath.github.io/my-loci-library/';
 export const TAG_GONE = 'Loci: no longer owned';
 export const TAG_REMOVED = 'Loci: removed';
+// Lines the first version of the companion wrote in Extra; they are removed when found.
 const OUR_EXTRA = /^(Original Date|Citation Key):/i;
 
 const CREATOR_TYPES = { translator: 'translator', editor: 'editor', illustrator: 'contributor', introduction: 'contributor', other: 'contributor' };
@@ -46,16 +50,16 @@ export function itemsFor(entry, library, { appUrl = APP_URL } = {}) {
     date: edition.year ? String(edition.year) : '',
     ISBN: edition.isbn || '',
     language: edition.languages.join(', '),
-    url: lociLink(edition.id, appUrl),
-    archiveLocation: location,
   };
   const originalDate = csl['original-date'] ? csl['original-date']['date-parts'][0][0] : null;
   const book = {
     linkId: edition.id,
     csl,
     year: edition.year,
-    originalDate,
+    // The link attached under the book: to it in Loci, titled with its shelf.
+    attachment: { title: location ? `My Loci Library · ${location}` : 'My Loci Library', url: lociLink(edition.id, appUrl) },
     data: {
+      originalDate: originalDateText(originalDate),
       itemType: 'book',
       title: csl.title,
       creators: people,
@@ -79,8 +83,8 @@ export function itemsFor(entry, library, { appUrl = APP_URL } = {}) {
         linkId: `${edition.id}/${work.id}`,
         csl: { author: authors, editor: [], title: work.title },
         year: edition.year,
-        originalDate: year,
         data: {
+          originalDate: originalDateText(year),
           itemType: 'bookSection',
           title: work.subtitle ? `${work.title}: ${work.subtitle}` : work.title,
           bookTitle: csl.title,
@@ -97,12 +101,18 @@ export function itemsFor(entry, library, { appUrl = APP_URL } = {}) {
 }
 
 /**
- * Extra, with our two lines (original date and pinned key) in place of any
- * earlier ones, and every other line a person wrote kept.
+ * An original date as Zotero's Original Date field takes it: a year ("397"),
+ * or a year before Christ written out ("385 BC"), which Zotero keeps and
+ * Chicago prints as it is written.
  */
-export function extraWith(existing, { originalDate, citationKey }) {
-  const kept = String(existing || '').split('\n').filter(line => line.trim() && !OUR_EXTRA.test(line));
-  return [...(originalDate !== null && originalDate !== undefined ? [`Original Date: ${originalDate}`] : []), `Citation Key: ${citationKey}`, ...kept].join('\n');
+export function originalDateText(year) {
+  if (year === null || year === undefined) return '';
+  return year < 0 ? `${-year} BC` : String(year);
+}
+
+/** Extra without the lines the first version of the companion wrote there; every line a person wrote is kept. */
+export function extraWithout(existing) {
+  return String(existing || '').split('\n').filter(line => !OUR_EXTRA.test(line)).join('\n').trim();
 }
 
 /**

@@ -9,7 +9,7 @@ import { buildLibrary } from '../core/library.js';
 import { freeCitationKey, citationKeyBase } from '../core/zotero.js';
 import { normalizeForSearch } from '../core/search.js';
 import { isbn13 } from '../core/entry.js';
-import { itemsFor, isSent, extraWith, pinnedKey, lociTags, TAG_GONE, TAG_REMOVED } from './zotero-items.mjs';
+import { itemsFor, isSent, extraWithout, pinnedKey, lociTags, TAG_GONE, TAG_REMOVED } from './zotero-items.mjs';
 
 const fingerprint = value => createHash('sha1').update(JSON.stringify(value)).digest('hex').slice(0, 16);
 const LOCI_TAGS = [TAG_GONE, TAG_REMOVED];
@@ -64,6 +64,8 @@ export async function sendToZotero(records, links, zotero, { collectionName = MA
     const present = await zotero.presentKeys();
     const missing = Object.entries(links.items).filter(([, link]) => link.key && !present.has(link.key));
     for (const [linkId, link] of missing) links.items[linkId] = { citationKey: link.citationKey };
+    // A link under a book that was deleted by hand is made again too.
+    for (const link of Object.values(links.items)) if (link.attachment && !present.has(link.attachment)) { delete link.attachment; delete link.attachmentTitle; }
     if (missing.length) report.push(`${missing.length} items were missing in Zotero (deleted, or in its trash) and are sent again.`);
   }
   const library = buildLibrary(records);
@@ -114,14 +116,14 @@ export async function sendToZotero(records, links, zotero, { collectionName = MA
     if (match) existing.used.add(match.key);
     const citationKey = known ? known.citationKey : (match && pinnedKey(match.data)) || freeCitationKey(citationKeyBase(item.csl, item.year), taken);
     taken.add(citationKey);
-    const data = { ...item.data, extraLines: { originalDate: item.originalDate, citationKey } };
+    const data = { ...item.data, citationKey };
     const sent = fingerprint([data, item.tags]);
     if (link && link.sent === sent) { unchanged++; continue; }
     if (link || match) {
       const key = link ? link.key : match.key;
       const differences = await mergeInto(zotero, key, { ...data, tags: item.tags }, links.collection, match && !link ? keepBefore : () => {});
       if (match && !link) report.push(...differences.map(text => `  ${item.data.title}: ${text}`));
-      links.items[item.linkId] = { key, citationKey, sent };
+      links.items[item.linkId] = { ...known, key, citationKey, sent };
       updated++;
       save();
     } else {
@@ -134,9 +136,7 @@ export async function sendToZotero(records, links, zotero, { collectionName = MA
   for (let i = 0; i < toCreate.length; i += 50) {
     onProgress(`Sending new items: ${i + 1}–${Math.min(i + 50, toCreate.length)} of ${toCreate.length}…`);
     const batch = toCreate.slice(i, i + 50);
-    const keys = await zotero.create(batch.map(({ data, item }) => ({
-      ...withoutExtraLines(data), extra: extraWith('', data.extraLines), collections: [links.collection], tags: item.tags.map(tag => ({ tag })),
-    })));
+    const keys = await zotero.create(batch.map(({ data, item }) => ({ ...data, collections: [links.collection], tags: item.tags.map(tag => ({ tag })) })));
     batch.forEach(({ item, citationKey, sent }, j) => { if (keys[j]) links.items[item.linkId] = { key: keys[j], citationKey, sent }; });
     made.push(...keys);
     save();
@@ -153,33 +153,52 @@ export async function sendToZotero(records, links, zotero, { collectionName = MA
     save();
   }
 
+  // The link under each book, back to it in Loci and titled with its shelf: made once, renamed when the shelf changes.
+  let attached = 0;
+  for (const item of wanted) {
+    const link = links.items[item.linkId];
+    if (!item.attachment || !link || !link.key) continue;
+    const title = item.attachment.title;
+    if (link.attachment && link.attachmentTitle === title) continue;
+    if (link.attachment) {
+      const current = await zotero.item(link.attachment);
+      await zotero.update(link.attachment, current.version, { title, url: item.attachment.url });
+    } else {
+      const [key] = await zotero.create([{ itemType: 'attachment', linkMode: 'linked_url', parentItem: link.key, title, url: item.attachment.url, contentType: '', charset: '', note: '', tags: [], relations: {} }]);
+      if (!key) continue;
+      link.attachment = key;
+    }
+    link.attachmentTitle = title;
+    attached++;
+    save();
+  }
+  if (attached) report.push(`${attached} links back to My Loci Library made or renamed (their titles show the shelf).`);
+
   report.unshift(`Zotero: ${made.length - failed} new, ${updated} updated, ${unchanged} unchanged${failed ? `, ${failed} refused by Zotero (run again)` : ''}.`);
   if (firstRun && report.length > 1) report.splice(1, 0, 'Books already in Zotero were linked; where their data differed, Loci\'s was written:');
   return report;
 }
 
-const withoutExtraLines = ({ extraLines, ...data }) => data;
-
 /**
- * Bring an existing item up to date: our fields written, Extra's other lines,
- * other tags and other collections kept. Returns what differed, in words.
+ * Bring an existing item up to date: our fields written, other tags and other
+ * collections kept, and anything the first version of the companion put in URL,
+ * Loc. in Archive or Extra taken out again. Returns what differed, in words.
  */
 async function mergeInto(zotero, key, ours, collection, keepBefore = () => {}) {
   const current = await zotero.item(key);
   keepBefore(current);
   const differences = [];
   const change = {};
-  for (const [field, value] of Object.entries(withoutExtraLines(ours))) {
+  for (const [field, value] of Object.entries(ours)) {
     if (field === 'tags' || field === 'itemType') continue; // an item's type is never changed
     if (JSON.stringify(current.data[field] ?? '') !== JSON.stringify(value)) {
       change[field] = value;
-      if (field !== 'url' && field !== 'archiveLocation' && current.data[field]) differences.push(`${field} was ${JSON.stringify(current.data[field])}`);
+      if (current.data[field]) differences.push(`${field} was ${JSON.stringify(current.data[field])}`);
     }
   }
-  if (ours.extraLines) {
-    const extra = extraWith(current.data.extra, ours.extraLines);
-    if (extra !== (current.data.extra || '')) change.extra = extra;
-  }
+  if (String(current.data.url || '').includes('/#/book/')) { change.url = ''; change.archiveLocation = ''; }
+  const extra = extraWithout(current.data.extra);
+  if (extra !== (current.data.extra || '')) change.extra = extra;
   const tags = [...(current.data.tags || []).filter(tag => !LOCI_TAGS.includes(tag.tag)), ...ours.tags.map(tag => ({ tag }))];
   if (JSON.stringify(tags) !== JSON.stringify(current.data.tags || [])) change.tags = tags;
   if (!(current.data.collections || []).includes(collection)) change.collections = [...(current.data.collections || []), collection];

@@ -30,27 +30,36 @@ const setup = (options = {}) => {
   return { fake, zotero: connectToZotero({ userId: '12345', key: 'test-key', fetchFn: fake.fetchFn }), links: { format: 1, collection: null, items: {} } };
 };
 
-test('physical books, cited Logos books and anthology sections are sent, with original date, pinned key, shelf and Loci link', async () => {
+// The links attached under books (back to Loci), and everything else.
+const attachments = fake => [...fake.items.values()].filter(item => item.data.itemType === 'attachment');
+const mainItems = fake => [...fake.items.values()].filter(item => item.data.itemType !== 'attachment');
+
+test('physical books, cited Logos books and anthology sections are sent with only bibliographic data, and a link back to Loci under each book', async () => {
   const { fake, zotero, links } = setup();
   const report = await sendToZotero(sampleRecords(), links, zotero);
   assert.match(report[0], /Zotero: 6 new/, 'Chadwick, the Loeb and its 3 sections, the cited Logos book');
   assert.equal(fake.byTitle('Not cited').length + fake.byTitle('A wish').length, 0, 'uncited Logos books and wishes never go');
   const [book] = fake.byTitle('Confessions');
-  assert.equal(book.data.url, 'https://jakobnath.github.io/my-loci-library/#/book/chadw1ck1991');
-  assert.equal(book.data.archiveLocation, 'Home › Office › Case 1');
-  assert.match(book.data.extra, /^Original Date: 397\nCitation Key: Augustine1991$/);
+  assert.equal(book.data.originalDate, '397', "in Zotero's own Original Date field");
+  assert.equal(book.data.citationKey, 'Augustine1991', "in Zotero's own Citation Key field");
+  assert.ok(!book.data.url && !book.data.archiveLocation && !book.data.extra, 'nothing that Chicago would print, or Better BibTeX export, beyond the book itself');
   assert.equal(book.data.collections.length, 1);
+  const [link] = attachments(fake).filter(item => item.data.parentItem === book.key);
+  assert.equal(link.data.linkMode, 'linked_url');
+  assert.equal(link.data.url, 'https://jakobnath.github.io/my-loci-library/#/book/chadw1ck1991');
+  assert.equal(link.data.title, 'My Loci Library · Home › Office › Case 1', 'the shelf in its title');
+  assert.equal(attachments(fake).length, 3, 'one under each book, none under sections');
   const [section] = fake.byTitle('Phaedo');
   assert.equal(section.data.itemType, 'bookSection');
   assert.equal(section.data.bookTitle, 'Euthyphro. Apology. Crito. Phaedo. Phaedrus.');
-  assert.match(section.data.extra, /Original Date: -385/);
+  assert.equal(section.data.originalDate, '385 BC');
   assert.ok(section.data.relations['dc:relation'].endsWith(links.items[loeb36.id].key), 'a section is related to its anthology');
   const keys = Object.values(links.items).map(link => link.citationKey);
   assert.equal(new Set(keys).size, keys.length, 'every key is different');
   assert.ok(keys.includes('Augustine1991a'), 'the cited Logos Confessions of the same year gets a suffix');
 });
 
-test('a second run sends nothing; a changed shelf is sent quickly, alone', async () => {
+test('a second run sends nothing; a changed shelf renames the link quickly, and the book itself is not touched', async () => {
   const { fake, zotero, links } = setup({ delayMs: 20 });
   const records = sampleRecords();
   await sendToZotero(records, links, zotero);
@@ -59,9 +68,13 @@ test('a second run sends nothing; a changed shelf is sent quickly, alone', async
   assert.deepEqual(fake.calls.slice(before), ['GET /collections?limit=100', 'GET /items?format=versions&includeTrashed=0'], 'only two small checks: the collection, and which items still exist');
   const moved = records.map(record => (record.id === 'c0py0000000p' ? withField(record, 'location', ['Home', 'Study'], NOW) : record));
   const started = Date.now();
-  assert.match((await sendToZotero(moved, links, zotero))[0], /0 new, 1 updated/);
+  const versionBefore = fake.byTitle('Confessions')[0].version;
+  const report = await sendToZotero(moved, links, zotero);
+  assert.match(report[0], /0 new, 0 updated/);
+  assert.match(report.join(' '), /1 links back to My Loci Library made or renamed/);
   assert.ok(Date.now() - started < 10000, 'under 10 seconds (PLAN.md, speed target)');
-  assert.equal(fake.byTitle('Confessions')[0].data.archiveLocation, 'Home › Study');
+  assert.equal(fake.items.get(links.items[chadwick.id].attachment).data.title, 'My Loci Library · Home › Study');
+  assert.equal(fake.byTitle('Confessions')[0].version, versionBefore, 'the book item is unchanged');
 });
 
 test('nothing is deleted: books given away or removed in Loci are tagged instead', async () => {
@@ -80,7 +93,7 @@ test('nothing is deleted: books given away or removed in Loci are tagged instead
   assert.deepEqual(tags('Euthyphro. Apology. Crito. Phaedo. Phaedrus.'), ['Loci: removed']);
   assert.deepEqual(tags('Phaedo'), ['Loci: removed'], 'its sections too');
   assert.deepEqual(tags('Confessions (Logos, cited)'), ['Loci: removed']);
-  assert.equal(fake.items.size, 6);
+  assert.equal(mainItems(fake).length, 6);
   assert.ok(!fake.calls.some(call => call.startsWith('DELETE')));
 });
 
@@ -93,7 +106,8 @@ test('on the first run a book already in Zotero is linked, keeps its pinned key,
   assert.equal(links.items[chadwick.id].key, key, 'linked, not made again');
   const item = fake.items.get(key).data;
   assert.equal(item.publisher, 'Oxford University Press', "Loci's data is written");
-  assert.match(item.extra, /Citation Key: Augustine1991\nRead for the seminar/, 'the pinned key and the note in Extra stay');
+  assert.equal(item.citationKey, 'Augustine1991', 'the key pinned in Extra moves to the Citation Key field');
+  assert.equal(item.extra, 'Read for the seminar', 'the note in Extra stays');
   assert.deepEqual(item.tags, [{ tag: 'patristics' }]);
   assert.deepEqual(item.collections.length, 2, 'its other collection stays');
   assert.ok(report.some(line => line.includes('publisher was "OUP"')), 'the overwritten difference is reported');
@@ -109,7 +123,8 @@ test('items deleted in Zotero, and a deleted collection, are made again on the n
   const report = await sendToZotero(records, links, zotero);
   assert.match(report.join(' '), /6 items were missing in Zotero/);
   assert.match(report[0], /Zotero: 6 new/);
-  assert.equal(fake.items.size, 6);
+  assert.equal(mainItems(fake).length, 6);
+  assert.equal(attachments(fake).length, 3, 'the links under the books are made again too');
   assert.equal(links.items[chadwick.id].citationKey, keyBefore, 'the pinned key stays the same');
   assert.equal(fake.byTitle('Confessions')[0].data.collections[0], links.collection, 'in the new collection');
   assert.match((await sendToZotero(records, links, zotero))[0], /0 new, 0 updated, 6 unchanged/);
@@ -120,7 +135,7 @@ test('a run stopped part-way keeps what it already sent', async () => {
   let saves = 0;
   await sendToZotero(sampleRecords(), links, zotero, { save: () => { saves++; } });
   assert.ok(saves >= 1, 'the link file is saved during the run, not only at the end');
-  assert.equal(Object.values(links.items).filter(link => link.key).length, fake.items.size);
+  assert.equal(Object.values(links.items).filter(link => link.key).length, mainItems(fake).length);
 });
 
 test('a trial in a test collection never changes an item already in Zotero', async () => {
