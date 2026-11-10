@@ -46,6 +46,7 @@ test('physical books, cited Logos books and anthology sections are sent with onl
   assert.equal(book.data.citationKey, 'Augustine1991', "in Zotero's own Citation Key field");
   assert.ok(!book.data.url && !book.data.archiveLocation && !book.data.extra, 'nothing that Chicago would print, or Better BibTeX export, beyond the book itself');
   assert.equal(fake.byTitle('Phaedo')[0].data.creators[0].name, 'Plato');
+  assert.deepEqual(fake.byTitle('Phaedo')[0].data.creators.filter(person => person.creatorType === 'translator').map(person => person.lastName), ['Fowler'], "the volume's translator, for each work in it");
   assert.equal(book.data.collections.length, 1);
   const [link] = attachments(fake).filter(item => item.data.parentItem === book.key);
   assert.equal(link.data.linkMode, 'linked_url');

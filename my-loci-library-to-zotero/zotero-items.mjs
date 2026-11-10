@@ -106,7 +106,10 @@ export function itemsFor(entry, library, { appUrl = APP_URL } = {}) {
   };
   const items = [book];
   if (entry.works.length > 1 && !isBible(entry)) {
+    // A section is cited with the volume's editors and, unless the work has its own
+    // translator, the volume's translators ("ed. and trans. Michael W. Holmes").
     const editors = edition.contributors.filter(person => person.role === 'editor').map(person => creator(cslName(person.name), 'editor'));
+    const translators = edition.contributors.filter(person => person.role === 'translator').map(person => creator(cslName(person.name), 'translator'));
     for (const piece of edition.contents) {
       const work = library.worksById.get(piece.work);
       if (!work) continue;
@@ -122,7 +125,8 @@ export function itemsFor(entry, library, { appUrl = APP_URL } = {}) {
           title: work.subtitle ? `${work.title}: ${work.subtitle}` : work.title,
           bookTitle: csl.title,
           volume: edition.volume || '',
-          creators: [...authors.map(name => creator(name, 'author')), ...editors, ...(piece.translator ? [creator(cslName(piece.translator), 'translator')] : [])],
+          creators: [...authors.map(name => creator(name, 'author')), ...editors, ...(piece.translator ? [creator(cslName(piece.translator), 'translator')] : translators)],
+          edition: edition.editionStatement || '',
           pages: piece.pages || '',
           series: edition.series || '',
           seriesNumber: edition.seriesNumber || '',
