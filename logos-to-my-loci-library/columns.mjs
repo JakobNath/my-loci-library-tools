@@ -1,10 +1,10 @@
-// Reading the Logos Library export (Print/Export › spreadsheet): the CSV text,
-// and which column fills which field. Logos names its columns in plain words;
-// each field below lists the names it may appear under. Every other column is
-// kept as it came, in the edition's `logosExtra` (DATA_FORMAT.md, "Edition").
-// If a later Logos version renames a column, add the new name here.
+// Reading the Logos Library export (a collection or the Library, Print/Export
+// as a CSV spreadsheet): the CSV text, and which column fills which field.
+// The column names were checked against a real export of 53 resources
+// (2026-11-10); each field also lists other names a later Logos might use.
+// Every other column is kept as it came, in the edition's `logosExtra`
+// (DATA_FORMAT.md, "Edition"), except the few in VOLATILE.
 
-import { yearFromText } from '../core/lookup.js';
 import { isbn13 } from '../core/entry.js';
 
 export const COLUMNS = {
@@ -12,12 +12,27 @@ export const COLUMNS = {
   title: ['Title'],
   subtitle: ['Subtitle'],
   authors: ['Author', 'Authors', 'Creator', 'Creators'],
-  publisher: ['Publisher'],
+  publisher: ['Publishers', 'Publisher'],
   year: ['Publication Date', 'Date', 'Year', 'Published'],
+  // No ISBN column in the 2026 export; kept in case a later one has it.
   series: ['Series'],
   languages: ['Language', 'Languages'],
   isbn: ['ISBN'],
 };
+
+// Columns that change with every export without the book changing (Logos's own
+// bookkeeping, and what other users rate or tag). Keeping them would make
+// every book look edited on every import, so they are left out.
+export const VOLATILE = ['Metadata Version', 'File Version', 'Last Updated', 'Community Rating', 'Community Tags'];
+
+/**
+ * The year a book was published, from the export's date: its first year,
+ * so "1884–1885" is 1884 and "1993 [2008]" is 1993; "n.d." (no date) is none.
+ */
+export function yearOf(text) {
+  const match = String(text || '').match(/\d{4}/);
+  return match ? Number(match[0]) : null;
+}
 
 /**
  * Parse CSV (or tab-separated) text: quoted cells may hold commas, quotes
@@ -79,17 +94,22 @@ export function readRow(row) {
     used.add(name);
     return row[name];
   };
+  // Logos writes a subtitle after the title's first colon ("Romans: A New Translation…").
+  const fullTitle = value('title');
+  const ownSubtitle = value('subtitle');
+  const colon = fullTitle.indexOf(': ');
+  const split = !ownSubtitle && colon > 0;
   const read = {
     logosId: value('logosId'),
-    title: value('title'),
-    subtitle: value('subtitle') || null,
+    title: split ? fullTitle.slice(0, colon) : fullTitle,
+    subtitle: ownSubtitle || (split ? fullTitle.slice(colon + 2) : null),
     authors: value('authors').split(/;|\s+&\s+|\s+and\s+/).map(text => text.trim()).filter(Boolean).map(personName),
     publisher: value('publisher') || null,
-    year: yearFromText(value('year')),
+    year: yearOf(value('year')),
     series: value('series') || null,
     languages: value('languages').split(/[;,]/).map(text => text.trim()).filter(Boolean),
     isbn: isbn13(value('isbn')),
   };
-  read.extra = Object.fromEntries(Object.entries(row).filter(([name, text]) => !used.has(name) && text !== ''));
+  read.extra = Object.fromEntries(Object.entries(row).filter(([name, text]) => !used.has(name) && !VOLATILE.includes(name) && text !== ''));
   return read;
 }

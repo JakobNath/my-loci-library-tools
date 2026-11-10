@@ -23,7 +23,10 @@ const here = dirname(fileURLToPath(import.meta.url));
 export const LINKS_FILE = join(here, 'links-to-confirm.txt');
 const MEMORY = join('integrations', 'logos-import.json');
 const INBOX = join('images', 'inbox');
-const coverUrl = isbn => `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg?default=false`;
+const coverByIsbn = isbn => `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg?default=false`;
+const coverById = id => `https://covers.openlibrary.org/b/id/${id}-L.jpg?default=false`;
+const searchUrl = (title, author) => `https://openlibrary.org/search.json?title=${encodeURIComponent(title)}${author ? `&author=${encodeURIComponent(author)}` : ''}&limit=5&fields=title,cover_i`;
+const plainTitle = text => String(text || '').normalize('NFD').replace(/[^A-Za-z0-9]/g, '').toLowerCase();
 
 const nowText = () => new Date().toISOString().slice(0, 19) + 'Z';
 
@@ -85,28 +88,44 @@ export function confirmLinks(dataRepo, { now = nowText(), linksFile = LINKS_FILE
 
 /**
  * Fetch covers for Logos books into images/inbox/<edition id>.jpg, at most `limit`
- * this run. Books with a cover already, or a file waiting in the inbox, are
- * skipped, so each run carries on where the last stopped. Inbox files of books
- * that now have a cover are removed. Books with no ISBN, or none on Open
- * Library, keep the drawn cover the app shows from their title and author.
+ * this run, from Open Library: by ISBN when the book has one, otherwise by
+ * title and first author (Logos exports carry no ISBN), taking a cover only
+ * when Open Library's title is the same. Books with a cover already, or a file
+ * waiting in the inbox, are skipped, so each run carries on where the last
+ * stopped. Inbox files of books that now have a cover are removed. Books with
+ * no cover found keep the drawn cover the app shows from their title and author.
  */
 export async function fetchCovers(dataRepo, { limit = 200, fetchFn = fetch } = {}) {
+  const records = readRecords(dataRepo);
+  const authorOf = edition => {
+    const work = records.find(record => record.id === (edition.contents[0] || {}).work);
+    const author = work && records.find(record => record.id === work.authors[0]);
+    return author ? author.name : '';
+  };
+  async function coverUrlFor(edition) {
+    if (edition.isbn) return coverByIsbn(edition.isbn);
+    const response = await fetchFn(searchUrl(edition.title, authorOf(edition)), { signal: AbortSignal.timeout(15000) });
+    if (!response.ok) return null;
+    const match = (await response.json()).docs.find(doc => doc.cover_i && plainTitle(doc.title) === plainTitle(edition.title));
+    return match ? coverById(match.cover_i) : null;
+  }
   const inbox = join(dataRepo, INBOX);
   mkdirSync(inbox, { recursive: true });
-  const editions = readRecords(dataRepo).filter(record => record.type === 'edition' && record.medium === 'logos' && !record.trashed);
+  const editions = records.filter(record => record.type === 'edition' && record.medium === 'logos' && !record.trashed);
   const hasCover = edition => edition.images.some(image => image.kind === 'cover');
   let removed = 0;
   for (const edition of editions.filter(hasCover)) {
     if (existsSync(join(inbox, `${edition.id}.jpg`))) { rmSync(join(inbox, `${edition.id}.jpg`)); removed++; }
   }
   const waiting = new Set(readdirSync(inbox).map(name => name.replace(/\.jpg$/, '')));
-  const todo = editions.filter(edition => edition.isbn && !hasCover(edition) && !waiting.has(edition.id)).slice(0, limit);
+  const todo = editions.filter(edition => !hasCover(edition) && !waiting.has(edition.id)).slice(0, limit);
   let saved = 0;
   let missing = 0;
   for (const edition of todo) {
     try {
-      const response = await fetchFn(coverUrl(edition.isbn), { signal: AbortSignal.timeout(15000) });
-      if (!response.ok) { missing++; continue; }
+      const url = await coverUrlFor(edition);
+      const response = url && await fetchFn(url, { signal: AbortSignal.timeout(15000) });
+      if (!response || !response.ok) { missing++; continue; }
       writeFileSync(join(inbox, `${edition.id}.jpg`), Buffer.from(await response.arrayBuffer()));
       saved++;
     } catch {

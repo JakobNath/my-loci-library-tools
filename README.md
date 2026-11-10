@@ -56,7 +56,7 @@ If the Library of Congress service ever changes or disappears, nothing else depe
 
 ## logos-to-my-loci-library
 
-Brings a Logos Library export into the catalog. In Logos, open the Library, filter it if you like (for example, resources added in the last 7 days), and use Print/Export to save a spreadsheet (CSV). Then run
+Brings a Logos Library export into the catalog. In Logos, export a collection (or the whole Library) as a CSV spreadsheet; in 2026 this was done from the Collections menu. Then run
 
     logos-to-my-loci-library\logos-import.cmd "C:\Users\me\Downloads\Library.csv"          (Windows)
     logos-to-my-loci-library/logos-import.sh ~/Downloads/Library.csv                  (Linux)

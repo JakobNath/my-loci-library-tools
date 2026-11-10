@@ -75,7 +75,10 @@ export function importRows(rows, records, memory, { now, today, newId, full = fa
       result.added.push(read.title);
       memory.imported[read.logosId] = values;
       // A work we already have (from a physical book) may be this one: suggested, never linked here.
-      for (const match of suggestWorks(read.title, read.authors.map(person => person.name), library)) {
+      // A work with no author (a book of the Bible) is never suggested for a book that has one
+      // (a commentary titled "Romans" is not the Epistle).
+      const matches = suggestWorks(read.title, read.authors.map(person => person.name), library).filter(match => match.authors.length || !read.authors.length);
+      for (const match of matches) {
         result.suggestions.push({ editionId: edition.id, workId: match.id, text: `${read.title} (Logos) is the same work as ${match.title}` });
       }
       continue;
