@@ -1,0 +1,108 @@
+// Reading lookup answers (recorded from Open Library on 9 November 2026, and
+// in Google Books' documented format), and the matching suggestions.
+
+import { fromOpenLibrary, fromGoogleBooks, combineFound, candidatesFromSearch } from '../lookup.js';
+import { editionsWithIsbn, suggestWorks } from '../matching.js';
+import { buildLibrary } from '../library.js';
+import { equal, same, ok } from './check.js';
+import { confessions, augustine, chadwick, byId } from './samples.js';
+
+// Open Library's answer for #12 (Chadwick's Confessions), shortened.
+const OPEN_LIBRARY = {
+  'ISBN:9780199537822': {
+    title: 'Confessions',
+    authors: [{ name: 'Augustine of Hippo' }],
+    number_of_pages: 311,
+    pagination: 'xxviii, 311 p. ;',
+    by_statement: 'Saint Augustine ; translated by Henry Chadwick.',
+    publishers: [{ name: 'Oxford University Press' }],
+    publish_places: [{ name: 'Oxford' }],
+    publish_date: '2008',
+    subjects: [{ name: 'Christian saints' }],
+  },
+};
+
+const COVER = 'https://covers.openlibrary.org/b/isbn/9780199537822-L.jpg?default=false';
+
+// Google Books' answer, in its documented shape.
+const GOOGLE_BOOKS = {
+  items: [{ volumeInfo: {
+    title: 'Confessions', authors: ['Saint Augustine'], publisher: 'OUP Oxford', publishedDate: '2008-08-14',
+    pageCount: 352, language: 'en', imageLinks: { thumbnail: 'http://books.google.com/books/content?id=x&printsec=frontcover&img=1&zoom=1&edge=curl' },
+  } }],
+};
+
+export const tests = [
+  {
+    name: 'an Open Library answer gives the edition fields, the translator, and a cover',
+    fn() {
+      const found = fromOpenLibrary(OPEN_LIBRARY, '9780199537822', COVER);
+      equal(found.title, 'Confessions');
+      same(found.authors, ['Augustine of Hippo']);
+      same(found.contributors, [{ name: 'Henry Chadwick', role: 'translator' }]);
+      same([found.publisher, found.place, found.year, found.pages], ['Oxford University Press', 'Oxford', '2008', 'xxviii, 311']);
+      equal(found.cover.url, COVER);
+      equal(found.cover.waiting, false);
+    },
+  },
+  {
+    name: 'names with initials are kept whole, and a closing full stop is dropped',
+    fn() {
+      const answer = { 'ISBN:9780872208162': { title: 'Confessions', by_statement: 'Augustine ; translated by F. J. Sheed ; introduction by Peter Brown.' } };
+      same(fromOpenLibrary(answer, '9780872208162', '').contributors, [{ name: 'F. J. Sheed', role: 'translator' }, { name: 'Peter Brown', role: 'introduction' }]);
+      const early = { 'ISBN:9780881414271': { title: 'On the Incarnation', pagination: 'pages cm', number_of_pages: 110 } };
+      equal(fromOpenLibrary(early, '9780881414271', '').pages, '110', 'a placeholder page field falls back to the count');
+    },
+  },
+  {
+    name: 'no lookup ever fills an original date',
+    fn() {
+      for (const found of [fromOpenLibrary(OPEN_LIBRARY, '9780199537822', COVER), fromGoogleBooks(GOOGLE_BOOKS, '9780199537822')]) {
+        ok(!('datings' in found) && !('originalDate' in found), `${found.source} must not give a dating`);
+      }
+    },
+  },
+  {
+    name: 'a Google Books cover waits for the laptop, and its gaps are filled from Open Library',
+    fn() {
+      const google = fromGoogleBooks(GOOGLE_BOOKS, '9780199537822');
+      equal(google.cover.waiting, true);
+      ok(google.cover.url.startsWith('https://') && !google.cover.url.includes('edge=curl'), 'a clean https address');
+      same(google.languages, ['English']);
+      const combined = combineFound(fromOpenLibrary(OPEN_LIBRARY, '9780199537822', COVER), google);
+      equal(combined.publisher, 'Oxford University Press', 'Open Library comes first');
+      same(combined.languages, ['English'], 'Google Books fills the gap');
+      equal(combineFound(null, google).source, 'googlebooks');
+    },
+  },
+  {
+    name: 'an unknown ISBN gives nothing, so manual entry opens',
+    fn() {
+      equal(fromOpenLibrary({}, '9780000000002'), null);
+      equal(fromGoogleBooks({ totalItems: 0 }, '9780000000002'), null);
+    },
+  },
+  {
+    name: 'a title search gives candidates with an ISBN-13 where there is one',
+    fn() {
+      const candidates = candidatesFromSearch({ docs: [{ title: 'Confessions', author_name: ['Augustine of Hippo'], first_publish_year: 1482, isbn: ['0199537828', '9780199537822'] }] });
+      same(candidates, [{ title: 'Confessions', authors: ['Augustine of Hippo'], year: '1482', isbn: '9780199537822' }]);
+    },
+  },
+  {
+    name: 'a second Confessions (#13) is suggested to join the same work as #12, under another form of the name',
+    fn() {
+      const library = { worksById: byId([confessions]), authorsById: byId([augustine]) };
+      same(suggestWorks('The Confessions', ['Augustine of Hippo'], library).map(work => work.id), [confessions.id]);
+      same(suggestWorks('Confessions', ['Jean-Jacques Rousseau'], library), [], 'another author is not suggested');
+    },
+  },
+  {
+    name: 'scanning an ISBN already in the catalog (#16) finds the edition, to warn before adding',
+    fn() {
+      const library = buildLibrary([confessions, augustine, chadwick]);
+      equal(editionsWithIsbn('9780199537822', library.entries).length, 1);
+      equal(editionsWithIsbn('9780000000002', library.entries).length, 0);
+    },
+  },
+];

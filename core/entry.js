@@ -55,10 +55,12 @@ function update(record, values, now) {
  * Build the records for one book from the form.
  * @param {object} form the values typed (see ui/edit.js for its shape)
  * @param {{ edition: object, copy: object|null, works: object[] }|null} existing the book being edited, or null for a new one
- * @param {{ newId: () => string, now: string, today: string, authors: object[] }} context
+ * @param {{ newId: () => string, now: string, today: string, authors: object[], works?: Map<string, object> }} context
+ *   works: every work by ID, needed when form.workId links the book to an existing work
  * @returns {{ records: object[], editionId: string|null, problems: string[] }}
  */
-export function recordsFromForm(form, existing, { newId, now, today, authors }) {
+export function recordsFromForm(form, existing, context) {
+  const { newId, now, today, authors } = context;
   const problems = [];
   const records = [];
   if (!form.title.trim()) problems.push('A title is needed.');
@@ -93,6 +95,17 @@ export function recordsFromForm(form, existing, { newId, now, today, authors }) 
       contents.push({ work: work.id, extent: 'complete', translator: null, pages: null });
     }
     if (!contents.length) problems.push('List at least one work in the contents, one per line.');
+  } else if (form.workId && context.works) {
+    // A person confirmed "same work as ...": link to it, and give it a
+    // dating only if it has none yet (an existing dating is never replaced here).
+    const work = context.works.get(form.workId);
+    if (!work) problems.push('The work chosen to link to is no longer in the catalog.');
+    else {
+      const reading = datingsFromRows(form.work.datings);
+      problems.push(...reading.problems);
+      if (!work.datings.length && reading.datings.length) records.push(withField(work, 'datings', reading.datings, now));
+      contents = [{ work: work.id, extent: 'complete', translator: null, pages: null }];
+    }
   } else {
     const reading = datingsFromRows(form.work.datings);
     problems.push(...reading.problems);
@@ -130,9 +143,29 @@ export function recordsFromForm(form, existing, { newId, now, today, authors }) 
     binding: copyForm.binding || null, location: copyForm.location.filter(Boolean), acquired: copyForm.acquired || null,
     price: copyForm.price === '' ? null : Number(copyForm.price), value, valueHistory: history,
     markings: copyForm.markings, notes: copyForm.notes, status: copyForm.status,
+    ...(copyForm.shelfOrder !== undefined ? { shelfOrder: copyForm.shelfOrder || null } : {}),
   };
   const copy = oldCopy ? update(oldCopy, copyValues, now) : newRecord('copy', newId(), now, { ...copyValues, edition: edition.id, added: today });
   if (copy !== oldCopy) records.push(copy);
   return { records, editionId: edition.id, problems };
 }
 
+/**
+ * Another copy of an edition already in the catalog ("You already have this
+ * edition. Add another copy?").
+ * @returns {object} the new copy record
+ */
+export function anotherCopy(editionId, copyForm, { newId, now, today }) {
+  return newRecord('copy', newId(), now, {
+    edition: editionId, added: today, binding: copyForm.binding || null, location: copyForm.location.filter(Boolean),
+    shelfOrder: copyForm.shelfOrder || null, acquired: copyForm.acquired || null, notes: copyForm.notes || '', status: 'owned',
+  });
+}
+
+/** Whether a scanned code is a book's ISBN: 13 digits, starting 978 or 979, with a correct check digit. */
+export function isBookBarcode(code) {
+  if (!/^97[89]\d{10}$/.test(code)) return false;
+  let sum = 0;
+  for (let i = 0; i < 12; i++) sum += Number(code[i]) * (i % 2 ? 3 : 1);
+  return (10 - (sum % 10)) % 10 === Number(code[12]);
+}

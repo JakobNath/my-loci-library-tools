@@ -29,7 +29,8 @@ const UNKNOWN_PAGES = 380; // a middling guess when the page count is unknown
  *   sources: measured, catalog, photo, same series, same set, pages, guess
  */
 export function estimateSize(edition, { binding = null, related = [] } = {}) {
-  return { height: heightOf(edition, binding, related), thickness: thicknessOf(edition, binding) };
+  const height = heightOf(edition, binding, related);
+  return { height, thickness: thicknessOf(edition, binding, height.mm) };
 }
 
 function heightOf(edition, binding, related) {
@@ -43,8 +44,11 @@ function heightOf(edition, binding, related) {
   return { mm: typical ? typical[1] : UNKNOWN_HEIGHT, source: 'guess' };
 }
 
-function thicknessOf(edition, binding) {
+function thicknessOf(edition, binding, heightMm) {
   if (edition.thickness) return { mm: edition.thickness, source: edition.thicknessSource || 'measured' };
+  // A spine photo's shape (width ÷ height) times the height.
+  const spine = edition.images.find(image => image.kind === 'spine' && image.ratio);
+  if (spine) return { mm: Math.round(heightMm * spine.ratio * 10) / 10, source: 'photo' };
   const pages = countPages(edition.pages);
   const covers = THIN_COVERS.test(binding || '') ? 0.5 : 5.5;
   const mm = Math.round(((pages || UNKNOWN_PAGES) * MM_PER_PAGE + covers) * 10) / 10;

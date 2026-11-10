@@ -78,6 +78,13 @@ export const tests = [
     },
   },
   {
+    name: 'a spine photo gives the thickness from the height',
+    fn() {
+      const book = { ...chadwick, height: 196, heightSource: 'catalog', images: [{ id: 'sp1n3000000x', kind: 'spine', source: 'photo', color: null, ratio: 0.1, master: true, waiting: null }] };
+      same(estimateSize(book).thickness, { mm: 19.6, source: 'photo' });
+    },
+  },
+  {
     name: '"logos" finds λόγος, and accents are ignored',
     fn() {
       equal(normalizeForSearch('λόγος'), 'logos');

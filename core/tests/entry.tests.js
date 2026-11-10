@@ -1,7 +1,7 @@
 // The entry form's records: sample books entered from scratch, editing
 // that stamps only what changed, and ISBNs.
 
-import { recordsFromForm, isbn13 } from '../entry.js';
+import { recordsFromForm, isbn13, anotherCopy, isBookBarcode } from '../entry.js';
 import { validateRecord } from '../records.js';
 import { equal, same, ok } from './check.js';
 
@@ -79,6 +79,36 @@ export const tests = [
       equal(isbn13('0-19-953782-6'), '9780199537822');
       equal(isbn13('9780199537822'), '9780199537822');
       equal(isbn13('not an isbn'), null);
+    },
+  },
+  {
+    name: 'a book confirmed as the same work links to it and adds no new work (#13 joins #12)',
+    fn() {
+      const first = recordsFromForm(blankForm({ title: 'Confessions', authors: ['Augustine'] }), null, context());
+      const work = first.records.find(record => record.type === 'work');
+      const second = recordsFromForm(blankForm({ title: 'Confessions', workId: work.id, work: { ...blankForm({}).work, datings: [{ text: 'c. 397–400', working: true }] } }),
+        null, { ...context(), works: new Map([[work.id, work]]) });
+      same(second.problems, []);
+      const types = second.records.map(record => record.type);
+      ok(!types.includes('author'), 'no new author');
+      same(types, ['work', 'edition', 'copy'], 'the work only gains its missing dating');
+      equal(second.records[1].contents[0].work, work.id);
+    },
+  },
+  {
+    name: 'another copy of an edition is one new copy record (#16)',
+    fn() {
+      const copy = anotherCopy('n2a8ed7v1kcx', { binding: 'Leather-like', location: ['Home', 'Bedroom', '', ''], shelfOrder: 'g', notes: '' }, context());
+      same([copy.type, copy.edition, copy.binding, copy.shelfOrder], ['copy', 'n2a8ed7v1kcx', 'Leather-like', 'g']);
+      same(copy.location, ['Home', 'Bedroom']);
+    },
+  },
+  {
+    name: 'only a valid ISBN barcode is taken as a book',
+    fn() {
+      ok(isBookBarcode('9780199537822'), 'a real ISBN');
+      ok(!isBookBarcode('9780199537823'), 'a wrong check digit');
+      ok(!isBookBarcode('4006381333931'), 'a product barcode, not a book');
     },
   },
 ];
