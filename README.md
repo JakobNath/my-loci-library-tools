@@ -54,6 +54,35 @@ Fills in the height of every physical book that has an ISBN and no height, from 
 
 If the Library of Congress service ever changes or disappears, nothing else depends on it: sizes simply stay estimated in the app.
 
+## logos-to-my-loci-library
+
+Brings a Logos Library export into the catalog. In Logos, open the Library, filter it if you like (for example, resources added in the last 7 days), and use Print/Export to save a spreadsheet (CSV). Then run
+
+    logos-to-my-loci-library\logos-import.cmd "C:\Users\me\Downloads\Library.csv"          (Windows)
+    logos-to-my-loci-library/logos-import.sh ~/Downloads/Library.csv                  (Linux)
+
+Rows are matched to books by their Logos resource ID. A new resource becomes a work, an edition (format Logos) and a copy; its authors are matched to authors already in the catalog by any form of their name. On later runs a field is updated only if it still holds what the importer last wrote there, so anything edited in the app is kept. What the importer last wrote is kept in `integrations/logos-import.json` in the data repository. Original dates are never filled in.
+
+- Add `--full` when the export lists the whole Logos library, unfiltered: resources missing from it are then marked "gone from Logos" (and marked owned again if they come back). A filtered export never removes anything.
+- Possible links to works already in the catalog (a Logos copy of a book we also own in print) are written to `links-to-confirm.txt` in the tool's folder. Change "no" to "yes" on each right line and run the tool with `--confirm-links`.
+- `--covers 200` fetches up to 200 covers, by ISBN, from Open Library into `images/inbox/` of the data repository; run it again to carry on. Then open `laptop/covers.html` (in the app, in the same browser as the app on this laptop) and choose the inbox files; the app sends the covers with its next sync. Books without an ISBN or an Open Library cover keep the drawn cover the app makes from their title and author.
+
+Which column fills which field (`columns.mjs`; every other column is kept as it came in the edition's "extra Logos data"):
+
+| Field | Logos column (any of) |
+| --- | --- |
+| Logos resource ID | Resource ID, ResourceId, Resource Id, Resource |
+| Title | Title |
+| Subtitle | Subtitle |
+| Authors | Author, Authors, Creator, Creators ("Surname, Given" names, separated by ";") |
+| Publisher | Publisher |
+| Year | Publication Date, Date, Year, Published |
+| Series | Series |
+| Languages | Language, Languages |
+| ISBN | ISBN |
+
+These names are a first reading, made before a real export was at hand. When the first real export is imported, check its column names against this table and add any that differ to `columns.mjs`.
+
 ## Tests
 
 Run `node --test` in this folder. It runs every tool's tests (with temporary folders and recorded answers, never the real data or the network), the shared core's tests, and checks that `core/` here matches `core/` in the app repository. Never edit `core/` here: edit it in the app repository, then run `update-core.cmd` (Windows) or `update-core.sh` (Linux).
