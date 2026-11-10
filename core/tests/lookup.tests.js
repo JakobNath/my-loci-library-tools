@@ -28,6 +28,7 @@ const COVER = 'https://covers.openlibrary.org/b/isbn/9780199537822-L.jpg?default
 const GOOGLE_BOOKS = {
   items: [{ volumeInfo: {
     title: 'Confessions', authors: ['Saint Augustine'], publisher: 'OUP Oxford', publishedDate: '2008-08-14',
+    industryIdentifiers: [{ type: 'ISBN_10', identifier: '0199537828' }, { type: 'ISBN_13', identifier: '9780199537822' }],
     pageCount: 352, language: 'en', imageLinks: { thumbnail: 'http://books.google.com/books/content?id=x&printsec=frontcover&img=1&zoom=1&edge=curl' },
   } }],
 };

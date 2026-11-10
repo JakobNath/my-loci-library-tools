@@ -1,0 +1,171 @@
+// Reading the Library of Congress, Open Library's edition record and Google
+// Books' volume record, and merging them (PLAN.md, "Book data"), against the
+// answers recorded in core/tests/answers/ on 10 November 2026.
+
+import { fromLibraryOfCongress, heightInMm } from '../marc.js';
+import { fromOpenLibraryEdition, fromGoogleBooksVolume, mergeFound, bindingFromFormat, sizesFromDimensions } from '../book-data.js';
+import { fromOpenLibrary, fromGoogleBooks, contributorsFrom, cleanPages } from '../lookup.js';
+import { equal, same, ok } from './check.js';
+import * as confessions from './answers/9780199537822.js';
+import * as crime from './answers/9780140449136.js';
+import * as chemnitz from './answers/9780758615473.js';
+import * as plato from './answers/9780872203495.js';
+import * as lewis from './answers/9780060652920.js';
+import * as loeb from './answers/9780674990401.js';
+import * as anna from './answers/9781857150582.js';
+import * as na28 from './answers/9783438051400.js';
+import * as holmes from './answers/9780801031083.js';
+
+const json = text => (text === null ? null : JSON.parse(text));
+
+// Every source's reading of one recorded book, best first, as the app and loci-enrich merge them.
+function readAll(book) {
+  return [
+    fromLibraryOfCongress(book.libraryOfCongress, book.isbn),
+    fromOpenLibraryEdition(json(book.openLibraryEdition), book.isbn),
+    fromOpenLibrary(json(book.openLibraryData), book.isbn, ''),
+    fromGoogleBooksVolume(json(book.googleBooksVolume), book.isbn),
+  ];
+}
+const merged = book => mergeFound(readAll(book));
+const names = found => found.contributors.map(person => `${person.name} (${person.role})`);
+
+export const tests = [
+  {
+    name: 'Complete Works reads as its title page: Plato; edited by John M. Cooper; xxx, 1808 pages; 24 cm; Hackett, 1997',
+    fn() {
+      const found = merged(plato);
+      same([found.title, found.authors], ['Complete Works', ['Plato']]);
+      same(names(found), ['John M. Cooper (editor)', 'D.S. Hutchinson (other)'], 'the associate editor is not the editor');
+      same([found.pages, found.height, found.publisher, found.place, found.year], ['xxx, 1808', 240, 'Hackett Publishing', 'Indianapolis, Ind.', '1997']);
+      equal(found.originalLanguage, 'Ancient Greek');
+      equal(found.originalTitle, '', '"Works" names a kind of collection, not an original title');
+      same(found.identifiers, { lccn: '96053280', oclc: '', lcc: 'B358 .C3 1997', ddc: '184' });
+      same(found.subjects, ['Socrates', 'Philosophy, Ancient']);
+    },
+  },
+  {
+    name: 'an impossible thickness is ignored (Google Books gives Hackett\'s Plato 16.1 cm thick and 9.5 cm wide)',
+    fn() {
+      equal(fromGoogleBooksVolume(json(plato.googleBooksVolume), plato.isbn).thickness, null);
+      equal(merged(plato).thickness, null);
+      same(sizesFromDimensions('20', '13', '3', 'cm'), { height: 200, thickness: 30 });
+      same(sizesFromDimensions('8.4', '5.4', '1.8', 'inches'), { height: 213, thickness: 46 });
+    },
+  },
+  {
+    name: 'Confessions: the translator, pages as printed, the series, Latin, and its catalogue numbers',
+    fn() {
+      const found = merged(confessions);
+      same(names(found), ['Henry Chadwick (translator)']);
+      same([found.pages, found.series, found.originalLanguage, found.height, found.thickness], ['xxviii, 311', "Oxford World's Classics", 'Latin', 200, 17]);
+      same(found.identifiers, { lccn: '2008491261', oclc: '228195188', lcc: 'BR65.A6 E5 2008', ddc: '270.2092' });
+    },
+  },
+  {
+    name: 'Crime and Punishment: catalogue punctuation removed, the revised edition, and the original title in Russian',
+    fn() {
+      const found = merged(crime);
+      same([found.title, found.editionStatement, found.place, found.publisher], ['Crime and Punishment', 'Rev. ed.', 'London', 'Penguin']);
+      same(names(found), ['David McDuff (translator)'], 'the introduction is part of the translator\'s work');
+      same([found.originalTitle, found.originalLanguage], ['Prestuplenie i nakazanie', 'Russian']);
+      equal(found.identifiers.ddc, '891.733', 'the slash in a Dewey number is left out');
+    },
+  },
+  {
+    name: 'Loci Theologici, one ISBN of a set: no pages from a description of volumes, and the series with its numbers',
+    fn() {
+      const lc = fromLibraryOfCongress(chemnitz.libraryOfCongress, chemnitz.isbn);
+      equal(lc.pages, '', '"v. <1-3>" is not a page count');
+      same([lc.series, lc.seriesNumber, lc.height], ["Chemnitz's Works", '7, 8', 240]);
+      same([lc.publisher, lc.place, lc.originalTitle], ['Concordia Publishing House', 'St. Louis, MO', ''], 'an original title the same as the title adds nothing');
+      equal(cleanPages('v. <1-2> ;'), '');
+    },
+  },
+  {
+    name: 'Mere Christianity: the subtitle in title case, the binding, and the top level of Open Library\'s contents',
+    fn() {
+      const found = merged(lewis);
+      ok(found.subtitle.startsWith('A Revised and Amplified Edition, with a New Introduction'), found.subtitle);
+      same([found.editionStatement, found.pages, found.height, found.binding], ['1st HarperCollins ed.', 'xx, 227', 220, 'Paperback']);
+      same(found.contents.map(entry => entry.title), ['Right and Wrong as a Clue to the Meaning of the Universe', 'What Christians Believe',
+        'Christian Behaviour', 'Beyond Personality: Or First Steps in the Doctrine of the Trinity']);
+    },
+  },
+  {
+    name: 'The Apostolic Fathers: contents from the Library of Congress, and one person as translator and editor',
+    fn() {
+      const found = merged(holmes);
+      same(names(found), ['Michael W. Holmes (translator)', 'Michael W. Holmes (editor)']);
+      same(found.contents.slice(0, 3).map(entry => entry.title), ['First Clement', 'Second Clement', 'The Letters of Ignatius']);
+      equal(found.contents.length, 21);
+      same([found.editionStatement, found.height, found.originalLanguage], ['3rd ed.', 230, 'Ancient Greek']);
+    },
+  },
+  {
+    name: 'a book the Library of Congress does not know (the Loeb Plato) is filled from Open Library and Google Books',
+    fn() {
+      equal(fromLibraryOfCongress(loeb.libraryOfCongress, loeb.isbn), null);
+      const found = merged(loeb);
+      same([found.publisher, found.pages, found.height], ['Harvard University Press', '608', 170]);
+      equal(found.identifiers.oclc, '44991830');
+    },
+  },
+  {
+    name: 'Anna Karenina: roles from Open Library\'s contributions, sizes in inches, and a hardcover',
+    fn() {
+      const found = merged(anna);
+      same(names(found), ['John Bayley (introduction)', 'Louise Maude (translator)', 'Aylmer Maude (translator)']);
+      same([found.height, found.thickness, found.binding], [213, 46, 'Hardcover']);
+    },
+  },
+  {
+    name: 'a value is taken only from a record that lists the book\'s own ISBN',
+    fn() {
+      equal(fromLibraryOfCongress(plato.libraryOfCongress, confessions.isbn), null);
+      equal(fromOpenLibraryEdition(json(plato.openLibraryEdition), confessions.isbn), null);
+      equal(fromGoogleBooksVolume(json(plato.googleBooksVolume), confessions.isbn), null);
+      equal(fromGoogleBooks(json(anna.googleBooksSearch), anna.isbn).title, 'Anna Karenina', 'not Democracy in America, which carries the same ISBN');
+      ok(fromGoogleBooks(json(loeb.googleBooksSearch), loeb.isbn).title.startsWith('Euthyphro'), 'library scans without an ISBN are passed over');
+    },
+  },
+  {
+    name: 'the Library of Congress comes first for bibliographic facts, and pages as printed beat a page count',
+    fn() {
+      const [lc, edition, , volume] = readAll(plato);
+      same([edition.year, edition.pages, volume.pages], ['2009', '1838', '1808']);
+      const found = mergeFound([lc, edition, volume]);
+      same([found.year, found.pages], ['1997', 'xxx, 1808']);
+      equal(mergeFound([volume, { ...lc, pages: 'xxx, 1808' }]).pages, 'xxx, 1808', 'printed pages win even from a later source');
+      equal(mergeFound([null, null]), null);
+    },
+  },
+  {
+    name: 'no source ever produces an original date, and a Bible is read like any book',
+    fn() {
+      for (const book of [confessions, crime, chemnitz, plato, lewis, loeb, anna, na28, holmes]) {
+        const found = merged(book);
+        ok(!('datings' in found) && !('originalDate' in found), `${book.isbn} has a date field`);
+      }
+      equal(merged(na28).binding, 'Paperback');
+    },
+  },
+  {
+    name: 'by lines name translators, editors and introductions as a person reads them',
+    fn() {
+      same(contributorsFrom('edited by Robert Kolb and Timothy J. Wengert ; translated by Charles Arand ... [et al.].'),
+        [{ name: 'Robert Kolb', role: 'editor' }, { name: 'Timothy J. Wengert', role: 'editor' }, { name: 'Charles Arand', role: 'translator' }]);
+      same(contributorsFrom('Leo Tolstoy ; introduction by John Sutherland ; illustrated by Roman Pisarev.'),
+        [{ name: 'John Sutherland', role: 'introduction' }, { name: 'Roman Pisarev', role: 'illustrator' }]);
+      same(contributorsFrom('C.S. Lewis'), []);
+    },
+  },
+  {
+    name: 'bindings and heights as records write them',
+    fn() {
+      same(['Hardcover', 'paperback', 'Mass Market Paperback', 'Leather Bound', 'Bonded Leather', 'Library Binding', 'Audio CD'].map(bindingFromFormat),
+        ['Hardcover', 'Paperback', 'Mass-market paperback', 'Leather', 'Bonded leather', 'Library binding', '']);
+      same([heightInMm('24 cm.'), heightInMm('24 x 30 cm'), heightInMm('maps ;')], [240, 240, null]);
+    },
+  },
+];

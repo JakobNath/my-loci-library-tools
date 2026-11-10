@@ -6,39 +6,78 @@
 // when a work was written.
 
 /**
- * The shape every lookup is turned into. Empty values are '' or [].
+ * The shape every lookup is turned into. Empty values are '', null or [].
+ * height and thickness are in millimeters. contents lists an anthology's
+ * works as a record gives them ({ title, author }). identifiers are the
+ * catalogue numbers of DATA_FORMAT.md (lccn, oclc, lcc, ddc).
  * @typedef {{ title: string, subtitle: string, authors: string[], contributors: { name: string, role: string }[],
  *   publisher: string, place: string, year: string, pages: string, languages: string[], isbn: string,
+ *   editionStatement: string, series: string, seriesNumber: string, height: number|null, thickness: number|null,
+ *   binding: string, originalTitle: string, originalLanguage: string, contents: { title: string, author: string }[],
+ *   subjects: string[], identifiers: { lccn: string, oclc: string, lcc: string, ddc: string },
  *   cover: { url: string, source: string, waiting: boolean } | null, source: string }} Found
  */
-function emptyFound(source) {
-  return { title: '', subtitle: '', authors: [], contributors: [], publisher: '', place: '', year: '', pages: '', languages: [], isbn: '', cover: null, source };
+export function emptyFound(source) {
+  return {
+    title: '', subtitle: '', authors: [], contributors: [], publisher: '', place: '', year: '', pages: '', languages: [], isbn: '',
+    editionStatement: '', series: '', seriesNumber: '', height: null, thickness: null, binding: '', originalTitle: '', originalLanguage: '',
+    contents: [], subjects: [], identifiers: { lccn: '', oclc: '', lcc: '', ddc: '' }, cover: null, source,
+  };
 }
 
-// Catalog text sometimes carries doubled spaces ("The  cost of discipleship").
-const tidy = text => String(text || '').replace(/\s+/g, ' ').trim();
+/** Catalog text without doubled spaces ("The  cost of discipleship"). */
+export const tidy = text => String(text || '').replace(/\s+/g, ' ').trim();
 
-const yearOf = text => (String(text || '').match(/\b(1[4-9]\d\d|20\d\d)\b/) || [''])[0];
+/** The year in a publication date ("c1997.", "April 23, 1992"), as text. */
+export const yearOf = text => (String(text || '').match(/(?<!\d)(1[4-9]\d\d|20\d\d)(?!\d)/) || [''])[0];
 
-// "xxviii, 311 p. ;" is written as "xxviii, 311". Library records made before
-// printing say "pages cm" (no count yet), which gives nothing.
-function cleanPages(text) {
+/**
+ * Pages as printed: "xxviii, 311 p. ;" is "xxviii, 311". Library records made
+ * before printing say "pages cm" (no count yet), and a set is described by its
+ * volumes ("v. <1-3>"); both give nothing.
+ */
+export function cleanPages(text) {
   const pages = String(text || '').replace(/\s*\bp(?:p|ages)?\.?/gi, '').replace(/\bcm\b/gi, '').replace(/[\s;:,.]+$/, '').trim();
-  return /\d|^[ivxlc]+$/i.test(pages) ? pages : '';
+  return /\d|^[ivxlc]+$/i.test(pages) && /^[\divxlcdm[\]\s,–-]+$/i.test(pages) ? pages : '';
 }
 
-// People named in a "by" line: "Saint Augustine ; translated by Henry Chadwick."
-function contributorsFrom(byLine) {
+// The roles named before "by": someone who "translated, with an introduction"
+// is the translator (the introduction is part of that work); an associate or
+// series editor is not the book's editor.
+function rolesIn(words) {
+  const text = words.toLowerCase();
+  if (/\b(associate|assistant|general|series)\s+editor/.test(text)) return ['other'];
+  const main = [['translat', 'translator'], ['edit', 'editor'], ['illustrat', 'illustrator']]
+    .filter(([stem]) => text.includes(stem)).map(([, role]) => role);
+  if (main.length) return main;
+  return text.includes('introduc') ? ['introduction'] : [];
+}
+
+// "Robert Kolb and Timothy J. Wengert", "Charles Arand ... [et al.]". Full
+// stops after initials stay (F. J. Sheed).
+function namesIn(text) {
+  return text.replace(/\.\.\.|\[?et al\.?\]?/g, '').split(/\s+and\s+|\s*,\s+|\s+&\s+/)
+    .map(name => name.trim().replace(/[\s.;,]+$/, (end, at, whole) => (/[A-Z]\.$/.test(whole.trim()) ? '.' : '')))
+    .filter(name => /\p{L}{2}/u.test(name));
+}
+
+/**
+ * People named in a statement of responsibility (a "by" line):
+ * "Saint Augustine ; translated by Henry Chadwick." Each part between ";"
+ * is read on its own: the words before "by" give the roles, the names after
+ * it the people. "associate editor, D.S. Hutchinson" has no "by" and is read too.
+ * @returns {{ name: string, role: string }[]}
+ */
+export function contributorsFrom(byLine) {
   const people = [];
-  // A name runs to the next ";" or ","; full stops stay, since names have initials (F. J. Sheed).
-  const roles = [['translator', /translated\s+(?:and\s+\w+\s+)?by\s+([^;,]+)/i], ['editor', /edited\s+(?:and\s+\w+\s+)?by\s+([^;,]+)/i],
-    ['introduction', /introduction\s+(?:and\s+\w+\s+)?by\s+([^;,]+)/i], ['illustrator', /illustrated\s+by\s+([^;,]+)/i]];
-  for (const [role, pattern] of roles) {
-    const match = String(byLine || '').match(pattern);
-    if (!match) continue;
-    for (const name of match[1].split(/\s+and\s+/)) {
-      const clean = name.trim().replace(/\.$/, (dot, at, whole) => (/[A-Z]\.$/.test(whole) ? dot : ''));
-      if (clean) people.push({ name: clean, role });
+  for (const part of String(byLine || '').split(';')) {
+    const at = part.search(/\bby\s/i);
+    const named = at >= 0 ? [part.slice(0, at), part.slice(at + 3)]
+      : (part.match(/^\s*([\p{L}\s]*?(?:editor|translator|illustrator)s?),\s+(.+)$/iu) || []).slice(1);
+    if (named.length < 2) continue;
+    const roles = rolesIn(named[0]);
+    for (const name of roles.length ? namesIn(named[1]) : []) {
+      for (const role of roles) people.push({ name, role });
     }
   }
   return people;
@@ -77,7 +116,8 @@ const LANGUAGES = { en: 'English', de: 'German', la: 'Latin', grc: 'Greek', el: 
  * @returns {Found|null}
  */
 export function fromGoogleBooks(answer, isbn) {
-  const volume = answer && answer.items && answer.items[0] && answer.items[0].volumeInfo;
+  const item = googleBooksItem(answer, isbn);
+  const volume = item && item.volumeInfo;
   if (!volume || !volume.title) return null;
   const found = emptyFound('googlebooks');
   found.title = titleCase(tidy(volume.title));
@@ -93,8 +133,32 @@ export function fromGoogleBooks(answer, isbn) {
   return found;
 }
 
+/** Whether a Google Books volume lists this ISBN (as ISBN-13 or ISBN-10). */
+export function listsIsbn(volumeInfo, isbn) {
+  return ((volumeInfo && volumeInfo.industryIdentifiers) || []).some(code => code.identifier === isbn || code.identifier === isbn.slice(3, 12) + isbn10Check(isbn));
+}
+
+const isbn10Check = isbn => {
+  const sum = [...isbn.slice(3, 12)].reduce((total, digit, i) => total + Number(digit) * (10 - i), 0);
+  const check = (11 - (sum % 11)) % 11;
+  return check === 10 ? 'X' : String(check);
+};
+
 /**
- * Fill the gaps in one lookup with another (Open Library first, then Google Books).
+ * The volume in a Google Books search answer that lists this ISBN. A search
+ * by ISBN also returns library scans without one, and now and then another
+ * book carrying the same ISBN, so the first volume listing it is taken.
+ * @returns {object|null} the search item, with its `id` and `volumeInfo`
+ */
+export function googleBooksItem(answer, isbn) {
+  return ((answer && answer.items) || []).find(item => listsIsbn(item.volumeInfo, isbn)) || null;
+}
+
+const isEmpty = value => value === '' || value === null || (Array.isArray(value) && !value.length);
+
+/**
+ * Fill the gaps in one lookup with another: each field is taken from the
+ * first that has it, and each catalogue number on its own.
  * @returns {Found|null}
  */
 export function combineFound(first, second) {
@@ -102,9 +166,10 @@ export function combineFound(first, second) {
   if (!second) return first;
   const combined = { ...first };
   for (const [name, value] of Object.entries(second)) {
-    const mine = combined[name];
-    const empty = mine === '' || mine === null || (Array.isArray(mine) && !mine.length);
-    if (empty) combined[name] = value;
+    if (isEmpty(combined[name])) combined[name] = value;
+  }
+  if (first.identifiers && second.identifiers) {
+    combined.identifiers = Object.fromEntries(Object.entries(first.identifiers).map(([name, value]) => [name, value || second.identifiers[name] || '']));
   }
   return combined;
 }
@@ -259,6 +324,16 @@ const SMALL_WORDS = new Set(['a', 'an', 'the', 'and', 'but', 'or', 'nor', 'for',
 export function titleCase(text) {
   const words = String(text || '').split(' ');
   if (words.slice(1).some(word => /[A-Z]/.test(word))) return text;
+  return sentenceToTitleCase(text);
+}
+
+/**
+ * Title case for a title written in sentence case, as library catalogues
+ * write them ("The letters of Ignatius" becomes "The Letters of Ignatius").
+ * Words that already begin with a capital keep it.
+ */
+export function sentenceToTitleCase(text) {
+  const words = String(text || '').split(' ');
   return words.map((word, i) => {
     const afterColon = i > 0 && /[:—]$/.test(words[i - 1]);
     const keepSmall = i > 0 && i < words.length - 1 && !afterColon && SMALL_WORDS.has(word.toLowerCase());
