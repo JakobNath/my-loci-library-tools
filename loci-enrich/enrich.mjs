@@ -15,6 +15,8 @@ export const RECHECK_DAYS = 90; // each book is asked again after this long, so 
 const EDITION_FIELDS = [['pages', 'pages'], ['editionStatement', 'edition'], ['series', 'series'], ['seriesNumber', 'number'], ['place', 'place']];
 // Fields of the work, filled only for a book holding one work.
 const WORK_FIELDS = ['originalTitle', 'originalLanguage'];
+// The catalogue numbers (DATA_FORMAT.md, "Identifiers"), as the report names them.
+const NUMBER_NAMES = { lccn: 'LCCN', oclc: 'OCLC', lcc: 'call number', ddc: 'Dewey' };
 // The roles taken from a record into an edition that names no contributors yet.
 const ROLES = ['translator', 'editor'];
 
@@ -77,6 +79,14 @@ export function fillBook({ edition, works }, found, previous = {}, now) {
     fill('thickness', found.thickness, `thickness ${found.thickness / 10} cm`);
     next = withField(next, 'thicknessSource', 'catalog', now);
   }
+  // Catalogue numbers one by one, so a number a person typed stays beside the ones filled in.
+  const numbers = Object.entries(found.identifiers).filter(([key, value]) => value && mayFill(`identifiers.${key}`, next.identifiers[key]));
+  if (numbers.length) {
+    next = withField(next, 'identifiers', { ...next.identifiers, ...Object.fromEntries(numbers) }, now);
+    for (const [key, value] of numbers) wrote[`identifiers.${key}`] = value;
+    filled.push(numbers.map(([key, value]) => `${NUMBER_NAMES[key]} ${value}`).join('; '));
+  }
+  if (found.subjects.length && mayFill('subjects', next.subjects)) fill('subjects', found.subjects, `${found.subjects.length} subject headings`);
   const people = found.contributors.filter(person => ROLES.includes(person.role));
   if (people.length && mayFill('contributors', next.contributors)) {
     fill('contributors', people, people.map(person => `${person.role} ${person.name}`).join(', '));

@@ -74,6 +74,9 @@ export function itemsFor(entry, library, { appUrl = APP_URL } = {}) {
       seriesNumber: edition.seriesNumber || '',
       volume: edition.volume || '',
       numPages: '',
+      // The Library of Congress call number, which Chicago does not print. Sent only when
+      // Loci has one, so call numbers already in Zotero are never emptied.
+      ...(edition.identifiers.lcc ? { callNumber: edition.identifiers.lcc } : {}),
       ...shared,
     },
   };

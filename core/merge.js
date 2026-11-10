@@ -1,16 +1,19 @@
 // Merging two versions of one record edited on different devices: each field
 // comes from whichever side changed it last (DATA_FORMAT.md, "Merging").
 
-import { FIELDS } from './records.js';
+import { FIELDS, migrate } from './records.js';
 
 /**
  * Merge two versions of the same record. Both devices get the same result
  * whichever order they merge in.
- * @param {object} mine
- * @param {object} theirs
+ * @param {object} mineAsRead this device's version
+ * @param {object} theirsAsRead the other device's version
  * @returns {object} a new record
  */
-export function mergeRecords(mine, theirs) {
+export function mergeRecords(mineAsRead, theirsAsRead) {
+  // Both sides in this app's data format, so a field one side lacks is not taken as empty.
+  const mine = migrate(mineAsRead);
+  const theirs = migrate(theirsAsRead);
   if (mine.id !== theirs.id || mine.type !== theirs.type) {
     throw new Error(`Cannot merge different records: ${mine.type} ${mine.id} and ${theirs.type} ${theirs.id}.`);
   }

@@ -5,7 +5,7 @@ import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
-import { recordToFileText } from '../core/records.js';
+import { recordToFileText, migrate } from '../core/records.js';
 
 const toolsFolder = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -30,8 +30,21 @@ export function readConfig(file = join(toolsFolder, 'config.json')) {
   };
 }
 
-/** Every record in a data repository, read from its record files. */
+/**
+ * Every record in a data repository, in this format version: older records
+ * are upgraded as they are read (core/records.js, migrate). Their files are
+ * not changed until a tool writes the record.
+ */
 export function readRecords(dataRepo) {
+  return readStoredRecords(dataRepo).map(migrate);
+}
+
+/**
+ * Every record exactly as its file stores it, in that file's format version.
+ * Only for catalog.json, whose records must match their files, so a device can
+ * tell which files it need not download (DATA_FORMAT.md, "catalog.json").
+ */
+export function readStoredRecords(dataRepo) {
   const records = [];
   for (const folder of Object.values(FOLDERS)) {
     const path = join(dataRepo, folder);

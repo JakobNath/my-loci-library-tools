@@ -199,3 +199,13 @@ test('the companion has matching .cmd and .sh launchers', () => {
   assert.ok(cmd.includes('cd /d "%~dp0"') && cmd.includes('node loci-zotero.mjs %*'));
   assert.ok(sh.startsWith('#!/bin/sh') && sh.includes('node loci-zotero.mjs "$@"'));
 });
+
+test("Loci's Library of Congress call number goes to Zotero's Call Number; without one, Zotero's own stays", async () => {
+  const { fake, zotero, links } = setup();
+  const key = fake.add({ itemType: 'book', title: 'Confessions', ISBN: '9780199537822', date: '1991', callNumber: 'BR65 .A6 1991', collections: [] });
+  await sendToZotero(sampleRecords(), links, zotero);
+  assert.equal(fake.items.get(key).data.callNumber, 'BR65 .A6 1991', 'not emptied when Loci has none');
+  const numbered = withField(chadwick, 'identifiers', { lccn: '2008491261', oclc: null, lcc: 'BR65.A6 E5 2008', ddc: null }, '2026-11-12T09:00:00Z');
+  await sendToZotero(sampleRecords().map(record => (record.id === chadwick.id ? numbered : record)), links, zotero);
+  assert.equal(fake.items.get(key).data.callNumber, 'BR65.A6 E5 2008');
+});

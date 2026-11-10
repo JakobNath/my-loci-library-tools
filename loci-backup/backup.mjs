@@ -6,7 +6,7 @@
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync, copyFileSync, utimesSync } from 'node:fs';
 import { join } from 'node:path';
-import { readRecords, isGitRepo, git } from '../shared/data-repo.mjs';
+import { readRecords, readStoredRecords, isGitRepo, git } from '../shared/data-repo.mjs';
 import { buildLibrary } from '../core/library.js';
 import { catalogCsv, catalogJson, cslJson, bibtex } from '../core/exports.js';
 import { catalogHtml } from './html-catalog.mjs';
@@ -24,7 +24,7 @@ const readJson = path => (existsSync(path) ? JSON.parse(readFileSync(path, 'utf8
 export function rebuildCatalog(dataRepo, built) {
   const path = join(dataRepo, 'catalog.json');
   const old = readJson(path);
-  const { format, ...lists } = JSON.parse(catalogJson(readRecords(dataRepo), built));
+  const { format, ...lists } = JSON.parse(catalogJson(readStoredRecords(dataRepo), built));
   delete lists.built;
   const fresh = { format, built, ...(old && old.testData ? { testData: true } : {}), ...lists };
   if (old && JSON.stringify({ ...old, built: null }) === JSON.stringify({ ...fresh, built: null })) return false;

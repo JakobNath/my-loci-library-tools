@@ -4,7 +4,7 @@
 
 import { isId } from './ids.js';
 
-export const FORMAT_VERSION = 1;
+export const FORMAT_VERSION = 2;
 
 // The fields of each record type, in file order, with the value of an empty field.
 export const FIELDS = {
@@ -12,7 +12,7 @@ export const FIELDS = {
   edition: {
     title: '', subtitle: null, contents: [], contributors: [], publisher: null, place: null, year: null,
     editionStatement: null, translationFirstPublished: null, series: null, seriesNumber: null, set: null, volume: null,
-    isbn: null, languages: [], pages: null, height: null, heightSource: null, thickness: null, thicknessSource: null,
+    isbn: null, identifiers: { lccn: null, oclc: null, lcc: null, ddc: null }, languages: [], subjects: [], pages: null, height: null, heightSource: null, thickness: null, thicknessSource: null,
     medium: 'physical', logosId: null, logosExtra: {}, cite: false, images: [],
   },
   copy: {
@@ -31,6 +31,8 @@ const NESTED_ORDER = {
   images: ['id', 'kind', 'source', 'color', 'ratio', 'master', 'waiting'],
   valueHistory: ['date', 'value'],
 };
+// The same for an edition's catalogue numbers, which are one object, not a list.
+const IDENTIFIER_KEYS = ['lccn', 'oclc', 'lcc', 'ddc'];
 
 export const STATUSES = ['owned', 'given away', 'sold', 'lost', 'gone from Logos'];
 export const ROLES = ['translator', 'editor', 'introduction', 'illustrator', 'other'];
@@ -117,6 +119,10 @@ const TYPE_CHECKS = {
       if (edition[field] !== null && !allowed.includes(edition[field])) problems.push(`${field} "${edition[field]}" is not one of: ${allowed.join(', ')}.`);
     }
     if (edition.isbn !== null && !/^\d{13}$/.test(edition.isbn)) problems.push(`ISBN "${edition.isbn}" should be 13 digits.`);
+    const identifiers = edition.identifiers || {};
+    if (IDENTIFIER_KEYS.some(key => !(key in identifiers) || (identifiers[key] !== null && typeof identifiers[key] !== 'string'))) {
+      problems.push(`"identifiers" should hold ${IDENTIFIER_KEYS.join(', ')}, each text or null.`);
+    }
     return problems;
   },
   copy(copy) {
@@ -149,6 +155,8 @@ export function recordToFileText(record) {
 }
 
 function orderNested(name, value) {
+  // A version-1 edition has no identifiers; left out, its text stays exactly as stored (sync compares it with the file).
+  if (name === 'identifiers') return value && Object.fromEntries(IDENTIFIER_KEYS.map(key => [key, value[key] ?? null]));
   const keys = NESTED_ORDER[name];
   if (!keys || !Array.isArray(value)) return value;
   return value.map(item => {
@@ -156,4 +164,24 @@ function orderNested(name, value) {
     for (const key of keys) ordered[key] = item[key] ?? null;
     return ordered;
   });
+}
+
+/**
+ * A record as this app's data format: older records are upgraded one
+ * version at a time, and nothing in them is lost (DATA_FORMAT.md, "Format
+ * versions"). A record newer than this app is returned unchanged; sync
+ * refuses to write over it. Every place that reads records reads through this.
+ * @param {object} record as read from a file, storage or catalog.json
+ * @returns {object} a new object when anything changed
+ */
+export function migrate(record) {
+  let upgraded = record;
+  if (upgraded.format === 1) upgraded = fromVersion1(upgraded);
+  return upgraded;
+}
+
+// Version 2 (November 2026) gave each edition its catalogue numbers and subject headings.
+function fromVersion1(record) {
+  if (record.type !== 'edition') return { ...record, format: 2 };
+  return { ...record, format: 2, identifiers: { lccn: null, oclc: null, lcc: null, ddc: null }, subjects: [] };
 }

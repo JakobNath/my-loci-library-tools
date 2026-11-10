@@ -48,7 +48,9 @@ const edition = (id, title, workId, extra = {}) => newRecord('edition', id, NOW,
 
 test('empty fields are filled from all three sources, and a field a person typed is left alone', async () => {
   const platoWork = work('p1at0w0rk001', 'Complete Works');
-  const complete = edition('p1at0ed00001', 'Complete Works', platoWork.id, { isbn: plato.isbn, place: 'Indianapolis' });
+  // As the app's version 1 wrote it: no catalogue numbers or subjects yet.
+  const { identifiers, subjects, ...version1 } = edition('p1at0ed00001', 'Complete Works', platoWork.id, { isbn: plato.isbn, place: 'Indianapolis' });
+  const complete = { ...version1, format: 1 };
   const folder = dataRepo([platoWork, complete]);
   try {
     const { fetchFn } = recordedServices([plato]);
@@ -60,6 +62,9 @@ test('empty fields are filled from all three sources, and a field a person typed
     assert.deepEqual(book.contributors, [{ name: 'John M. Cooper', role: 'editor' }], 'translators and editors only');
     assert.equal(book.place, 'Indianapolis', 'typed by a person');
     assert.equal(book.thickness, null, "Google Books' impossible thickness is not used");
+    assert.deepEqual(book.identifiers, { lccn: '96053280', oclc: null, lcc: 'B358 .C3 1997', ddc: '184' });
+    assert.deepEqual(book.subjects, ['Socrates', 'Philosophy, Ancient']);
+    assert.equal(book.format, 2);
     assert.equal(after.get(platoWork.id).originalLanguage, 'Ancient Greek');
     assert.deepEqual(after.get(platoWork.id).datings, [], 'an original date is never filled');
     const memory = JSON.parse(readFileSync(join(folder, MEMORY), 'utf8'));
