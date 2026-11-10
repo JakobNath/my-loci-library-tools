@@ -15,6 +15,9 @@ function emptyFound(source) {
   return { title: '', subtitle: '', authors: [], contributors: [], publisher: '', place: '', year: '', pages: '', languages: [], isbn: '', cover: null, source };
 }
 
+// Catalog text sometimes carries doubled spaces ("The  cost of discipleship").
+const tidy = text => String(text || '').replace(/\s+/g, ' ').trim();
+
 const yearOf = text => (String(text || '').match(/\b(1[4-9]\d\d|20\d\d)\b/) || [''])[0];
 
 // "xxviii, 311 p. ;" is written as "xxviii, 311". Library records made before
@@ -52,9 +55,9 @@ export function fromOpenLibrary(answer, isbn, coverUrl) {
   const book = answer && answer[`ISBN:${isbn}`];
   if (!book || !book.title) return null;
   const found = emptyFound('openlibrary');
-  found.title = book.title;
-  found.subtitle = book.subtitle || '';
-  found.authors = (book.authors || []).map(author => author.name).filter(Boolean);
+  found.title = tidy(book.title);
+  found.subtitle = tidy(book.subtitle);
+  found.authors = (book.authors || []).map(author => tidy(author.name)).filter(Boolean);
   found.contributors = contributorsFrom(book.by_statement);
   found.publisher = (book.publishers && book.publishers[0] && book.publishers[0].name) || '';
   found.place = (book.publish_places && book.publish_places[0] && book.publish_places[0].name) || '';
@@ -119,3 +122,59 @@ export function candidatesFromSearch(answer) {
     isbn: (doc.isbn || []).find(code => code.length === 13) || '',
   }));
 }
+
+/**
+ * A year from a date as Open Library writes it: "13 November 354" is 354,
+ * "1522" is 1522, "c. 350 BC" is -350.
+ * @returns {number|null}
+ */
+export function yearFromText(text) {
+  const match = String(text || '').match(/(\d{1,4})\s*(BC|B\.C\.|BCE)?\s*$/i) || String(text || '').match(/(\d{3,4})/);
+  if (!match) return null;
+  return match[2] ? -Number(match[1]) : Number(match[1]);
+}
+
+/**
+ * What Open Library knows about the work behind an ISBN, from its search
+ * answer (/search.json?q=isbn:...) and the first author's record (/authors/<key>.json).
+ * @returns {{ workTitle: string, firstPublished: number|null, author: { name: string, born: number|null, died: number|null } | null }}
+ */
+export function workFromOpenLibrary(searchAnswer, authorAnswer) {
+  const doc = (searchAnswer && searchAnswer.docs && searchAnswer.docs[0]) || {};
+  const author = authorAnswer && authorAnswer.name
+    ? { name: authorAnswer.name, born: yearFromText(authorAnswer.birth_date), died: yearFromText(authorAnswer.death_date) }
+    : null;
+  return { workTitle: doc.title || '', firstPublished: doc.first_publish_year || null, author };
+}
+
+/**
+ * Suggestions for a work's original date, for a person to accept with one
+ * tap; never filled in by themselves (PLAN.md, "Original dates"). Reasoning:
+ * Open Library's earliest edition of a work is often its first publication,
+ * but for older works it is only an early printing; an author's lifetime
+ * bounds when the work was written.
+ * @param {{ firstPublished: number|null, author: object|null }} work from workFromOpenLibrary
+ * @param {number|null} editionYear the year of the edition in hand
+ * @returns {{ text: string, label: string }[]} most likely first
+ */
+export function suggestOriginalDates(work, editionYear) {
+  const suggestions = [];
+  const { firstPublished, author } = work;
+  const lifetime = author && author.died !== null
+    ? { text: author.born !== null ? lifeText(author.born, author.died) : `before ${yearText(author.died)}`, label: `written in ${author.name}'s lifetime` }
+    : null;
+  if (firstPublished !== null && lifetime && firstPublished > author.died) {
+    // The earliest edition came after the author's death: it is a printing, not the original.
+    suggestions.push({ ...lifetime, label: `${lifetime.label}; Open Library's earliest edition (${firstPublished}) is a later printing` });
+    return suggestions;
+  }
+  if (firstPublished !== null) {
+    const same = editionYear && Number(editionYear) === firstPublished;
+    suggestions.push({ text: String(firstPublished), label: same ? 'first published, the same year as this printing (Open Library): check it is not an older work' : 'first published (Open Library)' });
+  }
+  if (lifetime) suggestions.push(lifetime);
+  return suggestions;
+}
+
+const yearText = year => (year < 0 ? `${-year} BC` : String(year));
+const lifeText = (born, died) => (born < 0 && died < 0 ? `${-born}–${-died} BC` : born < 0 ? `${-born} BC – ${died}` : `${born}–${died}`);

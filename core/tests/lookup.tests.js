@@ -1,7 +1,7 @@
 // Reading lookup answers (recorded from Open Library on 9 November 2026, and
 // in Google Books' documented format), and the matching suggestions.
 
-import { fromOpenLibrary, fromGoogleBooks, combineFound, candidatesFromSearch } from '../lookup.js';
+import { fromOpenLibrary, fromGoogleBooks, combineFound, candidatesFromSearch, workFromOpenLibrary, suggestOriginalDates, yearFromText } from '../lookup.js';
 import { editionsWithIsbn, suggestWorks } from '../matching.js';
 import { buildLibrary } from '../library.js';
 import { equal, same, ok } from './check.js';
@@ -39,6 +39,7 @@ export const tests = [
       const found = fromOpenLibrary(OPEN_LIBRARY, '9780199537822', COVER);
       equal(found.title, 'Confessions');
       same(found.authors, ['Augustine of Hippo']);
+      equal(fromOpenLibrary({ 'ISBN:1': { title: 'The  cost of  discipleship ' } }, '1', '').title, 'The cost of discipleship', 'spaces tidied');
       same(found.contributors, [{ name: 'Henry Chadwick', role: 'translator' }]);
       same([found.publisher, found.place, found.year, found.pages], ['Oxford University Press', 'Oxford', '2008', 'xxviii, 311']);
       equal(found.cover.url, COVER);
@@ -103,6 +104,41 @@ export const tests = [
       const library = buildLibrary([confessions, augustine, chadwick]);
       equal(editionsWithIsbn('9780199537822', library.entries).length, 1);
       equal(editionsWithIsbn('9780000000002', library.entries).length, 0);
+    },
+  },
+  {
+    name: 'Augustine: the earliest edition (1482) is after his death, so his lifetime is suggested',
+    fn() {
+      const work = workFromOpenLibrary({ docs: [{ title: 'Confessions', first_publish_year: 1482 }] }, { name: 'Augustine of Hippo', birth_date: '13 November 354', death_date: '28 August 430' });
+      same(work.author, { name: 'Augustine of Hippo', born: 354, died: 430 });
+      const suggestions = suggestOriginalDates(work, 1991);
+      equal(suggestions.length, 1);
+      equal(suggestions[0].text, '354–430');
+      ok(suggestions[0].label.includes('later printing'), 'says why');
+    },
+  },
+  {
+    name: 'Chemnitz: an earliest edition after his death (1596) gives his lifetime, which holds 1565–73',
+    fn() {
+      const work = workFromOpenLibrary({ docs: [{ title: 'Examen Concilii Tridentini', first_publish_year: 1596 }] }, { name: 'Martin Chemnitz', birth_date: '1522', death_date: '1586' });
+      equal(work.workTitle, 'Examen Concilii Tridentini', 'the original title, to suggest too');
+      same(suggestOriginalDates(work, 2007).map(s => s.text), ['1522–1586']);
+    },
+  },
+  {
+    name: 'a modern translation: the first publication is suggested first, the lifetime second',
+    fn() {
+      const work = workFromOpenLibrary({ docs: [{ title: 'Nachfolge', first_publish_year: 1937 }] }, { name: 'Dietrich Bonhoeffer', birth_date: '4 February 1906', death_date: '9 April 1945' });
+      same(suggestOriginalDates(work, 1995).map(s => s.text), ['1937', '1906–1945']);
+    },
+  },
+  {
+    name: 'a first publication in the same year as the printing is flagged for checking, and BC years read right',
+    fn() {
+      const suggestions = suggestOriginalDates({ firstPublished: 2007, author: null }, '2007');
+      ok(suggestions[0].label.includes('check'), 'asks for a check');
+      equal(yearFromText('c. 427 BC'), -427);
+      same(suggestOriginalDates({ firstPublished: 1514, author: { name: 'Plato', born: -428, died: -348 } }, 1914).map(s => s.text), ['428–348 BC']);
     },
   },
 ];
