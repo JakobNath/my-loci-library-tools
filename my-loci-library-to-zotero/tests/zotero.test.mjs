@@ -11,7 +11,7 @@ import { connectToZotero } from '../zotero-api.mjs';
 import { sendToZotero } from '../zotero-sync.mjs';
 import { fakeZotero } from './fake-zotero.mjs';
 import { plato, augustine, confessions, chadwick, loebWorks, loeb36, na28, na28Works, triglotta, triglottaWorks } from '../../core/tests/samples.js';
-import { isBible } from '../zotero-items.mjs';
+import { isBible } from '../../core/bible.js';
 import { buildLibrary } from '../../core/library.js';
 
 const here = dirname(fileURLToPath(import.meta.url));

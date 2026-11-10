@@ -8,6 +8,7 @@ import { parseContentsLines, contentsLine } from '../contents.js';
 import { buildLibrary, viewEntries, searchEntries, authorLineOf, sortEntries, filterChoices, SORTS } from '../library.js';
 import { equal, same, ok } from './check.js';
 import { newRecord } from '../records.js';
+import { isBible, isBibleBook } from '../bible.js';
 import { na28, na28Works, triglotta, triglottaWorks, loeb36, loebWorks, plato, augustine, confessions, chadwick, work, edition, byId } from './samples.js';
 
 export const tests = [
@@ -188,6 +189,17 @@ export const tests = [
       const years = new Set(loebWorks.map(work => work.datings.find(dating => dating.working)?.earliest));
       equal(viewEntries(entries, { sort: 'originalDate' }, { anthologies: 'each' }).length, years.size, 'once for each distinct date');
       equal(viewEntries(entries, { sort: 'title' }, { anthologies: 'each' }).length, 1, 'other sorts show it once');
+    },
+  },
+  {
+    name: 'NA28 is a Bible by its books; the Concordia Triglotta and the Loeb Plato are not',
+    fn() {
+      const { entries } = buildLibrary([...na28Works, na28, ...triglottaWorks, triglotta, ...loebWorks, loeb36, plato]);
+      const bible = title => isBible(entries.find(entry => entry.edition.title === title));
+      same([bible('Novum Testamentum Graece'), bible('Concordia Triglotta'), bible(loeb36.title)], [true, false, false]);
+      ok(isBible({ edition: { logosExtra: { 'Resource Type': 'Bible' } }, works: [{ title: 'Lexham English Bible' }] }), 'Logos says so');
+      ok(isBible({ edition: {}, works: [{ title: 'Genesis' }, { title: 'Exodus' }, { title: 'Preface' }] }), 'contents read from a catalog record');
+      same(['First Corinthians', '1 Corinthians', 'The Acts of the Apostles', 'Confessions'].map(isBibleBook), [true, true, true, false]);
     },
   },
 ];
