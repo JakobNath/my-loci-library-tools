@@ -5,7 +5,18 @@
 
 import { isbn13 } from './entry.js';
 import { emptyFound, combineFound, contributorsFrom, cleanPages, titleCase, tidy, yearOf, listsIsbn } from './lookup.js';
-import { LANGUAGE_NAMES } from './marc.js';
+
+// MARC language codes (also used by Open Library) for the languages a library
+// like ours meets. A code not listed is shown as it is.
+export const LANGUAGE_NAMES = {
+  ang: 'Old English', ara: 'Arabic', arc: 'Aramaic', arm: 'Armenian', chi: 'Chinese', chu: 'Church Slavic',
+  cop: 'Coptic', cze: 'Czech', dan: 'Danish', dut: 'Dutch', eng: 'English', enm: 'Middle English',
+  eth: 'Ethiopic', fin: 'Finnish', fre: 'French', frm: 'Middle French', fro: 'Old French', geo: 'Georgian',
+  ger: 'German', gmh: 'Middle High German', grc: 'Ancient Greek', gre: 'Greek', heb: 'Hebrew',
+  hun: 'Hungarian', ice: 'Icelandic', ita: 'Italian', jpn: 'Japanese', kor: 'Korean', lat: 'Latin',
+  nor: 'Norwegian', per: 'Persian', pol: 'Polish', por: 'Portuguese', rus: 'Russian', san: 'Sanskrit',
+  spa: 'Spanish', swe: 'Swedish', syr: 'Syriac',
+};
 
 // Open Library's physical formats, in the names of our binding list (core/settings.js).
 const BINDINGS = [
@@ -98,6 +109,25 @@ export function fromOpenLibraryEdition(edition, isbn) {
     lccn: first(edition.lccn), oclc: first(edition.oclc_numbers),
     lcc: first(edition.lc_classifications), ddc: first(edition.dewey_decimal_class).replace(/\//g, ''),
   };
+  return found;
+}
+
+/**
+ * Read Open Library's answer to /api/books?bibkeys=ISBN:<isbn>&format=json&jscmd=details:
+ * the full edition record, with its authors' names, in one request. Used
+ * when adding a book, because asking for the book and its edition record
+ * separately took twice as long (HOW_IT_WORKS.md, "Fuller entries when adding").
+ * @param {object} answer the whole answer
+ * @param {string} isbn 13 digits
+ * @param {string} coverUrl where Open Library keeps this ISBN's cover (given by the edge)
+ * @returns {import('./lookup.js').Found|null} null when Open Library does not know the book
+ */
+export function fromOpenLibraryDetails(answer, isbn, coverUrl) {
+  const edition = answer && answer[`ISBN:${isbn}`] && answer[`ISBN:${isbn}`].details;
+  const found = fromOpenLibraryEdition(edition, isbn);
+  if (!found) return null;
+  found.authors = (edition.authors || []).map(author => tidy(author.name)).filter(Boolean);
+  found.cover = coverUrl ? { url: coverUrl, source: 'openlibrary', waiting: false } : null;
   return found;
 }
 

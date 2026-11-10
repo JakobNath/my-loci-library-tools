@@ -281,6 +281,17 @@ export function workFromOpenLibrary(searchAnswer, authorAnswer) {
 }
 
 /**
+ * The authors of the work behind an ISBN, from the same search answer, in
+ * Latin letters ("Plato", not "Πλάτων"). Used when an edition record names
+ * no authors of its own, as Open Library's record for Hackett's Plato does.
+ * @returns {string[]}
+ */
+export function authorsFromWorkSearch(searchAnswer) {
+  const doc = (searchAnswer && searchAnswer.docs && searchAnswer.docs[0]) || {};
+  return (doc.author_name || []).map(name => nameInLatin(tidy(name), doc.author_alternative_name)).filter(Boolean);
+}
+
+/**
  * Suggestions for a work's original date, for a person to accept with one
  * tap; never filled in by themselves (PLAN.md, "Original dates"). Reasoning:
  * Open Library's earliest edition of a work is often its first publication,

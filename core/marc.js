@@ -6,18 +6,7 @@
 
 import { isbn13 } from './entry.js';
 import { emptyFound, contributorsFrom, cleanPages, sentenceToTitleCase, tidy, yearOf } from './lookup.js';
-
-// MARC language codes (also used by Open Library) for the languages a library
-// like ours meets. A code not listed is shown as it is.
-export const LANGUAGE_NAMES = {
-  ang: 'Old English', ara: 'Arabic', arc: 'Aramaic', arm: 'Armenian', chi: 'Chinese', chu: 'Church Slavic',
-  cop: 'Coptic', cze: 'Czech', dan: 'Danish', dut: 'Dutch', eng: 'English', enm: 'Middle English',
-  eth: 'Ethiopic', fin: 'Finnish', fre: 'French', frm: 'Middle French', fro: 'Old French', geo: 'Georgian',
-  ger: 'German', gmh: 'Middle High German', grc: 'Ancient Greek', gre: 'Greek', heb: 'Hebrew',
-  hun: 'Hungarian', ice: 'Icelandic', ita: 'Italian', jpn: 'Japanese', kor: 'Korean', lat: 'Latin',
-  nor: 'Norwegian', per: 'Persian', pol: 'Polish', por: 'Portuguese', rus: 'Russian', san: 'Sanskrit',
-  spa: 'Spanish', swe: 'Swedish', syr: 'Syriac',
-};
+import { LANGUAGE_NAMES } from './book-data.js';
 
 // Uniform titles that name a kind of collection, not an original title.
 const COLLECTIVE_TITLES = new Set(['works', 'selections', 'selected works', 'novels', 'poems', 'plays', 'short stories', 'correspondence', 'letters', 'sermons']);
