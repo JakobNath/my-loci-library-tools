@@ -54,6 +54,25 @@ export function freeCitationKey(base, taken) {
   }
 }
 
+const plain = text => String(text || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+/**
+ * A volume of a multivolume set (The Ante-Nicene Fathers, vol. 1): the set's
+ * title, the volume number, and the volume's own title, if it has one. CSL
+ * calls these title, volume and volume-title, and Chicago prints them as
+ * "The Apostolic Fathers, Justin Martyr, Irenaeus, vol. 1 of The Ante-Nicene
+ * Fathers". A volume entered as "The Ante-Nicene Fathers: Volume 1: The
+ * Apostolic Fathers…" has its own title after "Volume 1".
+ * @returns {{ title: string, volume: string, volumeTitle: string }|null} null when the edition is not a volume of a set
+ */
+export function volumeOfSet(edition) {
+  if (!edition.set || !edition.volume) return null;
+  const full = edition.subtitle ? `${edition.title}: ${edition.subtitle}` : edition.title;
+  let own = full;
+  if (plain(edition.title) === plain(edition.set)) own = String(edition.subtitle || '').replace(/^(vol(ume)?\.?|v\.)\s*[\w.]+\s*[:.,–—-]?\s*/i, '').trim();
+  return { title: edition.set, volume: String(edition.volume), volumeTitle: plain(own) === plain(edition.set) ? '' : own };
+}
+
 /**
  * A CSL-JSON item for an edition.
  * @param {object} edition
@@ -63,11 +82,17 @@ export function freeCitationKey(base, taken) {
  */
 export function editionToCsl(edition, worksById, authorsById) {
   const works = edition.contents.map(entry => worksById.get(entry.work)).filter(Boolean);
-  const authorIds = [...new Set(works.flatMap(work => work.authors))];
+  // A collection names as its authors only those every work shares: Plato for
+  // his dialogues, Luther for Luther's Works. A collection of many authors (the
+  // Apostolic Fathers) is cited under its editors (Chicago Manual of Style).
+  const authorIds = works.length > 1
+    ? works[0].authors.filter(id => works.every(work => work.authors.includes(id)))
+    : [...new Set(works.flatMap(work => work.authors))];
+  const set = volumeOfSet(edition);
   const item = {
     id: edition.id,
     type: 'book',
-    title: edition.subtitle ? `${edition.title}: ${edition.subtitle}` : edition.title,
+    title: set ? set.title : edition.subtitle ? `${edition.title}: ${edition.subtitle}` : edition.title,
     author: authorIds.map(id => authorsById.get(id)).filter(Boolean).map(author => cslName(author.name, author.sortName)),
   };
   for (const contributor of edition.contributors) {
@@ -81,6 +106,7 @@ export function editionToCsl(edition, worksById, authorsById) {
   if (edition.series) item['collection-title'] = edition.series;
   if (edition.seriesNumber) item['collection-number'] = edition.seriesNumber;
   if (edition.volume) item.volume = edition.volume;
+  if (set && set.volumeTitle) item['volume-title'] = set.volumeTitle;
   if (edition.isbn) item.ISBN = edition.isbn;
   if (edition.languages.length) item.language = edition.languages.join(', ');
 

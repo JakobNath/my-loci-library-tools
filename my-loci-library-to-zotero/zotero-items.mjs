@@ -7,15 +7,17 @@
 // only bibliographic data. The book's permanent Loci link, with its shelf in
 // the title, is a link attached under the book (HOW_IT_WORKS.md, "Zotero fields").
 
-import { editionToCsl, cslName } from '../core/zotero.js';
+import { editionToCsl, cslName, volumeOfSet } from '../core/zotero.js';
 import { sortYearOf } from '../core/dating.js';
 import { normalizeForSearch } from '../core/search.js';
 
 export const APP_URL = 'https://jakobnath.github.io/my-loci-library/';
 export const TAG_GONE = 'Loci: no longer owned';
 export const TAG_REMOVED = 'Loci: removed';
-// Lines the first version of the companion wrote in Extra; they are removed when found.
-const OUR_EXTRA = /^(Original Date|Citation Key):/i;
+// Lines the companion writes or once wrote in Extra; they are replaced when found.
+// Only "volume-title" is written now: Zotero has no field for a volume's own
+// title, and Zotero's Chicago style reads this line from Extra.
+const OUR_EXTRA = /^(Original Date|Citation Key|volume-title):/i;
 
 const CREATOR_TYPES = { translator: 'translator', editor: 'editor', illustrator: 'contributor', introduction: 'contributor', other: 'contributor' };
 
@@ -73,7 +75,9 @@ export function itemsFor(entry, library, { appUrl = APP_URL } = {}) {
     ...csl.author.map(name => creator(name, 'author')),
     ...edition.contributors.map(person => creator(cslName(person.name), CREATOR_TYPES[person.role] || 'contributor')),
   ];
+  const set = volumeOfSet(edition);
   const shared = {
+    extra: set && set.volumeTitle ? `volume-title: ${set.volumeTitle}` : '',
     publisher: edition.publisher || '',
     place: edition.place || '',
     date: edition.year ? String(edition.year) : '',
@@ -93,7 +97,7 @@ export function itemsFor(entry, library, { appUrl = APP_URL } = {}) {
       title: csl.title,
       creators: people,
       edition: edition.editionStatement || '',
-      series: edition.series || edition.set || '',
+      series: set ? edition.series || '' : edition.series || edition.set || '',
       seriesNumber: edition.seriesNumber || '',
       volume: edition.volume || '',
       numPages: '',
@@ -117,6 +121,7 @@ export function itemsFor(entry, library, { appUrl = APP_URL } = {}) {
           itemType: 'bookSection',
           title: work.subtitle ? `${work.title}: ${work.subtitle}` : work.title,
           bookTitle: csl.title,
+          volume: edition.volume || '',
           creators: [...authors.map(name => creator(name, 'author')), ...editors, ...(piece.translator ? [creator(cslName(piece.translator), 'translator')] : [])],
           pages: piece.pages || '',
           series: edition.series || '',

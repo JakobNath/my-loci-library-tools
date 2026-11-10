@@ -45,6 +45,7 @@ test('physical books, cited Logos books and anthology sections are sent with onl
   assert.equal(book.data.originalDate, '397', "in Zotero's own Original Date field");
   assert.equal(book.data.citationKey, 'Augustine1991', "in Zotero's own Citation Key field");
   assert.ok(!book.data.url && !book.data.archiveLocation && !book.data.extra, 'nothing that Chicago would print, or Better BibTeX export, beyond the book itself');
+  assert.equal(fake.byTitle('Phaedo')[0].data.creators[0].name, 'Plato');
   assert.equal(book.data.collections.length, 1);
   const [link] = attachments(fake).filter(item => item.data.parentItem === book.key);
   assert.equal(link.data.linkMode, 'linked_url');
@@ -179,6 +180,16 @@ test('a Bible is sent as one book, never as a section per biblical book; other a
   assert.equal(mainItems(fake).filter(item => item.data.bookTitle && item.data.bookTitle.startsWith('Concordia Triglotta')).length, triglottaWorks.length, 'the Book of Concord keeps a section per document');
   const { entries } = buildLibrary([...loebWorks, loeb36, plato]);
   assert.equal(isBible(entries[0]), false, 'Plato is not a Bible');
+});
+
+test('a section of a volume of a set has the set as its book, the volume number, and the volume title in Extra', async () => {
+  const { fake, zotero, links } = setup();
+  const volume = { ...loeb36, set: 'Loeb Classical Library', volume: '36', title: 'Loeb Classical Library', subtitle: 'Volume 36: Euthyphro. Apology. Crito. Phaedo. Phaedrus.' };
+  await sendToZotero([...loebWorks, volume, plato, copy('c0py0000000t', loeb36.id)], links, zotero);
+  const [section] = fake.byTitle('Phaedo');
+  assert.equal(section.data.bookTitle, 'Loeb Classical Library');
+  assert.equal(section.data.volume, '36');
+  assert.equal(section.data.extra, 'volume-title: Euthyphro. Apology. Crito. Phaedo. Phaedrus.');
 });
 
 test('the companion has matching .cmd and .sh launchers', () => {

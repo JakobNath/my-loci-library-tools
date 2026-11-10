@@ -101,7 +101,8 @@ export function bibtex(entries, worksById, authorsById) {
     const key = freeCitationKey(citationKeyBase(item, entry.edition.year), used);
     used.add(key);
     const fields = [
-      ['title', item.title],
+      ['title', item['volume-title'] || item.title],
+      ['maintitle', item['volume-title'] ? item.title : null],
       ['author', item.author.map(bibName).join(' and ')],
       ['editor', (item.editor || []).map(bibName).join(' and ')],
       ['translator', (item.translator || []).map(bibName).join(' and ')],

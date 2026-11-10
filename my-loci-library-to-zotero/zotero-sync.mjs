@@ -190,14 +190,15 @@ async function mergeInto(zotero, key, ours, collection, keepBefore = () => {}) {
   const differences = [];
   const change = {};
   for (const [field, value] of Object.entries(ours)) {
-    if (field === 'tags' || field === 'itemType') continue; // an item's type is never changed
+    if (field === 'tags' || field === 'itemType' || field === 'extra') continue; // an item's type is never changed
     if (JSON.stringify(current.data[field] ?? '') !== JSON.stringify(value)) {
       change[field] = value;
       if (current.data[field]) differences.push(`${field} was ${JSON.stringify(current.data[field])}`);
     }
   }
   if (String(current.data.url || '').includes('/#/book/')) { change.url = ''; change.archiveLocation = ''; }
-  const extra = extraWithout(current.data.extra);
+  // Extra: our one line (a volume's own title), and every line a person wrote.
+  const extra = [ours.extra || '', extraWithout(current.data.extra)].filter(Boolean).join('\n');
   if (extra !== (current.data.extra || '')) change.extra = extra;
   const tags = [...(current.data.tags || []).filter(tag => !LOCI_TAGS.includes(tag.tag)), ...ours.tags.map(tag => ({ tag }))];
   if (JSON.stringify(tags) !== JSON.stringify(current.data.tags || [])) change.tags = tags;

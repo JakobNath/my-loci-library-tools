@@ -5,7 +5,7 @@ import { newRecord, withField, validateRecord, recordToFileText, FIELDS } from '
 import { mergeRecords } from '../merge.js';
 import { keyBetween, keysForShelf } from '../shelf-order.js';
 import { escapeHtml } from '../html.js';
-import { editionToCsl, cslName } from '../zotero.js';
+import { editionToCsl, cslName, volumeOfSet } from '../zotero.js';
 import { equal, same, ok, throws } from './check.js';
 import { SHARED_DEFAULTS, settingsToFileText } from '../settings.js';
 import { trashBook, restoreBook, trashedItems } from '../trash.js';
@@ -126,6 +126,26 @@ export const tests = [
       same(item.issued, { 'date-parts': [[1991]] });
       same(item['original-date'], { 'date-parts': [[397]] });
       equal(item['collection-title'], "Oxford World's Classics");
+    },
+  },
+  {
+    name: 'a collection of many authors is cited under its editors, and a volume of a set keeps the set as its title',
+    fn() {
+      const clement = newRecord('author', 'c1ementr0me1', NOW_TEST, { name: 'Clement of Rome' });
+      const ignatius = newRecord('author', '1gnat1usant1', NOW_TEST, { name: 'Ignatius of Antioch' });
+      const works = [newRecord('work', 'w0rk0000000g', NOW_TEST, { title: '1 Clement', authors: [clement.id] }), newRecord('work', 'w0rk0000000h', NOW_TEST, { title: 'Letters of Ignatius', authors: [ignatius.id] })];
+      const anf = newRecord('edition', 'anf0v0lume01', NOW_TEST, {
+        title: 'The Ante-Nicene Fathers', subtitle: 'Volume 1: The Apostolic Fathers, Justin Martyr, Irenaeus', set: 'The Ante-Nicene Fathers', volume: '1',
+        contents: works.map(work => ({ work: work.id, extent: 'complete', translator: null, pages: null })), contributors: [{ name: 'Alexander Roberts', role: 'editor' }],
+      });
+      const item = editionToCsl(anf, byId(works), byId([clement, ignatius]));
+      same(item.author, [], 'no authors: Clement and Ignatius are not the authors of the volume');
+      same(item.editor, [{ family: 'Roberts', given: 'Alexander' }]);
+      equal(item.title, 'The Ante-Nicene Fathers');
+      equal(item.volume, '1');
+      equal(item['volume-title'], 'The Apostolic Fathers, Justin Martyr, Irenaeus');
+      equal(editionToCsl(loeb36, byId(loebWorks), byId([plato])).author[0].literal, 'Plato', 'a collection by one author keeps its author');
+      equal(volumeOfSet({ ...anf, subtitle: 'Volume 1' }).volumeTitle, '', 'a volume with no title of its own');
     },
   },
   {
