@@ -5,17 +5,27 @@ import { sortYearOf } from './dating.js';
 
 const ROLE_TO_CSL = { translator: 'translator', editor: 'editor', illustrator: 'illustrator' };
 
+// Ancient and medieval writers are known by a whole name, not a surname, and
+// Chicago lists them that way ("Ignatius of Antioch", "Thomas à Kempis",
+// "Justin Martyr", "John Chrysostom"; Chicago Manual of Style, names of persons
+// in antiquity and the Middle Ages). Such names are kept whole: a name with a
+// joining word (of, à, the), or ending in one of these customary epithets.
+const WHOLE_NAME = /\s(of|à|a|the)\s|\s(Martyr|Chrysostom|Nazianzen|Damascene|Aquinas|Confessor|Venerable|Great)$/;
+
 /**
- * A person's name in CSL form: family and given names when the name has a
- * sort form ("Chemnitz, Martin"), otherwise the name as one piece.
+ * A person's name in CSL form. A sort form with a comma ("Chemnitz, Martin")
+ * gives family and given names; a sort form without one keeps the name whole,
+ * as does a single word ("Augustine") or a premodern name ("Ignatius of
+ * Antioch"); otherwise the last word is the family name.
  */
 export function cslName(name, sortName = null) {
   if (sortName && sortName.includes(',')) {
     const [family, given] = sortName.split(',').map(part => part.trim());
     return { family, given };
   }
+  if (sortName) return { literal: sortName.trim() };
   const words = name.trim().split(/\s+/);
-  if (words.length === 1) return { literal: name.trim() };
+  if (words.length === 1 || WHOLE_NAME.test(name.trim())) return { literal: name.trim() };
   return { family: words[words.length - 1], given: words.slice(0, -1).join(' ') };
 }
 
@@ -74,9 +84,10 @@ export function editionToCsl(edition, worksById, authorsById) {
   if (edition.isbn) item.ISBN = edition.isbn;
   if (edition.languages.length) item.language = edition.languages.join(', ');
 
-  // The original date shows in Chicago citations: "(1991; orig. 397)".
-  // For one work it is that work's sort year; for an anthology, its earliest.
-  const years = works.map(sortYearOf).filter(year => year !== null);
-  if (years.length) item['original-date'] = { 'date-parts': [[Math.min(...years)]] };
+  // The original date shows in Chicago citations: "(1991; orig. 397)". Only a
+  // book holding one work has one: a collection has no single original date
+  // (the Concordia Triglotta is not "orig. 301"), so its works carry their own.
+  const year = works.length === 1 ? sortYearOf(works[0]) : null;
+  if (year !== null) item['original-date'] = { 'date-parts': [[year]] };
   return item;
 }

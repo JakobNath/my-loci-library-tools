@@ -129,12 +129,17 @@ export const tests = [
     },
   },
   {
-    name: 'an anthology gets its earliest date, and BC years stay negative (Loeb 36, #9)',
+    name: 'an anthology has no original date of its own (Loeb 36, #9); premodern names stay whole',
     fn() {
       const item = editionToCsl(loeb36, byId(loebWorks), byId([plato]));
-      same(item['original-date'], { 'date-parts': [[-399]] });
+      equal(item['original-date'], undefined, 'not "orig. 399 BC" for a collection of five dialogues');
       equal(item['collection-number'], '36');
       same(cslName('Martin Chemnitz', 'Chemnitz, Martin'), { family: 'Chemnitz', given: 'Martin' });
+      same(cslName('Charles Dickens'), { family: 'Dickens', given: 'Charles' });
+      for (const name of ['Ignatius of Antioch', 'Clement of Rome', 'Thomas à Kempis', 'Justin Martyr', 'John Chrysostom', 'Theodoret of Cyrus']) {
+        same(cslName(name), { literal: name }, name);
+      }
+      same(cslName('Pseudo-Dionysius', 'Pseudo-Dionysius the Areopagite'), { literal: 'Pseudo-Dionysius the Areopagite' }, 'a sort form without a comma keeps the name whole');
     },
   },
   {

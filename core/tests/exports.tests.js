@@ -7,7 +7,7 @@ import { catalogCsv, valueCsv, catalogJson, cslJson, bibtex } from '../exports.j
 import { valueHistoryWithout } from '../entry.js';
 import { archiveReminder, lastBackupLine } from '../backup-status.js';
 import { equal, same, ok } from './check.js';
-import { na28, na28Works, loeb36, loebWorks, plato, augustine, confessions, chadwick } from './samples.js';
+import { na28, na28Works, loeb36, loebWorks, plato, augustine, confessions, chadwick, edition } from './samples.js';
 
 const NOW = '2026-11-10T12:00:00Z';
 const copy = (id, edition, values) => newRecord('copy', id, NOW, { edition, added: '2026-11-10', ...values });
@@ -69,7 +69,10 @@ export const tests = [
       ok(bib.includes('@book{Augustine1991,'), 'keys are author and year, as Better BibTeX makes them in Zotero');
       ok(bib.includes('@book{Novum2012,'), 'or the first word of the title when there is no author');
       ok(bib.includes('origdate = {0397}'));
-      ok(bib.includes('origdate = {-0398}'), '399 BC, counted as biblatex does');
+      ok(!bib.split('@book{Plato1914,')[1].split('@book')[0].includes('origdate'), 'a collection has no original date of its own');
+      const phaedo = edition('ph2d0s1ngle0', 'Phaedo', [loebWorks[0].id], { year: 1914 });
+      const single = buildLibrary([...loebWorks, phaedo, plato]);
+      ok(bibtex(single.entries, single.worksById, single.authorsById).includes('origdate = {-0398}'), '399 BC, counted as biblatex does');
       ok(bib.includes('title = {Confessions}'));
       equal((bib.match(/@book\{/g) || []).length, library.entries.length, 'one entry per edition');
       equal(new Set(bib.match(/@book\{[^,]+/g)).size, library.entries.length, 'keys are unique');
