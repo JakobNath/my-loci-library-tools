@@ -110,18 +110,85 @@ export function combineFound(first, second) {
 }
 
 /**
- * Read Open Library's search answer (/search.json) into a short list of
- * candidates to choose from, for a search by title.
- * @returns {{ title: string, authors: string[], year: string, isbn: string }[]}
+ * The Open Library searches for what a person typed, as query texts. The
+ * first is the text as typed. People often add a publisher or series ("anna
+ * karenina everyman's library", "complete works plato hackett"), words that
+ * are in no title and push the right book out of the results; so the last
+ * word, and the last two, are also tried as the publisher, which also brings
+ * that publisher's edition to the top.
+ * @returns {string[]}
  */
-export function candidatesFromSearch(answer) {
-  return ((answer && answer.docs) || []).slice(0, 10).map(doc => ({
-    title: doc.title + (doc.subtitle ? `: ${doc.subtitle}` : ''),
-    authors: doc.author_name || [],
-    year: doc.first_publish_year ? String(doc.first_publish_year) : '',
-    isbn: (doc.isbn || []).find(code => code.length === 13) || '',
-    cover: doc.cover_i || null, // Open Library's number for the work's cover picture
-  }));
+export function searchQueries(text) {
+  // Little words (of, the, and…) are left out: Open Library requires every word
+  // it is given, and "complete works of plato" would miss a book titled "Complete works".
+  const all = String(text || '').trim().split(/\s+/).filter(Boolean);
+  const kept = all.filter(word => !IGNORED_IN_SEARCH.has(word.toLowerCase()));
+  const words = kept.length ? kept : all;
+  const queries = [words.join(' ')];
+  const stem = word => word.toLowerCase().replace(/[’']s$/, '').replace(/[^\p{L}\p{N}]/gu, '');
+  for (const count of [1, 2]) {
+    if (words.length - count < 2) continue;
+    const publisher = words.slice(-count).map(stem).filter(word => word.length > 2 && !['library', 'press', 'books', 'classics', 'edition'].includes(word));
+    if (publisher.length) queries.push(`${words.slice(0, -count).join(' ')} publisher:(${publisher.map(word => `${word}*`).join(' ')})`);
+  }
+  return [...new Set(queries)];
+}
+
+// A name in Latin letters, from the forms Open Library knows: "Plato" rather than "Πλάτων".
+const latin = text => /^[\p{Script=Latin}\p{N}\s.,'’()-]+$/u.test(text);
+function nameInLatin(name, others) {
+  if (latin(name)) return name;
+  const usable = (others || []).filter(other => latin(other) && other.trim().length > 2);
+  // The form written as a person would ("Plato"), before one in capitals ("PLATO").
+  return usable.find(other => other !== other.toUpperCase()) || usable[0] || name;
+}
+
+// The words of a search that should be found in a result, plain and lowercase.
+const IGNORED_IN_SEARCH = new Set(['a', 'an', 'the', 'of', 'and', 'in', 'on', 'to', 'for', 'by', 'with']);
+const searchWords = text => String(text || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  .replace(/[’']s\b/g, '').split(/[^\p{L}\p{N}]+/u).filter(word => word && !IGNORED_IN_SEARCH.has(word));
+
+/**
+ * Read Open Library's search answers (/search.json, with each work's best
+ * matching edition) into one list of candidates, each a specific edition: its
+ * own title (in English when there is one), the author in Latin letters, its
+ * publisher, year, ISBN and cover. Works found by more than one search appear
+ * once. With the text that was typed, the list is ordered by how many of its
+ * words each candidate's title, authors and publisher hold, so "complete works
+ * plato hackett" puts Hackett's Complete Works of Plato first.
+ * @param {object[]} answers in order of preference
+ * @param {string} [text] what was typed
+ * @returns {{ title: string, authors: string[], publisher: string, year: string, isbn: string, cover: number|null }[]}
+ */
+export function candidatesFromSearch(answers, text = '') {
+  if (!Array.isArray(answers)) answers = [answers];
+  const seen = new Set();
+  const candidates = [];
+  for (const answer of answers) {
+    for (const doc of (answer && answer.docs) || []) {
+      if (seen.has(doc.key || doc.title)) continue;
+      seen.add(doc.key || doc.title);
+      const edition = (doc.editions && doc.editions.docs && doc.editions.docs[0]) || {};
+      const isbns = edition.isbn || doc.isbn || [];
+      candidates.push({
+        title: edition.title || (doc.title + (doc.subtitle ? `: ${doc.subtitle}` : '')),
+        authors: (doc.author_name || []).map(name => nameInLatin(name, doc.author_alternative_name)),
+        publisher: (edition.publisher || [])[0] || '',
+        year: String(yearFromText((edition.publish_date || [])[0]) || doc.first_publish_year || ''),
+        isbn: isbns.find(code => code.length === 13) || isbns[0] || '',
+        cover: edition.cover_i || doc.cover_i || null, // Open Library's number for the cover picture
+      });
+    }
+  }
+  const wanted = searchWords(text);
+  if (!wanted.length) return candidates.slice(0, 10);
+  const score = candidate => {
+    const has = new Set(searchWords([candidate.title, ...candidate.authors, candidate.publisher].join(' ')));
+    return wanted.filter(word => has.has(word)).length;
+  };
+  // A stable sort: among equal scores, Open Library's own order stays.
+  return candidates.map((candidate, i) => ({ candidate, i, score: score(candidate) }))
+    .sort((a, b) => b.score - a.score || a.i - b.i).slice(0, 10).map(item => item.candidate);
 }
 
 /**

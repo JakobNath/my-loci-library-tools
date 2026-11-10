@@ -1,7 +1,7 @@
 // Reading lookup answers (recorded from Open Library on 9 November 2026, and
 // in Google Books' documented format), and the matching suggestions.
 
-import { fromOpenLibrary, fromGoogleBooks, combineFound, candidatesFromSearch, workFromOpenLibrary, suggestOriginalDates, yearFromText, titleCase } from '../lookup.js';
+import { fromOpenLibrary, fromGoogleBooks, combineFound, candidatesFromSearch, searchQueries, workFromOpenLibrary, suggestOriginalDates, yearFromText, titleCase } from '../lookup.js';
 import { editionsWithIsbn, suggestWorks } from '../matching.js';
 import { buildLibrary } from '../library.js';
 import { equal, same, ok } from './check.js';
@@ -87,7 +87,27 @@ export const tests = [
     name: 'a title search gives candidates with an ISBN-13 and a cover number where there are ones',
     fn() {
       const candidates = candidatesFromSearch({ docs: [{ title: 'Confessions', author_name: ['Augustine of Hippo'], first_publish_year: 1482, isbn: ['0199537828', '9780199537822'], cover_i: 8231856 }] });
-      same(candidates, [{ title: 'Confessions', authors: ['Augustine of Hippo'], year: '1482', isbn: '9780199537822', cover: 8231856 }]);
+      same(candidates, [{ title: 'Confessions', authors: ['Augustine of Hippo'], publisher: '', year: '1482', isbn: '9780199537822', cover: 8231856 }]);
+    },
+  },
+  {
+    name: 'a title search shows each work as its best-matching edition, in English and Latin letters, and the publisher\'s edition first',
+    fn() {
+      // Answers shaped as Open Library gave them on 2026-11-10.
+      const asTyped = { docs: [{ key: '/works/OL12', title: 'Анна Каренина', author_name: ['Leo Tolstoy'], first_publish_year: 1876, editions: { docs: [{ title: 'Anna Karenina', publisher: ['Penguin'], publish_date: ['1997'], isbn: ['0140262997', '9780140262995'], cover_i: 10598462 }] } }] };
+      const withPublisher = { docs: [{ key: '/works/OL12', title: 'Анна Каренина', author_name: ['Leo Tolstoy'], editions: { docs: [{ title: "Anna Karenina (Everyman's Library Classics)", publisher: ["Everyman's Library"], publish_date: ['April 23, 1992'], isbn: ['1857150589'], cover_i: 908565 }] } }] };
+      const [anna] = candidatesFromSearch([withPublisher, asTyped]);
+      same(anna, { title: "Anna Karenina (Everyman's Library Classics)", authors: ['Leo Tolstoy'], publisher: "Everyman's Library", year: '1992', isbn: '1857150589', cover: 908565 });
+      equal(candidatesFromSearch([withPublisher, asTyped]).length, 1, 'one work, once');
+      const noise = { docs: [{ key: '/works/A', title: 'Plotinos', author_name: ['Plotinus'], editions: { docs: [{ title: 'Plotinos', publisher: ['Platonist Press'] }] } }, { key: '/works/B', title: 'The Complete Works of Plato', author_name: ['Plato'], editions: { docs: [{ title: 'Complete works', publisher: ['Hackett Publishing Company'] }] } }] };
+      equal(candidatesFromSearch([noise], 'complete works plato hackett')[0].publisher, 'Hackett Publishing Company', 'the result holding every word comes first');
+      const plato = candidatesFromSearch({ docs: [{ key: '/works/OL1', title: 'The Complete Works of Plato', author_name: ['Πλάτων'], author_alternative_name: ['PLATO', 'Plato'], editions: { docs: [{ title: 'Complete works', publisher: ['Hackett Publishing Company'], isbn: ['9780872203495'] }] } }] })[0];
+      same(plato.authors, ['Plato'], 'the author in Latin letters, written normally');
+      equal(plato.publisher, 'Hackett Publishing Company');
+      same(searchQueries("anna karenina everyman's library"), ["anna karenina everyman's library", 'anna karenina publisher:(everyman*)'], '"library" alone is too common to name a publisher');
+      same(searchQueries('complete works plato hackett'), ['complete works plato hackett', 'complete works plato publisher:(hackett*)', 'complete works publisher:(plato* hackett*)']);
+      same(searchQueries('confessions'), ['confessions'], 'one or two words: only as typed');
+      equal(searchQueries('complete works of plato hackett')[0], 'complete works plato hackett', 'little words are left out');
     },
   },
   {
