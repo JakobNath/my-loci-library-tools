@@ -7,6 +7,7 @@ import { keyBetween, keysForShelf } from '../shelf-order.js';
 import { escapeHtml } from '../html.js';
 import { editionToCsl, cslName } from '../zotero.js';
 import { equal, same, ok, throws } from './check.js';
+import { SHARED_DEFAULTS, settingsToFileText } from '../settings.js';
 import { na28, na28Works, loeb36, loebWorks, plato, chadwick, confessions, augustine, byId } from './samples.js';
 
 const T1 = '2026-11-09T10:00:00Z';
@@ -129,6 +130,15 @@ export const tests = [
       same(item['original-date'], { 'date-parts': [[-399]] });
       equal(item['collection-number'], '36');
       same(cslName('Martin Chemnitz', 'Chemnitz, Martin'), { family: 'Chemnitz', given: 'Martin' });
+    },
+  },
+  {
+    name: 'settings.json is written with its keys in a fixed order, and missing settings take their defaults',
+    fn() {
+      const text = settingsToFileText({ views: [{ name: 'Office' }], currency: '€', dateStyle: 'CE' });
+      same(Object.keys(JSON.parse(text)), Object.keys(SHARED_DEFAULTS));
+      equal(JSON.parse(text).currency, '€');
+      ok(text.endsWith('}\n'), 'a newline at the end');
     },
   },
 ];

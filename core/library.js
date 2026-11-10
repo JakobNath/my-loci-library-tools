@@ -68,6 +68,9 @@ export function entryOf(edition, copies, worksById, authorsById, withSearch = tr
     value: copies.filter(copy => copy.status === 'owned').reduce((sum, copy) => sum + (copy.value || 0), 0),
     location: (copies.find(copy => copy.location.length) || { location: [] }).location,
     binding: (copies.find(copy => copy.binding) || { binding: '' }).binding,
+    categories: [...new Set(works.map(work => work.category).filter(Boolean))],
+    tags: [...new Set(works.flatMap(work => work.tags))],
+    needsDate: works.some(work => sortYearOf(work) === null),
     searchText: withSearch ? searchTextOf(edition, worksById, authorsById, copies) : null,
   };
 }
@@ -105,6 +108,7 @@ export function sortNameOf(author) {
 const textKey = text => (text ? normalizeForSearch(text).replace(/\d+/g, digits => digits.padStart(6, '0')) : null);
 export const SORTS = {
   title: { label: 'Title', key: entry => textKey(entry.edition.title.replace(/^(the|a|an) /i, '')) },
+  subtitle: { label: 'Subtitle', key: entry => textKey(entry.edition.subtitle) },
   author: { label: 'Author', key: entry => textKey(entry.authorSort) },
   originalDate: { label: 'Original date', key: entry => entry.sortYear },
   year: { label: 'Edition year', key: entry => entry.edition.year },
@@ -112,6 +116,9 @@ export const SORTS = {
   value: { label: 'Value', key: entry => entry.value || null, descending: true },
   location: { label: 'Location', key: entry => textKey(entry.location.join(' ')) },
   binding: { label: 'Binding', key: entry => textKey(entry.binding) },
+  category: { label: 'Category', key: entry => textKey(entry.categories[0]) },
+  publisher: { label: 'Publisher', key: entry => textKey(entry.edition.publisher) },
+  pages: { label: 'Pages', key: entry => entry.edition.pages },
   series: { label: 'Series', key: entry => textKey([entry.edition.series || entry.edition.set, entry.edition.seriesNumber || entry.edition.volume].filter(Boolean).join(' ')) },
 };
 
@@ -133,13 +140,57 @@ export function sortEntries(entries, sort) {
   return keyed.map(item => item.entry);
 }
 
+// A view: which books to show and in what order. Saved views (PLAN.md,
+// "Saved views") are these same objects with a name.
+export const VIEW_DEFAULTS = { medium: 'physical', sort: 'title', status: 'owned', location: [], category: '', tag: '', needsDate: false };
+
+/** Whether a location lies at or inside another (["Home", "Office"] is inside ["Home"]). */
+export const isInside = (location, outer) => outer.every((part, i) => location[i] === part);
+
+function matchesStatus(entry, status) {
+  if (status === 'owned') return entry.owned;
+  if (status === 'gone') return !entry.owned;
+  return status === 'all' || entry.copies.some(copy => copy.status === status);
+}
+
 /**
- * The entries to show, filtered and sorted. Never changes its input.
+ * The entries a view shows, in its order. Never changes its input.
  * @param {object[]} entries
- * @param {{ medium?: 'physical'|'logos'|'all', sort?: string, showGone?: boolean }} view
+ * @param {Partial<typeof VIEW_DEFAULTS>} view status: 'owned', 'gone', 'all' or one
+ *   copy status; location: a path, matching books there or further inside
  */
-export function viewEntries(entries, { medium = 'physical', sort = 'title', showGone = false } = {}) {
-  return sortEntries(entries.filter(entry => (medium === 'all' || entry.edition.medium === medium) && (showGone || entry.owned)), sort);
+export function viewEntries(entries, view = {}) {
+  const { medium, sort, status, location, category, tag, needsDate } = { ...VIEW_DEFAULTS, ...view };
+  return sortEntries(entries.filter(entry => (medium === 'all' || entry.edition.medium === medium)
+    && matchesStatus(entry, status)
+    && (!location.length || entry.copies.some(copy => isInside(copy.location, location)))
+    && (!category || entry.categories.includes(category))
+    && (!tag || entry.tags.includes(tag))
+    && (!needsDate || entry.needsDate)), sort);
+}
+
+/** What the filters can offer: every location (and each place containing one), category and tag in use. */
+export function filterChoices(entries) {
+  const locations = new Map();
+  const categories = new Set();
+  const tags = new Set();
+  for (const entry of entries) {
+    for (const copy of entry.copies) {
+      // Empty parts (a shelf left blank) are not offered as places of their own.
+      for (let depth = 1; depth <= copy.location.length && copy.location[depth - 1]; depth++) {
+        const path = copy.location.slice(0, depth);
+        locations.set(JSON.stringify(path), path);
+      }
+    }
+    entry.categories.forEach(category => categories.add(category));
+    entry.tags.forEach(tag => tags.add(tag));
+  }
+  const byText = (a, b) => a.localeCompare(b);
+  return {
+    locations: [...locations.values()].sort((a, b) => byText(a.join(' › '), b.join(' › '))),
+    categories: [...categories].sort(byText),
+    tags: [...tags].sort(byText),
+  };
 }
 
 /**

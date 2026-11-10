@@ -5,8 +5,9 @@ import { countPages } from '../pages.js';
 import { estimateSize } from '../sizes.js';
 import { normalizeForSearch, searchTextOf, matchesSearch } from '../search.js';
 import { parseContentsLines, contentsLine } from '../contents.js';
-import { buildLibrary, viewEntries, searchEntries, authorLineOf, sortEntries } from '../library.js';
+import { buildLibrary, viewEntries, searchEntries, authorLineOf, sortEntries, filterChoices, SORTS } from '../library.js';
 import { equal, same, ok } from './check.js';
+import { newRecord } from '../records.js';
 import { na28, na28Works, triglotta, triglottaWorks, loeb36, loebWorks, plato, augustine, confessions, chadwick, work, edition, byId } from './samples.js';
 
 export const tests = [
@@ -149,6 +150,33 @@ export const tests = [
       const sorted = sortEntries([entry('Volume 10'), entry('The Volume 9'), entry('Apology'), entry('Écrits')], 'title');
       same(sorted.map(e => e.edition.title), ['Apology', 'Écrits', 'The Volume 9', 'Volume 10']);
       same(sortEntries([entry('A', null), entry('B', 50), entry('C', 90)], 'value').map(e => e.edition.title), ['C', 'B', 'A']);
+    },
+  },
+  {
+    name: 'filters: location (and every place inside it), category, tag, status and "needs original date"',
+    fn() {
+      const at = (id, title, location, status = 'owned', workExtra = {}, datings = [{ text: '1950', earliest: 1950, latest: 1950, certainty: 'exact', kind: 'published', note: null, working: true }]) => [
+        work(`w${id}`, title, datings, workExtra),
+        edition(`e${id}`, title, [`w${id}`]),
+        newRecord('copy', `c${id}`, '2026-11-10T10:00:00Z', { edition: `e${id}`, location, status, added: '2026-11-10' }),
+      ];
+      const { entries } = buildLibrary([
+        ...at('00000000001', 'Office A', ['Home', 'Office', 'Case 1'], 'owned', { category: 'Philosophy', tags: ['Greek'] }),
+        ...at('00000000002', 'Office B', ['Home', 'Office', 'Case 2'], 'owned', { category: 'Theology' }),
+        ...at('00000000003', 'Bedroom', ['Home', 'Bedroom'], 'owned', {}, []),
+        ...at('00000000004', 'Sold one', ['Home', 'Office', 'Case 1'], 'sold'),
+      ]);
+      const titles = view => viewEntries(entries, view).map(entry => entry.edition.title);
+      same(titles({ location: ['Home', 'Office'] }), ['Office A', 'Office B'], 'a room includes its cases; sold books stay out');
+      same(titles({ location: ['Home', 'Office', 'Case 1'], status: 'all' }), ['Office A', 'Sold one']);
+      same(titles({ status: 'sold' }), ['Sold one']);
+      same(titles({ category: 'Philosophy' }), ['Office A']);
+      same(titles({ tag: 'Greek' }), ['Office A']);
+      same(titles({ needsDate: true }), ['Bedroom']);
+      const choices = filterChoices(entries);
+      same(choices.locations.map(path => path.join(' › ')), ['Home', 'Home › Bedroom', 'Home › Office', 'Home › Office › Case 1', 'Home › Office › Case 2']);
+      same(choices.categories, ['Philosophy', 'Theology']);
+      ok(['title', 'subtitle', 'author', 'originalDate', 'year', 'binding', 'series', 'category', 'location', 'value', 'added'].every(key => key in SORTS), 'every sort PLAN.md names');
     },
   },
 ];
