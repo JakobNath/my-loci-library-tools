@@ -56,7 +56,7 @@ test('a second run sends nothing; a changed shelf is sent quickly, alone', async
   await sendToZotero(records, links, zotero);
   const before = fake.calls.length;
   assert.match((await sendToZotero(records, links, zotero))[0], /0 new, 0 updated, 6 unchanged/);
-  assert.equal(fake.calls.length, before, 'not one request to Zotero');
+  assert.deepEqual(fake.calls.slice(before), ['GET /collections?limit=100', 'GET /items?format=versions&includeTrashed=0'], 'only two small checks: the collection, and which items still exist');
   const moved = records.map(record => (record.id === 'c0py0000000p' ? withField(record, 'location', ['Home', 'Study'], NOW) : record));
   const started = Date.now();
   assert.match((await sendToZotero(moved, links, zotero))[0], /0 new, 1 updated/);
@@ -97,6 +97,30 @@ test('on the first run a book already in Zotero is linked, keeps its pinned key,
   assert.deepEqual(item.tags, [{ tag: 'patristics' }]);
   assert.deepEqual(item.collections.length, 2, 'its other collection stays');
   assert.ok(report.some(line => line.includes('publisher was "OUP"')), 'the overwritten difference is reported');
+});
+
+test('items deleted in Zotero, and a deleted collection, are made again on the next run, with the same keys', async () => {
+  const { fake, zotero, links } = setup();
+  const records = sampleRecords();
+  await sendToZotero(records, links, zotero);
+  const keyBefore = links.items[chadwick.id].citationKey;
+  for (const key of [...fake.items.keys()]) fake.remove(key);
+  fake.removeCollections();
+  const report = await sendToZotero(records, links, zotero);
+  assert.match(report.join(' '), /6 items were missing in Zotero/);
+  assert.match(report[0], /Zotero: 6 new/);
+  assert.equal(fake.items.size, 6);
+  assert.equal(links.items[chadwick.id].citationKey, keyBefore, 'the pinned key stays the same');
+  assert.equal(fake.byTitle('Confessions')[0].data.collections[0], links.collection, 'in the new collection');
+  assert.match((await sendToZotero(records, links, zotero))[0], /0 new, 0 updated, 6 unchanged/);
+});
+
+test('a run stopped part-way keeps what it already sent', async () => {
+  const { fake, zotero, links } = setup();
+  let saves = 0;
+  await sendToZotero(sampleRecords(), links, zotero, { save: () => { saves++; } });
+  assert.ok(saves >= 1, 'the link file is saved during the run, not only at the end');
+  assert.equal(Object.values(links.items).filter(link => link.key).length, fake.items.size);
 });
 
 test('the companion has matching .cmd and .sh launchers', () => {

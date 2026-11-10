@@ -51,6 +51,11 @@ export function connectToZotero({ userId, key, fetchFn = fetch }) {
       }
     },
 
+    /** The keys of every item in the library, not counting those in Zotero's trash (one small request). */
+    async presentKeys() {
+      return new Set(Object.keys(await call('GET', '/items?format=versions&includeTrashed=0')));
+    },
+
     /** One item: { key, version, data }. */
     item: itemKey => call('GET', `/items/${itemKey}`),
 

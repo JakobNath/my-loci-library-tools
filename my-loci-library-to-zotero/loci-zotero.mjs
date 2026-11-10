@@ -17,16 +17,23 @@ import { sendToZotero } from './zotero-sync.mjs';
 const LINKS = join('integrations', 'zotero-links.json');
 const toolsFolder = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-/** Load the link file, run one sync, and save the link file (even after an error part-way). */
+/**
+ * Load the link file, run one sync, and keep the link file saved as it goes
+ * (after every batch, and at the end even after an error), so a run that is
+ * stopped part-way never forgets what it already sent.
+ */
 export async function runZotero(dataRepo, zotero, options = {}) {
   const path = join(dataRepo, LINKS);
   const links = existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : { format: 1, collection: null, items: {} };
-  try {
-    return await sendToZotero(readRecords(dataRepo), links, zotero, options);
-  } finally {
+  const save = () => {
     mkdirSync(join(dataRepo, 'integrations'), { recursive: true });
     const items = Object.fromEntries(Object.entries(links.items).sort(([a], [b]) => a.localeCompare(b)));
     writeFileSync(path, `${JSON.stringify({ format: 1, collection: links.collection, items }, null, 2)}\n`);
+  };
+  try {
+    return await sendToZotero(readRecords(dataRepo), links, zotero, { ...options, save });
+  } finally {
+    save();
   }
 }
 
@@ -39,11 +46,13 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
     const config = JSON.parse(readFileSync(join(toolsFolder, 'config.json'), 'utf8'));
     if (!config.zoteroUserId || !config.zoteroKey) throw new Error('config.json needs "zoteroUserId" and "zoteroKey" (the tools README explains where to find them).');
     const useGit = !args.includes('--no-git') && isGitRepo(dataRepo);
+    console.log(`Reading the catalog in ${dataRepo}…`);
     if (useGit) git(dataRepo, 'pull', '--ff-only');
     const collectionAt = args.indexOf('--collection');
     const lines = await runZotero(dataRepo, connectToZotero({ userId: String(config.zoteroUserId), key: config.zoteroKey }), {
       collectionName: collectionAt >= 0 ? args[collectionAt + 1] : 'My Loci Library',
       appUrl: config.appUrl,
+      onProgress: text => console.log(text),
     });
     if (useGit && commitAndPush(dataRepo, [LINKS], 'Update the Zotero links')) lines.push('Link file committed and pushed.');
     lines.push(`Done in ${((Date.now() - started) / 1000).toFixed(1)} s. Zotero on this laptop picks the changes up with its next sync.`);

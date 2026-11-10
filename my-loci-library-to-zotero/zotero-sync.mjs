@@ -21,13 +21,27 @@ const titleYear = data => `${normalizeForSearch(data.title || '')}|${String(data
  * @param {object[]} records every record in the data repository
  * @param {{ collection: string|null, items: Record<string, { key: string, citationKey: string, sent: string }> }} links integrations/zotero-links.json (changed in place)
  * @param {ReturnType<import('./zotero-api.mjs').connectToZotero>} zotero
- * @param {{ collectionName?: string, appUrl?: string }} options
+ * @param {{ collectionName?: string, appUrl?: string, onProgress?: (text: string) => void, save?: () => void }} options
+ *   onProgress: told what is happening, for the command line; save: keeps the link file,
+ *   called after each batch, so a run that is stopped part-way loses nothing
  * @returns {Promise<string[]>} the report, one line each
  */
-export async function sendToZotero(records, links, zotero, { collectionName = 'My Loci Library', appUrl } = {}) {
+export async function sendToZotero(records, links, zotero, { collectionName = 'My Loci Library', appUrl, onProgress = () => {}, save = () => {} } = {}) {
   const report = [];
   const firstRun = !Object.keys(links.items).length;
-  links.collection = links.collection || await zotero.collection(collectionName);
+  onProgress(`Connecting to Zotero (collection "${collectionName}")…`);
+  // The collection is looked up every run: if it was deleted in Zotero it is made again,
+  // and every item is sent again so it joins the new one.
+  const collection = await zotero.collection(collectionName);
+  if (links.collection && links.collection !== collection) for (const link of Object.values(links.items)) link.sent = null;
+  links.collection = collection;
+  // Items deleted in Zotero (or moved to its trash) are sent again, keeping their pinned keys.
+  if (!firstRun) {
+    const present = await zotero.presentKeys();
+    const missing = Object.entries(links.items).filter(([, link]) => link.key && !present.has(link.key));
+    for (const [linkId, link] of missing) links.items[linkId] = { citationKey: link.citationKey };
+    if (missing.length) report.push(`${missing.length} items were missing in Zotero (deleted, or in its trash) and are sent again.`);
+  }
   const library = buildLibrary(records);
   const trashed = records.filter(record => record.type === 'edition' && record.trashed);
 
@@ -57,18 +71,22 @@ export async function sendToZotero(records, links, zotero, { collectionName = 'M
   const toCreate = [];
   let unchanged = 0;
   let updated = 0;
+  onProgress('Comparing with what was sent last time…');
   for (const item of wanted) {
-    const link = links.items[item.linkId];
+    const known = links.items[item.linkId];
+    const link = known && known.key ? known : null; // an item that exists in Zotero
     if (item.tagOnly) {
+      if (!link) continue; // gone from Zotero as well: nothing to tag
       const sent = fingerprint(item.tags);
       if (link.sent === sent) { unchanged++; continue; }
       await mergeInto(zotero, link.key, { tags: item.tags }, links.collection);
       link.sent = sent;
       updated++;
+      save();
       continue;
     }
     const match = !link && firstRun ? existing.byIsbn.get(isbnOf(item.data)) || existing.byTitle.get(titleYear(item.data)) : null;
-    const citationKey = link ? link.citationKey : (match && pinnedKey(match.data.extra)) || freeCitationKey(citationKeyBase(item.csl, item.year), taken);
+    const citationKey = known ? known.citationKey : (match && pinnedKey(match.data.extra)) || freeCitationKey(citationKeyBase(item.csl, item.year), taken);
     taken.add(citationKey);
     const data = { ...item.data, extraLines: { originalDate: item.originalDate, citationKey } };
     const sent = fingerprint([data, item.tags]);
@@ -79,24 +97,34 @@ export async function sendToZotero(records, links, zotero, { collectionName = 'M
       if (match && !link) report.push(...differences.map(text => `  ${item.data.title}: ${text}`));
       links.items[item.linkId] = { key, citationKey, sent };
       updated++;
+      save();
     } else {
       toCreate.push({ item, citationKey, sent, data });
     }
   }
 
-  const made = await zotero.create(toCreate.map(({ data, item }) => ({
-    ...withoutExtraLines(data), extra: extraWith('', data.extraLines), collections: [links.collection], tags: item.tags.map(tag => ({ tag })),
-  })));
-  toCreate.forEach(({ item, citationKey, sent }, i) => { if (made[i]) links.items[item.linkId] = { key: made[i], citationKey, sent }; });
+  // New items go 50 at a time (as many as Zotero takes in one request), and are saved after each batch.
+  const made = [];
+  for (let i = 0; i < toCreate.length; i += 50) {
+    onProgress(`Sending new items: ${i + 1}–${Math.min(i + 50, toCreate.length)} of ${toCreate.length}…`);
+    const batch = toCreate.slice(i, i + 50);
+    const keys = await zotero.create(batch.map(({ data, item }) => ({
+      ...withoutExtraLines(data), extra: extraWith('', data.extraLines), collections: [links.collection], tags: item.tags.map(tag => ({ tag })),
+    })));
+    batch.forEach(({ item, citationKey, sent }, j) => { if (keys[j]) links.items[item.linkId] = { key: keys[j], citationKey, sent }; });
+    made.push(...keys);
+    save();
+  }
   const failed = made.filter(key => !key).length;
 
   // Each section of an anthology is marked as related to the anthology's own item.
   for (const [linkId, link] of Object.entries(links.items)) {
     const book = links.items[linkId.split('/')[0]];
-    if (!linkId.includes('/') || link.related || !book) continue;
+    if (!linkId.includes('/') || link.related || !link.key || !book || !book.key) continue;
     const current = await zotero.item(link.key);
     await zotero.update(link.key, current.version, { relations: { ...(current.data.relations || {}), 'dc:relation': zotero.uri(book.key) } });
     link.related = true;
+    save();
   }
 
   report.unshift(`Zotero: ${made.length - failed} new, ${updated} updated, ${unchanged} unchanged${failed ? `, ${failed} refused by Zotero (run again)` : ''}.`);

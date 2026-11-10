@@ -25,6 +25,7 @@ export function fakeZotero({ delayMs = 0 } = {}) {
     calls.push(`${method} ${path}`);
     const body = options.body ? JSON.parse(options.body) : null;
     let match;
+    if (method === 'GET' && path.startsWith('/items?format=versions')) return answer(200, Object.fromEntries([...items.values()].map(item => [item.key, item.version])));
     if (method === 'GET' && path.startsWith('/collections')) return answer(200, collections);
     if (method === 'POST' && path === '/collections') {
       const key = newKey();
@@ -61,6 +62,9 @@ export function fakeZotero({ delayMs = 0 } = {}) {
     fetchFn,
     calls,
     items,
+    /** Delete items and collections in Zotero, as a person might by hand. */
+    remove(key) { items.delete(key); },
+    removeCollections() { collections.length = 0; },
     /** Put an item straight into the library (as if added in Zotero by hand). */
     add(data) { const key = newKey(); items.set(key, { key, version: ++version, data: { key, ...data } }); return key; },
     byTitle: title => [...items.values()].filter(item => item.data.title === title),
