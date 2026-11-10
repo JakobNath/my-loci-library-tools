@@ -120,6 +120,7 @@ export function candidatesFromSearch(answer) {
     authors: doc.author_name || [],
     year: doc.first_publish_year ? String(doc.first_publish_year) : '',
     isbn: (doc.isbn || []).find(code => code.length === 13) || '',
+    cover: doc.cover_i || null, // Open Library's number for the work's cover picture
   }));
 }
 

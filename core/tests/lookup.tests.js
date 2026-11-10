@@ -84,10 +84,10 @@ export const tests = [
     },
   },
   {
-    name: 'a title search gives candidates with an ISBN-13 where there is one',
+    name: 'a title search gives candidates with an ISBN-13 and a cover number where there are ones',
     fn() {
-      const candidates = candidatesFromSearch({ docs: [{ title: 'Confessions', author_name: ['Augustine of Hippo'], first_publish_year: 1482, isbn: ['0199537828', '9780199537822'] }] });
-      same(candidates, [{ title: 'Confessions', authors: ['Augustine of Hippo'], year: '1482', isbn: '9780199537822' }]);
+      const candidates = candidatesFromSearch({ docs: [{ title: 'Confessions', author_name: ['Augustine of Hippo'], first_publish_year: 1482, isbn: ['0199537828', '9780199537822'], cover_i: 8231856 }] });
+      same(candidates, [{ title: 'Confessions', authors: ['Augustine of Hippo'], year: '1482', isbn: '9780199537822', cover: 8231856 }]);
     },
   },
   {

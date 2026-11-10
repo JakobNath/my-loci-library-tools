@@ -21,6 +21,19 @@ export function isbn13(text) {
   return body + ((10 - (sum % 10)) % 10);
 }
 
+/**
+ * An ISBN found in what was typed or pasted: an ISBN itself, or a link to a
+ * printed book on Amazon, whose address carries the ISBN-10 ("/dp/0199540144").
+ * Nothing is fetched: the link is only read. Kindle links ("/dp/B0...") and
+ * short links (a.co/...) carry no ISBN.
+ * @returns {string|null} 13 digits, or null
+ */
+export function isbnInText(text) {
+  const link = String(text ?? '').match(/\/(?:dp|gp\/product|product)\/([0-9]{9}[0-9X])(?=[/?#]|$)/i);
+  if (link) return isbn13(link[1]);
+  return /^[\d\sX-]+$/i.test(String(text ?? '').trim()) ? isbn13(text) : null;
+}
+
 const key = text => normalizeForSearch(text);
 
 /**
@@ -85,7 +98,7 @@ export function wishFromForm(form, existing, { newId, now }) {
  */
 export function formFromWish(wish) {
   return {
-    edition: { title: wish.title, subtitle: wish.subtitle, contributors: wish.contributors, publisher: wish.publisher, isbn: wish.isbn, languages: [], medium: 'physical', images: [] },
+    edition: { title: wish.title, subtitle: wish.subtitle, contributors: wish.contributors, publisher: wish.publisher, isbn: wish.isbn, languages: [], medium: 'physical', images: wish.images },
     authorsText: wish.authors.join('; '),
     notes: wish.notes,
   };

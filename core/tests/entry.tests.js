@@ -1,7 +1,7 @@
 // The entry form's records: sample books entered from scratch, editing
 // that stamps only what changed, and ISBNs.
 
-import { recordsFromForm, isbn13, anotherCopy, isBookBarcode, wishFromForm, formFromWish } from '../entry.js';
+import { recordsFromForm, isbn13, anotherCopy, isBookBarcode, wishFromForm, formFromWish, isbnInText } from '../entry.js';
 import { validateRecord } from '../records.js';
 import { equal, same, ok } from './check.js';
 
@@ -124,6 +124,17 @@ export const tests = [
       equal(start.edition.title, 'Theological Commonplaces');
       equal(start.authorsText, 'Johann Gerhard');
       equal(start.notes, 'Volume 1 first.', 'the note goes to the new copy');
+    },
+  },
+  {
+    name: 'an ISBN is read from what was typed or from an Amazon link, and nothing else is taken for one',
+    fn() {
+      equal(isbnInText('https://www.amazon.com/Birth-Tragedy-Oxford-Worlds-Classics/dp/0199540144/ref=sr_1_1?keywords=birth'), '9780199540143');
+      equal(isbnInText('https://www.amazon.com/gp/product/0199540144'), '9780199540143');
+      equal(isbnInText('978-0-19-954014-3'), '9780199540143');
+      equal(isbnInText('https://www.amazon.com/dp/B07XYZ1234'), null, 'a Kindle link has no ISBN');
+      equal(isbnInText('https://a.co/d/abc123'), null, 'a short link has no ISBN');
+      equal(isbnInText('The Birth of Tragedy 1872'), null, 'a title with a year is a title');
     },
   },
 ];
