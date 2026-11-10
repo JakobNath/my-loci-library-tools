@@ -5,7 +5,7 @@ Small laptop tools for My Loci Library. Each lives in its own folder and runs on
 Created by Jakob Nath.
 
 - `loci-backup/`: the daily backup, the monthly snapshot of the exports and the HTML catalog, and the yearly archive.
-- `loci-sizes/`: fills in catalog heights for the shelf view.
+- `loci-enrich/`: fills empty book fields (pages, sizes, edition, series, translators and more) from the Library of Congress, Open Library and Google Books.
 - `logos-to-my-loci-library/`: imports a Logos Library spreadsheet export.
 - `my-loci-library-to-zotero/`: sends books one way into Zotero.
 - `shared/`: what every tool needs (the settings file, reading and writing record files, Git).
@@ -32,11 +32,11 @@ Google Books refuses most requests without a key. One free key, made once, serve
 
 ## loci-backup
 
-Each run pulls the data repository, fills catalog heights (`loci-sizes`), rebuilds `catalog.json` (only when a record changed), copies every changed file into `<backupFolder>/data`, saves the exports (CSV, JSON, CSL-JSON, BibTeX and `catalog.html`) once a month in `<backupFolder>/snapshots/<year-month>`, records the backup in `backup-status.json`, and commits and pushes what it changed in one commit. Files are never deleted from the backup folder.
+Each run pulls the data repository, fills empty book fields (`loci-enrich`), rebuilds `catalog.json` (only when a record changed), copies every changed file into `<backupFolder>/data`, saves the exports (CSV, JSON, CSL-JSON, BibTeX and `catalog.html`) once a month in `<backupFolder>/snapshots/<year-month>`, records the backup in `backup-status.json`, and commits and pushes what it changed in one commit. Files are never deleted from the backup folder.
 
 `catalog.html` opens in any browser with no internet: every book with its cover thumbnail, and a search box. It is the backup a person can read without the app.
 
-Options: `--no-git` (work on the files only), `--no-sizes` (skip the catalog heights).
+Options: `--no-git` (work on the files only), `--no-enrich` (skip filling book fields).
 
 ### Running it every day
 
@@ -58,11 +58,15 @@ Once a year the app reminds you (in Settings, and once a week on opening) to sav
 
 It writes a dated folder with every record and picture, the exports, and the whole history as one Git bundle (`history.bundle`, restored with `git clone history.bundle my-loci-library-data`), and resets the reminder.
 
-## loci-sizes
+## loci-enrich
 
-Fills in the height of every physical book that has an ISBN and no height, from the Library of Congress catalog (the height printed in the book's record, to the whole centimeter). A height typed in the app is never changed. Books the catalog does not know are asked about again after 90 days; that list is kept in `loci-sizes/checked.json` on this laptop. It runs with every backup, and by hand with `loci-sizes.cmd` or `loci-sizes.sh`. Options: `--limit 200` (ask about at most that many books this time), `--no-git`.
+Fills the **empty** fields of every book with an ISBN from the Library of Congress, then Open Library, then Google Books (with `googleBooksKey` in `config.json`; without one Google Books is not asked): pages as printed, height and thickness, edition, series and number, place, translators and editors (when the book names none yet), and, for a book holding one work, the work's original title and language. When sources disagree, the Library of Congress wins for bibliographic facts; a value is taken only from a record that lists the book's own ISBN. It never fills an original date. The contents of an anthology are only listed in its report, to be entered by hand if they are right, and never for a Bible.
 
-If the Library of Congress service ever changes or disappears, nothing else depends on it: sizes simply stay estimated in the app.
+It keeps what it wrote for each book in the data repository (`integrations/enrich.json`), and never touches a field again once it has written it, so a value a person changed or cleared stays as they left it. Each book is asked about once, and again after 90 days (so new catalog records are found); a first run on a large catalog carries on where it stopped. It pauses a second between books, to be gentle on the free services, writes its report to the screen and to `loci-enrich/last-report.txt`, and commits once.
+
+It runs with every backup, and by hand with `loci-enrich.cmd` or `loci-enrich.sh`. Options: `--limit 200` (ask about at most that many books this time), `--no-git`.
+
+The Library of Congress service has no encrypted connection and does not allow calls from web pages, which is why only this laptop tool asks it. If any source ever changes or disappears, nothing else depends on it: those fields simply stay as they are.
 
 ## logos-to-my-loci-library
 

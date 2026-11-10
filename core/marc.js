@@ -6,7 +6,7 @@
 
 import { isbn13 } from './entry.js';
 import { emptyFound, contributorsFrom, cleanPages, sentenceToTitleCase, tidy, yearOf } from './lookup.js';
-import { LANGUAGE_NAMES } from './book-data.js';
+import { LANGUAGE_NAMES, isWorkTitle } from './book-data.js';
 
 // Uniform titles that name a kind of collection, not an original title.
 const COLLECTIVE_TITLES = new Set(['works', 'selections', 'selected works', 'novels', 'poems', 'plays', 'short stories', 'correspondence', 'letters', 'sermons']);
@@ -102,7 +102,7 @@ function contentsOf(record) {
       }
     }
   }
-  return contents;
+  return contents.filter(entry => isWorkTitle(entry.title));
 }
 
 /**

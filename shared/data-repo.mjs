@@ -15,7 +15,7 @@ export const FOLDERS = { work: 'works', edition: 'editions', copy: 'copies', aut
 /**
  * This laptop's settings, from config.json beside the tools (copy
  * config.example.json to make it). Paths may be relative to the tools folder.
- * @returns {{ dataRepo: string, backupFolder: string|null }}
+ * @returns {{ dataRepo: string, backupFolder: string|null, googleBooksKey: string }}
  */
 export function readConfig(file = join(toolsFolder, 'config.json')) {
   if (!existsSync(file)) {
@@ -26,6 +26,7 @@ export function readConfig(file = join(toolsFolder, 'config.json')) {
   return {
     dataRepo: resolve(toolsFolder, config.dataRepo),
     backupFolder: config.backupFolder ? resolve(toolsFolder, config.backupFolder) : null,
+    googleBooksKey: config.googleBooksKey || '',
   };
 }
 

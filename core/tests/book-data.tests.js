@@ -3,7 +3,7 @@
 // answers recorded in core/tests/answers/ on 10 November 2026.
 
 import { fromLibraryOfCongress, heightInMm } from '../marc.js';
-import { fromOpenLibraryEdition, fromGoogleBooksVolume, mergeFound, bindingFromFormat, sizesFromDimensions } from '../book-data.js';
+import { fromOpenLibraryEdition, fromGoogleBooksVolume, mergeFound, bindingFromFormat, sizesFromDimensions, googleKeyVerdict } from '../book-data.js';
 import { fromOpenLibrary, fromGoogleBooks, contributorsFrom, cleanPages } from '../lookup.js';
 import { equal, same, ok } from './check.js';
 import * as confessions from './answers/9780199537822.js';
@@ -45,10 +45,11 @@ export const tests = [
     },
   },
   {
-    name: 'an impossible thickness is ignored (Google Books gives Hackett\'s Plato 16.1 cm thick and 9.5 cm wide)',
+    name: 'sizes that cannot be one book\'s are not used (Hackett\'s Plato 16.1 cm thick and 9.5 cm wide; a boxed set)',
     fn() {
       equal(fromGoogleBooksVolume(json(plato.googleBooksVolume), plato.isbn).thickness, null);
-      equal(merged(plato).thickness, null);
+      same([merged(plato).height, merged(plato).thickness], [240, null], 'the Library of Congress still gives the height');
+      same(sizesFromDimensions('14.1', '10', '8.5', 'inches'), { height: null, thickness: null }, 'the Ante-Nicene Fathers in their box');
       same(sizesFromDimensions('20', '13', '3', 'cm'), { height: 200, thickness: 30 });
       same(sizesFromDimensions('8.4', '5.4', '1.8', 'inches'), { height: 213, thickness: 46 });
     },
@@ -166,6 +167,31 @@ export const tests = [
       same(['Hardcover', 'paperback', 'Mass Market Paperback', 'Leather Bound', 'Bonded Leather', 'Library Binding', 'Audio CD'].map(bindingFromFormat),
         ['Hardcover', 'Paperback', 'Mass-market paperback', 'Leather', 'Bonded leather', 'Library binding', '']);
       same([heightInMm('24 cm.'), heightInMm('24 x 30 cm'), heightInMm('maps ;')], [240, 240, null]);
+    },
+  },
+  {
+    name: 'volumes, parts and front matter are not offered as works, and a bookseller\'s "New Ed edition" reads "New ed."',
+    fn() {
+      const set = '<record xmlns="http://www.loc.gov/MARC21/slim"><datafield tag="020" ind1=" " ind2=" "><subfield code="a">9780758615404</subfield></datafield>'
+        + '<datafield tag="245" ind1="1" ind2="0"><subfield code="a">Examination of the Council of Trent.</subfield></datafield>'
+        + '<datafield tag="505" ind1="0" ind2=" "><subfield code="a">V. 1. Part I -- v. 2. Part II -- Introduction -- Index.</subfield></datafield></record>';
+      same(fromLibraryOfCongress(set, '9780758615404').contents, []);
+      equal(fromOpenLibraryEdition({ title: 'Anna Karenina', isbn_13: [anna.isbn], edition_name: 'New Ed edition' }, anna.isbn).editionStatement, 'New ed.');
+      equal(merged(holmes).contents.length, 21, 'the works of a real anthology stay');
+    },
+  },
+  {
+    name: '"Test the key" says plainly whether a Google Books key works, and why not',
+    fn() {
+      equal(googleKeyVerdict(200, { items: [] }).works, true);
+      // Google's answer to a key it does not know, as sent on 10 November 2026.
+      const invalid = { error: { code: 400, message: 'API key not valid. Please pass a valid API key.', status: 'INVALID_ARGUMENT',
+        errors: [{ reason: 'badRequest' }], details: [{ '@type': 'type.googleapis.com/google.rpc.ErrorInfo', reason: 'API_KEY_INVALID' }] } };
+      ok(googleKeyVerdict(400, invalid).message.includes('copied whole'), 'an unknown key');
+      ok(googleKeyVerdict(403, { error: { code: 403, details: [{ reason: 'SERVICE_DISABLED' }] } }).message.includes('Enable'), 'the Books API is off');
+      ok(googleKeyVerdict(403, { error: { code: 403, details: [{ reason: 'API_KEY_SERVICE_BLOCKED' }] } }).message.includes('Books API'), 'restricted to other services');
+      ok(googleKeyVerdict(429, null).message.includes('limit'), 'the daily limit');
+      equal(googleKeyVerdict(500, null).message, 'Google Books refused the key (500).');
     },
   },
 ];

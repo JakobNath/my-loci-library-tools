@@ -71,11 +71,11 @@ test('the daily backup runs end to end without Git, and a second run changes not
   const repo = sampleRepo();
   const backup = mkdtempSync(join(tmpdir(), 'loci-backup-drive-'));
   try {
-    const report = await dailyBackup({ dataRepo: repo, backupFolder: backup }, { useGit: false, sizes: false, now: NOW });
+    const report = await dailyBackup({ dataRepo: repo, backupFolder: backup }, { useGit: false, enrich: false, now: NOW });
     assert.ok(report.some(line => line.startsWith('catalog.json rebuilt')));
     assert.ok(existsSync(join(backup, 'snapshots', '2026-11', 'catalog.html')));
     const catalog = readFileSync(join(repo, 'catalog.json'), 'utf8');
-    const again = await dailyBackup({ dataRepo: repo, backupFolder: backup }, { useGit: false, sizes: false, now: '2026-11-11T03:00:00Z' });
+    const again = await dailyBackup({ dataRepo: repo, backupFolder: backup }, { useGit: false, enrich: false, now: '2026-11-11T03:00:00Z' });
     assert.ok(again.includes('catalog.json already up to date.'));
     assert.equal(readFileSync(join(repo, 'catalog.json'), 'utf8'), catalog);
   } finally {
@@ -100,7 +100,7 @@ test('the yearly archive holds the data, the exports and a note on restoring', (
 });
 
 test('each tool has a matching .cmd and .sh launcher that runs it from its own folder', () => {
-  for (const [folder, script] of [['loci-backup', 'loci-backup.mjs'], ['loci-sizes', 'loci-sizes.mjs']]) {
+  for (const [folder, script] of [['loci-backup', 'loci-backup.mjs'], ['loci-enrich', 'loci-enrich.mjs']]) {
     const cmd = readFileSync(join(here, '..', '..', folder, `${folder}.cmd`), 'utf8');
     const sh = readFileSync(join(here, '..', '..', folder, `${folder}.sh`), 'utf8');
     assert.ok(cmd.includes('cd /d "%~dp0"') && cmd.includes(`node ${script} %*`), `${folder}.cmd`);

@@ -32,9 +32,11 @@ export function bindingFromFormat(text) {
 
 /**
  * Height and thickness in millimeters from dimensions written height first:
- * "8.4 x 5.4 x 1.8 inches", "22 x  x  centimeters". A thickness is kept only
- * when it is less than the width and half the height: records sometimes give
- * the three in another order (Hackett's Plato: 24 × 9.5 × 16.1 cm).
+ * "8.4 x 5.4 x 1.8 inches", "22 x  x  centimeters". Sizes that cannot be a
+ * single book's (a thickness not less than the width or half the height) are
+ * not used at all: records sometimes give the three in another order
+ * (Hackett's Plato: 24 × 9.5 × 16.1 cm), or measure a boxed set (the
+ * Ante-Nicene Fathers: 14.1 × 10 × 8.5 inches).
  * @returns {{ height: number|null, thickness: number|null }}
  */
 export function sizesFromDimensions(height, width, thickness, unit) {
@@ -42,18 +44,21 @@ export function sizesFromDimensions(height, width, thickness, unit) {
   const mm = text => (Number(text) > 0 ? Math.round(Number(text) * scale) : null);
   const sizes = { height: mm(height), thickness: mm(thickness) };
   const tooThick = sizes.thickness && ((sizes.height && sizes.thickness >= sizes.height / 2) || (mm(width) && sizes.thickness >= mm(width)));
-  if (tooThick) sizes.thickness = null;
-  return sizes;
+  return tooThick ? { height: null, thickness: null } : sizes;
 }
 
-// Front and back matter in a table of contents are not works.
-const NOT_A_WORK = /^(preface|foreword|prologue|introduction|acknowledg|contents|index|bibliograph|notes|abbreviations|appendix|glossary|list of|further reading|chronology)/i;
+// Front and back matter, and the volumes or parts of one book ("V. 1. Part I",
+// "Part 1: Working with Biblical Hebrew Prose"), are not works.
+const NOT_A_WORK = /^(preface|foreword|prologue|introduction|acknowledg|contents|index|bibliograph|notes|abbreviations|appendix|glossary|list of|further reading|chronology)|^(v|vol|volume|pt|part|bk|book|bd|band|teil)\.?\s*[\divxlc]+\b/i;
+
+/** Whether a title in a contents list can be a work of an anthology. */
+export const isWorkTitle = title => !NOT_A_WORK.test(tidy(title));
 
 // The top level of Open Library's table of contents, as works an anthology may hold.
 function contentsFromToc(toc) {
   const entries = (toc || []).filter(entry => entry && tidy(entry.title));
   const top = Math.min(...entries.map(entry => entry.level || 0));
-  return entries.filter(entry => (entry.level || 0) === top && !NOT_A_WORK.test(tidy(entry.title)))
+  return entries.filter(entry => (entry.level || 0) === top && isWorkTitle(entry.title))
     .map(entry => {
       const title = tidy(entry.title).replace(/ : /g, ': ');
       return { title: titleCase(title === title.toUpperCase() ? title.toLowerCase() : title), author: tidy(entry.authors && entry.authors[0] && entry.authors[0].name) };
@@ -94,7 +99,8 @@ export function fromOpenLibraryEdition(edition, isbn) {
   found.year = yearOf(edition.publish_date);
   found.pages = cleanPages(edition.pagination) || (edition.number_of_pages ? String(edition.number_of_pages) : '');
   found.isbn = isbn;
-  found.editionStatement = tidy(edition.edition_name).replace(/[[\]]/g, '').replace(/\.\.$/, '.');
+  // Records copied from booksellers say "New Ed edition", meaning "New ed.".
+  found.editionStatement = tidy(edition.edition_name).replace(/[[\]]/g, '').replace(/\.\.$/, '.').replace(/\bEd\.? edition$/i, 'ed.');
   Object.assign(found, edition.series && edition.series.length ? seriesParts(edition.series[0]) : {});
   found.binding = bindingFromFormat(edition.physical_format);
   const dimensions = String(edition.physical_dimensions || '').match(/^\s*([\d.]*)\s*x\s*([\d.]*)\s*x\s*([\d.]*)\s*(\w+)/i);
@@ -179,4 +185,32 @@ export function mergeFound(answers) {
   const merged = present.reduce(combineFound);
   const printed = present.map(found => found.pages).find(pages => pages && !isBareCount(pages));
   return printed ? { ...merged, pages: printed } : merged;
+}
+
+// Google's reasons for refusing a key (the "reason" in its error answer), in plain words.
+const KEY_PROBLEMS = {
+  API_KEY_INVALID: 'Google does not know this key. Check that it was copied whole: it starts with "AIza".',
+  SERVICE_DISABLED: 'The Books API is not switched on for this key\'s project. Do step 1 again and click "Enable".',
+  API_KEY_SERVICE_BLOCKED: 'The key is limited to other services. In step 3, tick "Books API" under the key\'s API restrictions.',
+  API_KEY_HTTP_REFERRER_BLOCKED: 'The key only works on certain websites. In step 3, set "Application restrictions" to "None".',
+  API_KEY_ANDROID_APP_BLOCKED: 'The key only works in certain Android apps. In step 3, set "Application restrictions" to "None".',
+  API_KEY_IOS_APP_BLOCKED: 'The key only works in certain iPhone apps. In step 3, set "Application restrictions" to "None".',
+  RATE_LIMIT_EXCEEDED: 'The key works, but has reached today\'s limit of lookups. It will work again tomorrow.',
+};
+
+/**
+ * Whether a Google Books key works, from the answer to one lookup made with
+ * it (Settings › Advanced, "Test the key"), and why not in plain words.
+ * @param {number} status the answer's HTTP status
+ * @param {object|null} answer the answer, parsed
+ * @returns {{ works: boolean, message: string }}
+ */
+export function googleKeyVerdict(status, answer) {
+  if (status === 200) return { works: true, message: 'The key works: Google Books answered a test lookup.' };
+  const error = (answer && answer.error) || {};
+  const reasons = [...(error.details || []), ...(error.errors || [])].map(item => item.reason);
+  const known = reasons.find(reason => KEY_PROBLEMS[reason]);
+  if (known) return { works: false, message: KEY_PROBLEMS[known] };
+  if (status === 429) return { works: false, message: KEY_PROBLEMS.RATE_LIMIT_EXCEEDED };
+  return { works: false, message: `Google Books refused the key (${status}${error.message ? `: ${error.message}` : ''}).` };
 }
