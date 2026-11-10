@@ -105,9 +105,14 @@ export function extraWith(existing, { originalDate, citationKey }) {
   return [...(originalDate !== null && originalDate !== undefined ? [`Original Date: ${originalDate}`] : []), `Citation Key: ${citationKey}`, ...kept].join('\n');
 }
 
-/** A citation key already pinned in an item's Extra, if any. */
-export function pinnedKey(extra) {
-  const match = String(extra || '').match(/^Citation Key:\s*(\S+)/im);
+/**
+ * A citation key already pinned on an item, if any: Zotero 7's own Citation
+ * Key field, or else a "Citation Key:" line in Extra (where Better BibTeX kept
+ * pinned keys before Zotero had the field).
+ */
+export function pinnedKey(data) {
+  if (data.citationKey) return data.citationKey;
+  const match = String(data.extra || '').match(/^Citation Key:\s*(\S+)/im);
   return match ? match[1] : null;
 }
 

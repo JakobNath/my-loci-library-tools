@@ -14,6 +14,10 @@ import { readConfig, readRecords, isGitRepo, git, commitAndPush } from '../share
 import { connectToZotero } from './zotero-api.mjs';
 import { sendToZotero } from './zotero-sync.mjs';
 
+// A full copy of each item already in Zotero, taken before the companion first changes it,
+// so any change can be undone by hand. Kept on this laptop (not committed).
+const BEFORE = join(dirname(fileURLToPath(import.meta.url)), 'before');
+
 const LINKS = join('integrations', 'zotero-links.json');
 const toolsFolder = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -53,6 +57,11 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
       collectionName: collectionAt >= 0 ? args[collectionAt + 1] : 'My Loci Library',
       appUrl: config.appUrl,
       onProgress: text => console.log(text),
+      keepBefore: item => {
+        mkdirSync(BEFORE, { recursive: true });
+        const file = join(BEFORE, `${item.key}.json`);
+        if (!existsSync(file)) writeFileSync(file, `${JSON.stringify(item, null, 2)}\n`);
+      },
     });
     if (useGit && commitAndPush(dataRepo, [LINKS], 'Update the Zotero links')) lines.push('Link file committed and pushed.');
     lines.push(`Done in ${((Date.now() - started) / 1000).toFixed(1)} s. Zotero on this laptop picks the changes up with its next sync.`);

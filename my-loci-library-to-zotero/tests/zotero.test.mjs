@@ -123,6 +123,37 @@ test('a run stopped part-way keeps what it already sent', async () => {
   assert.equal(Object.values(links.items).filter(link => link.key).length, fake.items.size);
 });
 
+test('a trial in a test collection never changes an item already in Zotero', async () => {
+  const { fake, zotero, links } = setup();
+  const key = fake.add({ itemType: 'book', title: 'Confessions', ISBN: '9780199537822', date: '1991', collections: ['OLDCOLL1'] });
+  const before = structuredClone(fake.items.get(key));
+  await sendToZotero(sampleRecords(), links, zotero, { collectionName: 'Loci test' });
+  assert.deepEqual(fake.items.get(key), before);
+  assert.ok(Object.values(links.items).every(link => link.key !== key));
+});
+
+test('on the first run only a real match is linked: a book, with an ISBN in common and an agreeing title, once', async () => {
+  const { fake, zotero, links } = setup();
+  // A two-volume set whose ISBN field also holds Chadwick's ISBN, and a section with it: neither is Confessions.
+  const set = fake.add({ itemType: 'book', title: 'Loci theologici 1', ISBN: '978-0-7586-1546-6 978-0-19-953782-2', collections: [] });
+  const section = fake.add({ itemType: 'bookSection', title: 'Confessions', ISBN: '9780199537822', collections: [] });
+  const kept = [structuredClone(fake.items.get(set)), structuredClone(fake.items.get(section))];
+  const copies = [];
+  await sendToZotero(sampleRecords(), links, zotero, { keepBefore: item => copies.push(item.key) });
+  assert.deepEqual([fake.items.get(set), fake.items.get(section)], kept, 'neither is touched');
+  const real = fake.add({ itemType: 'book', title: 'Confessions', ISBN: '978-0-19-953782-2 0199537828', citationKey: 'Augustine1991', collections: [] });
+  const { zotero: second, links: fresh } = setup();
+  const fake2 = fakeZotero();
+  fake2.items.set(real, fake.items.get(real));
+  const run = connectToZotero({ userId: '12345', key: 'test-key', fetchFn: fake2.fetchFn });
+  await sendToZotero(sampleRecords(), fresh, run, { keepBefore: item => copies.push(item.key) });
+  assert.equal(fresh.items[chadwick.id].key, real, 'the real Confessions, with several ISBNs in its field, is linked');
+  assert.equal(fresh.items[chadwick.id].citationKey, 'Augustine1991', "Zotero's own Citation Key field is kept");
+  assert.deepEqual(copies, [real], 'a full copy was kept before it was changed');
+  assert.equal(Object.values(fresh.items).filter(link => link.key === real).length, 1, 'linked to one Loci book only');
+  void second;
+});
+
 test('the companion has matching .cmd and .sh launchers', () => {
   const cmd = readFileSync(join(here, '..', 'loci-zotero.cmd'), 'utf8');
   const sh = readFileSync(join(here, '..', 'loci-zotero.sh'), 'utf8');

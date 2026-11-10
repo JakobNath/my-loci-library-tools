@@ -8,25 +8,49 @@ import { createHash } from 'node:crypto';
 import { buildLibrary } from '../core/library.js';
 import { freeCitationKey, citationKeyBase } from '../core/zotero.js';
 import { normalizeForSearch } from '../core/search.js';
+import { isbn13 } from '../core/entry.js';
 import { itemsFor, isSent, extraWith, pinnedKey, lociTags, TAG_GONE, TAG_REMOVED } from './zotero-items.mjs';
 
 const fingerprint = value => createHash('sha1').update(JSON.stringify(value)).digest('hex').slice(0, 16);
 const LOCI_TAGS = [TAG_GONE, TAG_REMOVED];
 
-// A book in Zotero matches one of ours by ISBN, or by title and year.
-const isbnOf = data => String(data.ISBN || '').replace(/[^0-9X]/gi, '').slice(-13);
-const titleYear = data => `${normalizeForSearch(data.title || '')}|${String(data.date || '').match(/\d{4}/)?.[0] || ''}`;
+export const MAIN_COLLECTION = 'My Loci Library';
+
+// Every ISBN in a Zotero ISBN field, as 13 digits: the field may hold several
+// ("978-0-7586-1546-6 978-0-7586-1547-3" for a two-volume set).
+const isbnsOf = data => (String(data.ISBN || '').match(/\d[\d-]{8,15}[\dX]/gi) || []).map(isbn13).filter(Boolean);
+const plainTitle = text => normalizeForSearch(String(text || '')).replace(/[^a-z0-9]/g, '');
+// Titles agree when one is the other, or the other with its subtitle ("Confessions" and "Confessions: A New Translation").
+const sameTitle = (a, b) => { const x = plainTitle(a); const y = plainTitle(b); return Boolean(x && y && (x.startsWith(y) || y.startsWith(x))); };
+const yearOf = data => String(data.date || '').match(/\d{4}/)?.[0] || '';
+
+/**
+ * The book already in Zotero that is this one, if any: a book (never a book
+ * section) that shares an ISBN and whose title agrees, or, when neither has an
+ * ISBN, has the same title and year. An item is linked to one Loci book only.
+ */
+function findExisting(item, books, used) {
+  if (item.data.itemType !== 'book') return null;
+  const ours = isbn13(item.data.ISBN);
+  return books.find(book => !used.has(book.key) && book.data.itemType === 'book' && sameTitle(item.data.title, book.data.title) && (ours
+    ? isbnsOf(book.data).includes(ours)
+    : !isbnsOf(book.data).length && plainTitle(item.data.title) === plainTitle(book.data.title) && yearOf(item.data) === yearOf(book.data))) || null;
+}
 
 /**
  * @param {object[]} records every record in the data repository
  * @param {{ collection: string|null, items: Record<string, { key: string, citationKey: string, sent: string }> }} links integrations/zotero-links.json (changed in place)
  * @param {ReturnType<import('./zotero-api.mjs').connectToZotero>} zotero
- * @param {{ collectionName?: string, appUrl?: string, onProgress?: (text: string) => void, save?: () => void }} options
+ * @param {{ collectionName?: string, appUrl?: string, linkExisting?: boolean, onProgress?: (text: string) => void, save?: () => void, keepBefore?: (item: object) => void }} options
+ *   linkExisting: on a first run, link books already in Zotero instead of adding them
+ *   again; only for the main collection, so a trial in a test collection never
+ *   changes an item that was already there;
  *   onProgress: told what is happening, for the command line; save: keeps the link file,
- *   called after each batch, so a run that is stopped part-way loses nothing
+ *   called after each batch, so a run that is stopped part-way loses nothing;
+ *   keepBefore: given a full copy of each existing item before it is first changed
  * @returns {Promise<string[]>} the report, one line each
  */
-export async function sendToZotero(records, links, zotero, { collectionName = 'My Loci Library', appUrl, onProgress = () => {}, save = () => {} } = {}) {
+export async function sendToZotero(records, links, zotero, { collectionName = MAIN_COLLECTION, appUrl, linkExisting = collectionName === MAIN_COLLECTION, onProgress = () => {}, save = () => {}, keepBefore = () => {} } = {}) {
   const report = [];
   const firstRun = !Object.keys(links.items).length;
   onProgress(`Connecting to Zotero (collection "${collectionName}")…`);
@@ -57,12 +81,13 @@ export async function sendToZotero(records, links, zotero, { collectionName = 'M
   }
 
   // On the first run, books already in Zotero are linked rather than made again.
-  const existing = { byIsbn: new Map(), byTitle: new Map(), keys: new Set() };
+  // Keys already pinned in the library are never handed out again.
+  const existing = { books: [], used: new Set(), keys: new Set() };
   if (firstRun) {
+    onProgress('Reading the books already in Zotero…');
     for (const item of await zotero.allBooks()) {
-      if (isbnOf(item.data)) existing.byIsbn.set(isbnOf(item.data), item);
-      existing.byTitle.set(titleYear(item.data), item);
-      const key = pinnedKey(item.data.extra);
+      if (linkExisting) existing.books.push(item);
+      const key = pinnedKey(item.data);
       if (key) existing.keys.add(key);
     }
   }
@@ -85,15 +110,16 @@ export async function sendToZotero(records, links, zotero, { collectionName = 'M
       save();
       continue;
     }
-    const match = !link && firstRun ? existing.byIsbn.get(isbnOf(item.data)) || existing.byTitle.get(titleYear(item.data)) : null;
-    const citationKey = known ? known.citationKey : (match && pinnedKey(match.data.extra)) || freeCitationKey(citationKeyBase(item.csl, item.year), taken);
+    const match = !link && firstRun ? findExisting(item, existing.books, existing.used) : null;
+    if (match) existing.used.add(match.key);
+    const citationKey = known ? known.citationKey : (match && pinnedKey(match.data)) || freeCitationKey(citationKeyBase(item.csl, item.year), taken);
     taken.add(citationKey);
     const data = { ...item.data, extraLines: { originalDate: item.originalDate, citationKey } };
     const sent = fingerprint([data, item.tags]);
     if (link && link.sent === sent) { unchanged++; continue; }
     if (link || match) {
       const key = link ? link.key : match.key;
-      const differences = await mergeInto(zotero, key, { ...data, tags: item.tags }, links.collection);
+      const differences = await mergeInto(zotero, key, { ...data, tags: item.tags }, links.collection, match && !link ? keepBefore : () => {});
       if (match && !link) report.push(...differences.map(text => `  ${item.data.title}: ${text}`));
       links.items[item.linkId] = { key, citationKey, sent };
       updated++;
@@ -138,12 +164,13 @@ const withoutExtraLines = ({ extraLines, ...data }) => data;
  * Bring an existing item up to date: our fields written, Extra's other lines,
  * other tags and other collections kept. Returns what differed, in words.
  */
-async function mergeInto(zotero, key, ours, collection) {
+async function mergeInto(zotero, key, ours, collection, keepBefore = () => {}) {
   const current = await zotero.item(key);
+  keepBefore(current);
   const differences = [];
   const change = {};
   for (const [field, value] of Object.entries(withoutExtraLines(ours))) {
-    if (field === 'tags') continue;
+    if (field === 'tags' || field === 'itemType') continue; // an item's type is never changed
     if (JSON.stringify(current.data[field] ?? '') !== JSON.stringify(value)) {
       change[field] = value;
       if (field !== 'url' && field !== 'archiveLocation' && current.data[field]) differences.push(`${field} was ${JSON.stringify(current.data[field])}`);
