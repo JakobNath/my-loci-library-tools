@@ -20,6 +20,31 @@ export function cslName(name, sortName = null) {
 }
 
 /**
+ * A citation key in the Better BibTeX pattern we already use in Zotero
+ * (PLAN.md, "Citekeys and note names"): the first author's surname, or else
+ * the first editor's, folded to plain letters, then the edition's year
+ * ("Adler1972"). With no person, the title's first word. Repeats get a, b, c
+ * added by whoever hands the keys out (core/exports.js, the Zotero tool).
+ * @param {object} item a CSL-JSON item (editionToCsl)
+ * @param {number|null} year the edition's year
+ */
+export function citationKeyBase(item, year) {
+  const plain = text => String(text || '').normalize('NFD').replace(/[^A-Za-z0-9]/g, '');
+  const person = (item.author && item.author[0]) || (item.editor && item.editor[0]);
+  const word = plain(person && (person.family || person.literal)) || plain(String(item.title || '').replace(/^(the|a|an) /i, '').split(/\s/)[0]) || 'Book';
+  return `${word[0].toUpperCase()}${word.slice(1)}${year || ''}`;
+}
+
+/** The next free key for a base: the base itself, then base + a, b, c... */
+export function freeCitationKey(base, taken) {
+  if (!taken.has(base)) return base;
+  for (let i = 0; ; i++) {
+    const suffix = i < 26 ? String.fromCharCode(97 + i) : `${String.fromCharCode(97 + Math.floor(i / 26) - 1)}${String.fromCharCode(97 + (i % 26))}`;
+    if (!taken.has(base + suffix)) return base + suffix;
+  }
+}
+
+/**
  * A CSL-JSON item for an edition.
  * @param {object} edition
  * @param {Map<string, object>} worksById

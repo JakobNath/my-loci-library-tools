@@ -4,7 +4,7 @@
 // editions and original dates. Pure text in, text out; the screen saves it.
 
 import { workingDating, formatYearRange } from './dating.js';
-import { editionToCsl } from './zotero.js';
+import { editionToCsl, citationKeyBase, freeCitationKey } from './zotero.js';
 import { valueSummary } from './value.js';
 
 // A CSV cell: quoted when it holds a comma, quote or line break, quotes doubled (RFC 4180).
@@ -87,23 +87,19 @@ const bibName = name => (name.literal ? `{${bibText(name.literal)}}` : `${bibTex
 // biblatex dates are four digits, and years before Christ are counted astronomically:
 // 1 BC is 0000, so 399 BC (stored as -399) is -0398.
 const bibYear = year => (year > 0 ? String(year).padStart(4, '0') : `-${String(-(year + 1)).padStart(4, '0')}`);
-const asciiWord = text => String(text || '').normalize('NFD').replace(/[^A-Za-z0-9]/g, '').toLowerCase();
 
 /**
- * BibTeX (biblatex fields): @book entries keyed author + year ("chadwick1991"),
- * with a, b, c added when two books share a key; the original date is "origdate".
+ * BibTeX (biblatex fields): @book entries keyed as in Zotero, author + year
+ * ("Augustine1991", core/zotero.js), with a, b, c added when two books share a
+ * key; the original date is "origdate".
  */
 export function bibtex(entries, worksById, authorsById) {
-  const used = new Map();
+  const used = new Set();
   const out = [];
   for (const entry of entries) {
     const item = editionToCsl(entry.edition, worksById, authorsById);
-    const people = item.author.length ? item.author : item.editor || [];
-    const firstWord = asciiWord(item.title.replace(/^(the|a|an) /i, '').split(/\s/)[0]);
-    const base = `${asciiWord(people[0] && (people[0].family || people[0].literal)) || firstWord || 'book'}${entry.edition.year || ''}`;
-    const seen = used.get(base) || 0;
-    used.set(base, seen + 1);
-    const key = seen ? `${base}${String.fromCharCode(96 + seen)}` : base;
+    const key = freeCitationKey(citationKeyBase(item, entry.edition.year), used);
+    used.add(key);
     const fields = [
       ['title', item.title],
       ['author', item.author.map(bibName).join(' and ')],

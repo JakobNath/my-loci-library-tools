@@ -83,6 +83,23 @@ Which column fills which field (`columns.mjs`; every other column is kept as it 
 
 These names are a first reading, made before a real export was at hand. When the first real export is imported, check its column names against this table and add any that differ to `columns.mjs`.
 
+## my-loci-library-to-zotero
+
+Sends the catalog one way into a "My Loci Library" collection in Zotero: every physical book, Logos books marked "cite" in the app, and, for an anthology, a book section for each work in it (related to the anthology's item), so one piece can be cited. Wishlist items never go.
+
+Each item gets the original date and its pinned Better BibTeX citation key in Extra ("Original Date: 397", "Citation Key: Augustine1991"), the shelf location in "Loc. in Archive", and the book's permanent Loci link as its URL. Keys follow the pattern Better BibTeX already uses (first author's surname and the edition's year, with a, b, c for repeats), and once given a key never changes. Nothing is ever deleted from Zotero: a book no longer owned is tagged "Loci: no longer owned", and one removed from Loci (or a Logos book no longer marked "cite") "Loci: removed". Only books that changed since the last run are sent. Which Loci record is which Zotero item is kept in `integrations/zotero-links.json` in the data repository.
+
+Setting up, once:
+1. At zotero.org/settings/keys, note "Your userID for use in API calls", and make a new private key with "Allow library access" and "Allow write access".
+2. Put both in `config.json` as `zoteroUserId` and `zoteroKey`. The key stays on this laptop.
+3. Try it on a test collection first: `loci-zotero.cmd --collection "Loci test"`. Look at the items in Zotero, then delete that collection and its items in Zotero by hand, and delete `integrations/zotero-links.json` in the data repository before the real first run.
+
+Then run `my-loci-library-to-zotero\loci-zotero.cmd` (Windows) or `my-loci-library-to-zotero/loci-zotero.sh` (Linux) whenever you mark a book to cite; it finishes in a few seconds, and Zotero on the laptop shows the book after its next sync (usually within seconds; Edit › Settings › Sync › "Sync automatically" must be on). To run it on a schedule too, make a Task Scheduler task as for loci-backup, repeating every hour.
+
+On the first run, books already in Zotero (matched by ISBN, or by title and year) are linked instead of being added again. Their data is replaced by Loci's, but their notes, attachments, other tags, other collections, other lines in Extra and any pinned citation key are kept; every field that was overwritten is listed in the run's report.
+
+Zotero 7's local connection on the laptop can only read, so the tool writes through Zotero's web API, which the plan names as the fallback.
+
 ## Tests
 
 Run `node --test` in this folder. It runs every tool's tests (with temporary folders and recorded answers, never the real data or the network), the shared core's tests, and checks that `core/` here matches `core/` in the app repository. Never edit `core/` here: edit it in the app repository, then run `update-core.cmd` (Windows) or `update-core.sh` (Linux).

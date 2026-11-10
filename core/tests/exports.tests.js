@@ -66,8 +66,8 @@ export const tests = [
       const item = csl.find(entry => entry.id === chadwick.id);
       same(item['original-date'], { 'date-parts': [[397]] });
       const bib = bibtex(library.entries, library.worksById, library.authorsById);
-      ok(bib.includes('@book{augustine1991,'), 'keys are author and year');
-      ok(bib.includes('@book{novum2012,'), 'or the first word of the title when there is no author');
+      ok(bib.includes('@book{Augustine1991,'), 'keys are author and year, as Better BibTeX makes them in Zotero');
+      ok(bib.includes('@book{Novum2012,'), 'or the first word of the title when there is no author');
       ok(bib.includes('origdate = {0397}'));
       ok(bib.includes('origdate = {-0398}'), '399 BC, counted as biblatex does');
       ok(bib.includes('title = {Confessions}'));
