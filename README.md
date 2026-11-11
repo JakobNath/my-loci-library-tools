@@ -16,7 +16,7 @@ Created by Jakob Nath.
 1. Install Git and Node. Clone this repository and the data repository (`my-loci-library-data`) next to each other.
 2. Copy `config.example.json` to `config.json` in this folder and fill it in:
    - `dataRepo`: the data repository's folder (relative paths start from this folder).
-   - `backupFolder`: the folder that receives the daily copy, such as "My Loci Library backup" inside Google Drive for desktop.
+   - `backupFolder`: the folder that receives the daily copy, such as "My Loci Library backup" inside Google Drive for desktop. Set Drive for desktop to mirror My Drive (Settings › Preferences › Folders from Drive › Mirror files), so the folder is an ordinary one on the laptop, such as `C:/Users/Jakob/My Drive/My Loci Library backup`; a streamed drive (`G:`) is missing whenever Drive for desktop is not running, and the backup would fail.
    - `googleBooksKey` (optional): a free Google Books key, so the tools can ask Google Books too (see "A Google Books key" below).
    `config.json` stays on this laptop; it is never committed.
 3. Run `loci-backup/loci-backup.cmd` (Windows) or `loci-backup/loci-backup.sh` (Linux) once by hand and read what it reports.
@@ -44,6 +44,13 @@ Windows (Task Scheduler):
 1. Open Task Scheduler › Create Basic Task. Name: "My Loci Library backup". Trigger: Daily, at a time the laptop is usually on (such as 12:30).
 2. Action: Start a program. Program: the full path of `loci-backup\loci-backup.cmd`. Start in: the `loci-backup` folder.
 3. In the task's properties, tick "Run task as soon as possible after a scheduled start is missed", so a day the laptop was off is caught up.
+
+Or make the same task in one step from PowerShell (change the folder to where the tools are):
+
+    $folder = 'C:\path\to\my-loci-library-tools\loci-backup'
+    Register-ScheduledTask -TaskName 'My Loci Library backup' -Action (New-ScheduledTaskAction -Execute "$folder\loci-backup.cmd" -WorkingDirectory $folder) -Trigger (New-ScheduledTaskTrigger -Daily -At '12:30') -Settings (New-ScheduledTaskSettingsSet -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Hours 1))
+
+Task Scheduler's "Last Run Result" should read 0 (success) after a run.
 
 Linux (cron): run `crontab -e` and add a line such as
 
