@@ -39,3 +39,42 @@ export function isAnotherCatalog(connectedRepo, wantedRepo) {
   const connected = (connectedRepo || '').trim().toLowerCase();
   return connected !== '' && connected !== (wantedRepo || '').trim().toLowerCase();
 }
+
+/**
+ * A link that sets up another device: the catalog, the sync key and the
+ * Google Books key, after the "#", which browsers never send to any server.
+ * @param {string} appUrl the app's address without its "#" part
+ * @param {{ repo: string, key: string, googleBooksKey?: string }} setup
+ * @returns {string}
+ */
+export function setupLink(appUrl, { repo, key, googleBooksKey }) {
+  const params = new URLSearchParams({ repo, key });
+  if (googleBooksKey) params.set('google', googleBooksKey);
+  return `${appUrl}#/connect?${params}`;
+}
+
+/**
+ * Read a setup link's "#" part, as made by setupLink.
+ * @param {string} hash the address's "#" part, such as location.hash
+ * @returns {{ repo: string, key: string, googleBooksKey: string } | null} null if it is not a setup link
+ */
+export function readSetupLink(hash) {
+  const match = /^#\/connect\?(.*)$/.exec(hash || '');
+  if (!match) return null;
+  const params = new URLSearchParams(match[1]);
+  const repo = (params.get('repo') || '').trim();
+  const key = (params.get('key') || '').trim();
+  if (!repo || !key) return null;
+  return { repo, key, googleBooksKey: (params.get('google') || '').trim() };
+}
+
+/**
+ * The likely data repository for an app served from "<owner>.github.io":
+ * "<owner>/my-loci-library-data", the name the setup guide uses. Elsewhere ''.
+ * @param {string} hostname such as location.hostname
+ * @returns {string}
+ */
+export function guessDataRepo(hostname) {
+  const match = /^([a-z0-9-]+)\.github\.io$/i.exec(hostname || '');
+  return match ? `${match[1]}/my-loci-library-data` : '';
+}

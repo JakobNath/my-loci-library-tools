@@ -7,7 +7,7 @@ import { keyBetween, keysForShelf } from '../shelf-order.js';
 import { escapeHtml } from '../html.js';
 import { editionToCsl, cslName, volumeOfSet, editionForCitation } from '../zotero.js';
 import { equal, same, ok, throws } from './check.js';
-import { SHARED_DEFAULTS, settingsToFileText, isAnotherCatalog } from '../settings.js';
+import { SHARED_DEFAULTS, settingsToFileText, isAnotherCatalog, setupLink, readSetupLink, guessDataRepo } from '../settings.js';
 import { trashBook, restoreBook, trashedItems } from '../trash.js';
 import { listValues, renameValue } from '../lists.js';
 import { buildLibrary, viewEntries } from '../library.js';
@@ -183,6 +183,25 @@ export const tests = [
       ok(!isAnotherCatalog('', 'JakobNath/my-loci-library-data'), 'never connected: its books are kept and sent');
       ok(!isAnotherCatalog(undefined, 'JakobNath/my-loci-library-data'), 'a device that has never saved a repository');
       ok(!isAnotherCatalog('JakobNath/my-loci-library-data', ' jakobnath/My-Loci-Library-Data '), 'same repository, other capitals and spaces');
+    },
+  },
+  {
+    name: 'a setup link carries the catalog and both keys after the "#", and reads back the same',
+    fn() {
+      const link = setupLink('https://jakobnath.github.io/my-loci-library/', { repo: 'JakobNath/my-loci-library-data', key: 'github_pat_a+b/c', googleBooksKey: 'AIza1' });
+      ok(link.startsWith('https://jakobnath.github.io/my-loci-library/#/connect?'), 'everything after the "#"');
+      same(readSetupLink(link.slice(link.indexOf('#'))), { repo: 'JakobNath/my-loci-library-data', key: 'github_pat_a+b/c', googleBooksKey: 'AIza1' });
+      equal(readSetupLink('#' + setupLink('x', { repo: 'a/b', key: 'k' }).split('#')[1]).googleBooksKey, '', 'no Google Books key');
+      equal(readSetupLink('#/settings/advanced'), null, 'an ordinary address');
+      equal(readSetupLink('#/connect?repo=a/b'), null, 'a link without a key');
+    },
+  },
+  {
+    name: 'the data repository is guessed from a github.io address, and not elsewhere',
+    fn() {
+      equal(guessDataRepo('jakobnath.github.io'), 'jakobnath/my-loci-library-data');
+      equal(guessDataRepo('localhost'), '');
+      equal(guessDataRepo('books.example.org'), '');
     },
   },
   {

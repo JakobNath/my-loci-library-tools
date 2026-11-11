@@ -44,7 +44,7 @@ The real catalog lives in a private repository, `my-loci-library-data`; sample d
 - Record IDs are random, permanent, and never changed or reused.
 - Never change the data format without updating `DATA_FORMAT.md`, raising the format version, and keeping older records readable.
 - Original dates are never filled in automatically from lookups. Only a person sets them.
-- Never commit keys, tokens or personal data. Sync keys live only on each device.
+- Never commit keys, tokens or personal data. Sync keys live only on our devices and in the setup links we send each other; never in a repository or in the app's code.
 
 **Tests**
 
