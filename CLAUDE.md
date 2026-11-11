@@ -1,38 +1,28 @@
-# My Loci Library: rules for every session
+# My Loci Library: project rules
 
 My Loci Library is a lightweight, open-source catalog of Jakob and his wife's physical books and Logos library. It has to keep working for 40+ years, so these rules favor simple, durable choices over clever ones. Created by Jakob Nath.
 
-## Read first, every session
+This file is kept identical in the app (`my-loci-library`) and the laptop tools (`my-loci-library-tools`). When you change one, change the other in the same step.
 
-1. This file.
-2. `PLAN.md`, the master plan. It is the source of truth. If anything here or in `BUILD_PLAN.md` seems to disagree with it, follow `PLAN.md` and note the conflict in `HOW_IT_WORKS.md` under "Decisions".
-3. `CODE_STYLE.md`: how code is written from phase 3 onward. Prototypes are exempt, but no prototype code enters the app or the tools without being rewritten to it.
-4. `BUILD_PLAN.md`: find the first unchecked step and continue from there.
-5. `DATA_FORMAT.md` and `HOW_IT_WORKS.md`, once they exist.
-6. `SAMPLE_BOOKS.md` when you need test data or prototype content.
+## Where things are
 
-Then run the self-tests before changing anything.
+- `docs/plan/STATUS.md` (in the app): where the project stands and what comes next.
+- `docs/plan/PLAN.md` (in the app): the master plan and the source of truth. If anything disagrees with it, follow PLAN.md and record the conflict as a decision.
+- `docs/decisions/` (in the app): every choice the plan did not settle, with its reason, one file per topic.
+- `CODE_STYLE.md`: how code is written, and the definition of done.
+- `DATA_FORMAT.md` (in the app): every field of a record.
+- `HOW_IT_WORKS.md` (in the app): the parts and how to fix each one.
+- The tools' `README.md`: each laptop tool and how to run it.
 
-## Workspace layout
-
-Sessions start in the workspace folder (`My Loci Library/`). It is not a Git repo itself. It holds this file, the plan files, an `inputs/` folder for files Jakob provides (such as a Logos export), and the repos:
-
-- `my-loci-library/`: the app (public, MIT, served by GitHub Pages). Holds a copy of this file, the docs, and the plan files under `docs/plan/`.
-- `my-loci-library-tools/`: laptop tools (public, MIT). Holds a copy of this file.
-- `my-loci-library-test-data/`: private, sample data used while building.
-- `my-loci-library-data/`: private, the real catalog. **Never write to it during the build.** Create it empty with a README in phase 1, then leave it alone.
-
-When you change this file, update the copies in both public repos in the same step.
+The real catalog lives in a private repository, `my-loci-library-data`; sample data for building and testing lives in `my-loci-library-test-data`. Never write to the real catalog while building or testing.
 
 ## How to work
 
-- Work through `BUILD_PLAN.md` in order. Tick each step (`- [x]`) when its check passes, and commit after every step.
-- Stop only where `BUILD_PLAN.md` says **STOP**. Everywhere else, keep going.
-- If something isn't covered by the plan, choose the lightest option that fits the plan, then record the choice and the reason in `HOW_IT_WORKS.md` under "Decisions". Don't stop to ask.
-- If something fails, use the fallback the plan names. If none is named, choose the simplest one, note it under "Decisions", and continue.
-- Anything that can only be checked on a real phone goes on `DEVICE_CHECKS.md`, as a short checklist item saying what to try and what should happen. Never wait on it.
+- If something is not covered by the plan, choose the lightest option that fits the plan, then record the choice and the reason at the end of the right file in `docs/decisions/`.
+- If something fails, use the fallback the plan names. If none is named, choose the simplest one and record it.
+- Anything that can only be checked on a real phone goes on `DEVICE_CHECKS.md`, as a short checklist item saying what to try and what should happen.
 - Don't add features that aren't in `PLAN.md`.
-- Every step must meet the definition of done in CODE_STYLE.md.
+- Every change must meet the definition of done in `CODE_STYLE.md`.
 
 ## Hard rules
 
