@@ -4,7 +4,7 @@ This project has to stay readable and repairable for 10+ years by someone who ma
 
 > **Could someone who knows basic JavaScript, and nothing else about this project, open any one file, understand it in five minutes, and change it safely, with the tests telling them if they broke something?**
 
-When a rule here seems to conflict with that test, the test wins. Record the exception under "Decisions" in `HOW_IT_WORKS.md`.
+When a rule here seems to conflict with that test, the test wins. Record the exception in `docs/decisions/` (in the app).
 
 These rules apply from phase 3 onward. Prototypes are throwaway and exempt, but **no prototype code enters the app or the tools without being rewritten to these rules**. This includes the photo detection and enhancement code.
 
@@ -142,7 +142,7 @@ The usual failure of framework-free code is accidentally building a worse framew
 - **Comments explain why, never what.** The code says what. Example: `// BC years are negative so sorting works across the era boundary.`
 - Every non-obvious number gets a comment with its reason: `600 // detail cover height in px, chosen in the photo prototype round 2`.
 - Exported core functions get a short JSDoc block (purpose, parameters, return value). It gives types and hints to any editor, with no build step. Nothing more elaborate.
-- **Decisions go in `HOW_IT_WORKS.md`** under "Decisions": date, what was decided, what was rejected, and why. One short paragraph each. In ten years, *why* is worth more than *what*.
+- **Decisions go in `docs/decisions/`** (in the app), at the end of the file for their topic: date, what was decided, what was rejected, and why. One short paragraph each. In ten years, *why* is worth more than *what*.
 - No commented-out code, no `TODO` without a matching item in `BUILD_PLAN.md` or `DEVICE_CHECKS.md`, no dead code. Git remembers deleted code.
 
 ---
