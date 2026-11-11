@@ -7,7 +7,7 @@ import { keyBetween, keysForShelf } from '../shelf-order.js';
 import { escapeHtml } from '../html.js';
 import { editionToCsl, cslName, volumeOfSet, editionForCitation } from '../zotero.js';
 import { equal, same, ok, throws } from './check.js';
-import { SHARED_DEFAULTS, settingsToFileText } from '../settings.js';
+import { SHARED_DEFAULTS, settingsToFileText, isAnotherCatalog } from '../settings.js';
 import { trashBook, restoreBook, trashedItems } from '../trash.js';
 import { listValues, renameValue } from '../lists.js';
 import { buildLibrary, viewEntries } from '../library.js';
@@ -174,6 +174,15 @@ export const tests = [
       equal(JSON.parse(text).currency, '€');
       ok(text.endsWith('}\n'), 'a newline at the end');
       ok(!settingsToFileText({ syncKey: 'secret', theme: 'dark' }).includes('secret'), 'settings for one device, such as its sync key, are never written');
+    },
+  },
+  {
+    name: 'a device connected to one data repository and connecting to another is emptied first; a first connection, or the same repository in other capitals, is not',
+    fn() {
+      ok(isAnotherCatalog('JakobNath/my-loci-library-test-data', 'JakobNath/my-loci-library-data'), 'test catalog to real catalog');
+      ok(!isAnotherCatalog('', 'JakobNath/my-loci-library-data'), 'never connected: its books are kept and sent');
+      ok(!isAnotherCatalog(undefined, 'JakobNath/my-loci-library-data'), 'a device that has never saved a repository');
+      ok(!isAnotherCatalog('JakobNath/my-loci-library-data', ' jakobnath/My-Loci-Library-Data '), 'same repository, other capitals and spaces');
     },
   },
   {
