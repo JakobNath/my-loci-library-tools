@@ -221,6 +221,63 @@ export function anotherCopy(editionId, copyForm, { newId, now, today }) {
   });
 }
 
+// A volume label written in Roman numerals ("IV"), as on many older sets.
+const ROMAN_LABEL = /^[IVXLC]+$/;
+
+/**
+ * The volumes of a set, pasted one per line ("Adding a set"): "7 Plato",
+ * "8 Aristotle I", "I/1 The Doctrine of the Word of God". The first word is
+ * the volume label when it holds a digit or is a Roman numeral; a line with
+ * no such word is a title without a label.
+ * @param {string} text
+ * @param {string} setTitle the title for a line that is only a label ("31": "Luther's Works, vol. 31")
+ * @returns {{ volume: string, title: string }[]}
+ */
+export function volumesFromLines(text, setTitle) {
+  return String(text ?? '').split('\n').map(line => line.trim()).filter(Boolean).map(line => {
+    const [first, ...rest] = line.split(/\s+/);
+    if (!/\d/.test(first) && !ROMAN_LABEL.test(first)) return { volume: '', title: line };
+    const volume = first.replace(/[.:,]$/, '');
+    const title = rest.join(' ').replace(/^[-–—:]\s*/, '');
+    return { volume, title: title || `${setTitle}, vol. ${volume}` };
+  });
+}
+
+/**
+ * The volume label likely to come next: "31" gives "32", "I/1" gives "I/2".
+ * @returns {string} empty when there is no number at the end to count on from
+ */
+export function nextVolumeLabel(label) {
+  const match = String(label ?? '').match(/^(.*?)(\d+)$/);
+  return match ? match[1] + (Number(match[2]) + 1) : '';
+}
+
+/**
+ * A volume's looked-up details with its set's shared facts, given once when
+ * "Adding a set". The set's title, publisher, edition and binding apply to
+ * every volume, and its general editors are added once each. The year found
+ * for the volume is kept, since a set's volumes often appear over decades;
+ * the set's year fills in only when none was found.
+ * @param {object} found what the lookups found (core/lookup.js, emptyFound)
+ * @param {{ title: string, publisher: string, year: string, editionStatement: string, editors: string[], binding: string }} set
+ * @param {string} volume the volume label
+ * @returns {object} a new found object; the input is not changed
+ */
+export function withSetFacts(found, set, volume) {
+  const named = new Set(found.contributors.map(person => key(person.name)));
+  const editors = set.editors.filter(name => !named.has(key(name))).map(name => ({ name, role: 'editor' }));
+  return {
+    ...found,
+    set: set.title,
+    volume,
+    publisher: set.publisher || found.publisher,
+    editionStatement: set.editionStatement || found.editionStatement,
+    year: found.year || set.year,
+    binding: set.binding || found.binding,
+    contributors: [...found.contributors, ...editors],
+  };
+}
+
 /** Whether a scanned code is a book's ISBN: 13 digits, starting 978 or 979, with a correct check digit. */
 export function isBookBarcode(code) {
   if (!/^97[89]\d{10}$/.test(code)) return false;

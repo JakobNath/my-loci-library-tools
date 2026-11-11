@@ -1,7 +1,8 @@
 // The entry form's records: sample books entered from scratch, editing
 // that stamps only what changed, and ISBNs.
 
-import { recordsFromForm, isbn13, anotherCopy, isBookBarcode, wishFromForm, formFromWish, isbnInText } from '../entry.js';
+import { recordsFromForm, isbn13, anotherCopy, isBookBarcode, wishFromForm, formFromWish, isbnInText, volumesFromLines, nextVolumeLabel, withSetFacts } from '../entry.js';
+import { emptyFound } from '../lookup.js';
 import { validateRecord } from '../records.js';
 import { equal, same, ok } from './check.js';
 
@@ -20,6 +21,45 @@ function blankForm(values) {
 }
 
 export const tests = [
+  {
+    name: 'volumes of a set pasted one per line give each its label and title',
+    fn() {
+      same(volumesFromLines('7 Plato\n8 Aristotle I\n\n  I/1 The Doctrine of the Word of God\n31\nIV – Church Dogmatics', 'Great Books'), [
+        { volume: '7', title: 'Plato' },
+        { volume: '8', title: 'Aristotle I' },
+        { volume: 'I/1', title: 'The Doctrine of the Word of God' },
+        { volume: '31', title: 'Great Books, vol. 31' },
+        { volume: 'IV', title: 'Church Dogmatics' },
+      ]);
+      same(volumesFromLines('Aristotle I', 'Great Books'), [{ volume: '', title: 'Aristotle I' }], 'no label first: all title');
+    },
+  },
+  {
+    name: 'the next volume label counts on from the last number',
+    fn() {
+      equal(nextVolumeLabel('31'), '32');
+      equal(nextVolumeLabel('I/1'), 'I/2');
+      equal(nextVolumeLabel('9'), '10');
+      equal(nextVolumeLabel('IV'), '', 'Roman numerals are left to the person');
+      equal(nextVolumeLabel(''), '');
+    },
+  },
+  {
+    name: 'a scanned volume of Luther\'s Works takes the set\'s facts and keeps its own year',
+    fn() {
+      const set = { title: 'Luther\'s Works', publisher: 'Fortress Press', year: '1955', editionStatement: 'American edition', editors: ['Jaroslav Pelikan', 'Helmut T. Lehmann'], binding: 'Hardcover' };
+      const found = { ...emptyFound('Open Library'), isbn: '9780800603311', title: 'Career of the Reformer I', publisher: 'Muhlenberg', year: 1957, contributors: [{ name: 'Helmut T. Lehmann', role: 'editor' }] };
+      const volume = withSetFacts(found, set, '31');
+      equal(volume.set, 'Luther\'s Works');
+      equal(volume.volume, '31');
+      equal(volume.publisher, 'Fortress Press', 'the set\'s publisher');
+      equal(volume.year, 1957, 'the volume\'s own year');
+      equal(volume.binding, 'Hardcover');
+      same(volume.contributors.map(person => person.name), ['Helmut T. Lehmann', 'Jaroslav Pelikan'], 'each editor once');
+      equal(withSetFacts({ ...found, year: null }, set, '32').year, '1955', 'the set\'s year when none was found');
+      equal(found.set, undefined, 'the input is unchanged');
+    },
+  },
   {
     name: 'the custom Imitation of Christ (#20) is entered from scratch, with no ISBN or publisher',
     fn() {

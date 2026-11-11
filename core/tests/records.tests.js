@@ -3,7 +3,7 @@
 import { makeId, isId, ID_ALPHABET } from '../ids.js';
 import { newRecord, withField, validateRecord, recordToFileText, FIELDS, migrate, FORMAT_VERSION } from '../records.js';
 import { mergeRecords } from '../merge.js';
-import { keyBetween, keysForShelf } from '../shelf-order.js';
+import { keyBetween, keysForShelf, keysAfterMove } from '../shelf-order.js';
 import { escapeHtml } from '../html.js';
 import { editionToCsl, cslName, volumeOfSet, editionForCitation } from '../zotero.js';
 import { equal, same, ok, throws } from './check.js';
@@ -107,6 +107,31 @@ export const tests = [
       ok(keyBetween(null, keys[0]) < keys[0], 'before the first');
       ok(keyBetween(keys[29], null) > keys[29], 'after the last');
       throws(() => keyBetween('n', 'm'), 'out of order');
+    },
+  },
+  {
+    name: 'moving a copy along a shelf changes only its own key',
+    fn() {
+      const keys = ['b', 'd', 'f', 'h'];
+      const moved = keysAfterMove(keys, 3, 1); // the last copy goes between the first two
+      same([...moved.keys()], [3]);
+      ok('b' < moved.get(3) && moved.get(3) < 'd', 'between its new neighbours');
+      ok(keysAfterMove(keys, 0, 4).get(0) > 'h', 'to the end');
+      ok(keysAfterMove(keys, 2, 0).get(2) < 'b', 'to the start');
+      equal(keysAfterMove(keys, 1, 1).size, 0, 'its own gap: nothing changes');
+      equal(keysAfterMove(keys, 1, 2).size, 0, 'the gap just after it: nothing changes');
+    },
+  },
+  {
+    name: 'a shelf with missing or repeated keys is renumbered once in its new order',
+    fn() {
+      for (const keys of [['b', null, null], ['b', 'b', 'd']]) {
+        const moved = keysAfterMove(keys, 2, 0);
+        const result = keys.map((key, i) => (moved.has(i) ? moved.get(i) : key));
+        const order = [2, 0, 1].map(i => result[i]);
+        same([...order].sort(), order, `${keys.join(',')}: sorted in the new order`);
+        equal(new Set(result).size, 3, 'every key different');
+      }
     },
   },
   {

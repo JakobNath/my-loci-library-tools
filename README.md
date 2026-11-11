@@ -73,6 +73,8 @@ It keeps what it wrote for each book in the data repository (`integrations/enric
 
 It runs with every backup, and by hand with `loci-enrich.cmd` or `loci-enrich.sh`. Options: `--limit 200` (ask about at most that many books this time), `--no-git`.
 
+Adding a book on the phone asks only what a person knows; the details above are left to this tool. Run it by hand right after a scanning session, rather than waiting for the night's backup, and the app's "Needs details" filter (in the Library, with a count in Settings) then shows what it could not find.
+
 The Library of Congress service has no encrypted connection and does not allow calls from web pages, which is why only this laptop tool asks it. If any source ever changes or disappears, nothing else depends on it: those fields simply stay as they are.
 
 ## logos-to-my-loci-library

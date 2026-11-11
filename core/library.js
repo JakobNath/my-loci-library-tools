@@ -142,7 +142,20 @@ export function sortEntries(entries, sort) {
 
 // A view: which books to show and in what order. Saved views (PLAN.md,
 // "Saved views") are these same objects with a name.
-export const VIEW_DEFAULTS = { medium: 'physical', sort: 'title', status: 'owned', location: [], category: '', tag: '', needsDate: false };
+export const VIEW_DEFAULTS = { medium: 'physical', sort: 'title', status: 'owned', location: [], category: '', tag: '', needsDate: false, needsDetails: false };
+
+/**
+ * The catalog details a physical book still lacks ("Needs details"): adding
+ * asks only what a person knows, and these are left to the lookups and the
+ * laptop's nightly check. A Logos book's details come from the Logos export,
+ * so it never needs them here.
+ * @returns {string[]} the names of the empty ones, of publisher, year, pages and binding
+ */
+export function missingDetails(entry) {
+  if (entry.isDigital) return [];
+  const { publisher, year, pages } = entry.edition;
+  return Object.entries({ publisher, year, pages, binding: entry.binding }).filter(([, value]) => !value).map(([name]) => name);
+}
 
 /** Whether a location lies at or inside another (["Home", "Office"] is inside ["Home"]). */
 export const isInside = (location, outer) => outer.every((part, i) => location[i] === part);
@@ -163,13 +176,14 @@ function matchesStatus(entry, status) {
  *   each work it holds (settings.json, "anthologiesInShelfLists")
  */
 export function viewEntries(entries, view = {}, { anthologies = 'once' } = {}) {
-  const { medium, sort, status, location, category, tag, needsDate } = { ...VIEW_DEFAULTS, ...view };
+  const { medium, sort, status, location, category, tag, needsDate, needsDetails } = { ...VIEW_DEFAULTS, ...view };
   const chosen = entries.filter(entry => (medium === 'all' || entry.edition.medium === medium)
     && matchesStatus(entry, status)
     && (!location.length || entry.copies.some(copy => isInside(copy.location, location)))
     && (!category || entry.categories.includes(category))
     && (!tag || entry.tags.includes(tag))
-    && (!needsDate || entry.needsDate));
+    && (!needsDate || entry.needsDate)
+    && (!needsDetails || missingDetails(entry).length));
   if (sort !== 'originalDate' || anthologies !== 'each') return sortEntries(chosen, sort);
   return sortEntries(chosen.flatMap(entry => (entry.works.length > 1
     ? [...new Set(entry.works.map(sortYearOf))].map(year => ({ ...entry, sortYear: year }))

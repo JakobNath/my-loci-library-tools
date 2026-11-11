@@ -51,3 +51,32 @@ export function keysForShelf(count) {
   }
   return keys;
 }
+
+/**
+ * New keys for moving one copy along its shelf (the shelf view's Arrange).
+ * Usually only the moved copy gets a new key. If some copies on the shelf
+ * have no key yet, or two share one (two devices adding at once), the whole
+ * shelf is given fresh keys in its new order, once.
+ * @param {(string|null)[]} keys the shelf's keys, left to right, as shown
+ * @param {number} from the index of the copy being moved
+ * @param {number} gap where it goes: 0 is before the first copy, keys.length after the last
+ * @returns {Map<number, string>} index in `keys` → new key, for each copy whose key changes
+ */
+export function keysAfterMove(keys, from, gap) {
+  const changes = new Map();
+  if (gap === from || gap === from + 1) return changes;
+  const order = keys.map((key, i) => i).filter(i => i !== from);
+  const at = gap > from ? gap - 1 : gap;
+  order.splice(at, 0, from);
+  const others = keys.filter((key, i) => i !== from);
+  const inOrder = others.every((key, i) => key && (i === 0 || others[i - 1] < key));
+  if (inOrder) {
+    const before = at > 0 ? keys[order[at - 1]] : null;
+    const after = at + 1 < order.length ? keys[order[at + 1]] : null;
+    changes.set(from, keyBetween(before, after));
+    return changes;
+  }
+  const fresh = keysForShelf(keys.length);
+  order.forEach((index, place) => { if (keys[index] !== fresh[place]) changes.set(index, fresh[place]); });
+  return changes;
+}

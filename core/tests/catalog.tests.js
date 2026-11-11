@@ -5,7 +5,7 @@ import { countPages } from '../pages.js';
 import { estimateSize } from '../sizes.js';
 import { normalizeForSearch, searchTextOf, matchesSearch } from '../search.js';
 import { parseContentsLines, contentsLine } from '../contents.js';
-import { buildLibrary, viewEntries, searchEntries, authorLineOf, sortEntries, filterChoices, SORTS } from '../library.js';
+import { buildLibrary, viewEntries, searchEntries, authorLineOf, sortEntries, filterChoices, missingDetails, SORTS } from '../library.js';
 import { equal, same, ok } from './check.js';
 import { newRecord } from '../records.js';
 import { isBible, isBibleBook } from '../bible.js';
@@ -178,6 +178,21 @@ export const tests = [
       same(choices.locations.map(path => path.join(' › ')), ['Home', 'Home › Bedroom', 'Home › Office', 'Home › Office › Case 1', 'Home › Office › Case 2']);
       same(choices.categories, ['Philosophy', 'Theology']);
       ok(['title', 'subtitle', 'author', 'originalDate', 'year', 'binding', 'series', 'category', 'location', 'value', 'added'].every(key => key in SORTS), 'every sort PLAN.md names');
+    },
+  },
+  {
+    name: '"needs details" lists physical books missing publisher, year, pages or binding',
+    fn() {
+      const copy = (id, editionId, binding) => newRecord('copy', id, '2026-11-11T10:00:00Z', { edition: editionId, binding, added: '2026-11-11' });
+      const bare = edition('bare00000001', 'Luther\'s Works 31', [confessions.id], { set: 'Luther\'s Works', volume: '31' });
+      const logos = edition('g0g0s0000001', 'Confessions', [confessions.id], { medium: 'logos' });
+      const { entries } = buildLibrary([confessions, chadwick, bare, logos,
+        copy('c0py00000011', chadwick.id, 'Paperback'), copy('c0py00000012', bare.id, null), copy('c0py00000013', logos.id, null)]);
+      const find = id => entries.find(entry => entry.id === id);
+      same(missingDetails(find(chadwick.id)), [], 'Chadwick has them all');
+      same(missingDetails(find(bare.id)), ['publisher', 'year', 'pages', 'binding']);
+      same(missingDetails(find(logos.id)), [], 'a Logos book never needs them');
+      same(viewEntries(entries, { needsDetails: true, medium: 'all' }).map(entry => entry.id), [bare.id]);
     },
   },
   {
