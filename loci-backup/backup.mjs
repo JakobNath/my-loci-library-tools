@@ -58,7 +58,8 @@ export function mirrorFolder(from, to) {
 
 /** The exports and the HTML catalog, written into `folder`. */
 export function writeExports(dataRepo, folder, built) {
-  const records = readRecords(dataRepo);
+  // The exports never write records, so a catalog ahead of these tools is still backed up.
+  const records = readRecords(dataRepo, { allowNewer: true });
   const library = buildLibrary(records);
   const settings = readJson(join(dataRepo, 'settings.json')) || {};
   const thumbnail = id => {
