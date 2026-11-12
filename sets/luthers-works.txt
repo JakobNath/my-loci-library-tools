@@ -1,0 +1,354 @@
+# Luther's Works, American Edition, volumes 1–55 (Concordia Publishing House and Fortress Press,
+# 1955–1986; general editors Jaroslav Pelikan and Helmut T. Lehmann): every volume and the works it holds.
+# Researched 12 November 2026. Every volume title was checked against at least two sources (Logos,
+# Open Library, the Fortress Press and Concordia Publishing House pages, the Concordia Seminary
+# library's Library of Congress set record, therebelgod.com's tables of contents); the contents of
+# volumes 31–55 against two tables of contents (Fortress Press and therebelgod.com), those of 1–30
+# against the set record, Logos and Open Library. Original titles follow the Weimar edition; some rest
+# on one source (listed in the project's working notes for the person who checks this list).
+# Translators and page ranges are left out: no source reachable on that day gave them per work.
+# Letters, sermons, hymns and the Table Talk are one work per volume, not one per letter or sermon.
+# Not yet checked by a person: its dates are offered, not filled in.
+set: Luther's Works
+publisher: Concordia Publishing House; Fortress Press
+place: St. Louis; Philadelphia
+year: 1955–1986
+edition: American Edition
+
+volume: 1 | Lectures on Genesis: Chapters 1–5 | isbn 9780570064015
+Martin Luther — Lectures on Genesis | In primum librum Mose enarrationes | Latin — 1535–1545
+
+# note: therebelgod.com titles this volume "Lectures on Genesis 6-19"; Logos and Open Library (ISBN 9780570064022) say "Chapters 6-14"
+volume: 2 | Lectures on Genesis: Chapters 6–14 | isbn 9780570064022
+Martin Luther — Lectures on Genesis | In primum librum Mose enarrationes | Latin — 1535–1545
+
+volume: 3 | Lectures on Genesis: Chapters 15–20 | isbn 9780570064039
+Martin Luther — Lectures on Genesis | In primum librum Mose enarrationes | Latin — 1535–1545
+
+volume: 4 | Lectures on Genesis: Chapters 21–25 | isbn 9780570064046
+Martin Luther — Lectures on Genesis | In primum librum Mose enarrationes | Latin — 1535–1545
+
+volume: 5 | Lectures on Genesis: Chapters 26–30 | isbn 9780570064053
+Martin Luther — Lectures on Genesis | In primum librum Mose enarrationes | Latin — 1535–1545
+
+volume: 6 | Lectures on Genesis: Chapters 31–37 | isbn 9780570064060
+Martin Luther — Lectures on Genesis | In primum librum Mose enarrationes | Latin — 1535–1545
+
+volume: 7 | Lectures on Genesis: Chapters 38–44 | isbn 9780570064077
+Martin Luther — Lectures on Genesis | In primum librum Mose enarrationes | Latin — 1535–1545
+
+volume: 8 | Lectures on Genesis: Chapters 45–50 | isbn 9780570064084
+Martin Luther — Lectures on Genesis | In primum librum Mose enarrationes | Latin — 1535–1545
+
+volume: 9 | Lectures on Deuteronomy | isbn 9780570064091
+# note: WA 14 heads the lectures "1523/24" and dates the printed text "Deuteronomion Mosi cum annotationibus. 1525"
+Martin Luther — Lectures on Deuteronomy | Deuteronomion Mosi cum annotationibus | Latin — 1523–1525
+
+# note: volume title: Logos "First Lectures on the Psalms 1-75"; Open Library "Lectures on the Psalms I/Chapters 1-75"; therebelgod "Lectures on Psalms I"
+volume: 10 | First Lectures on the Psalms I: Psalms 1–75 | isbn 9780570064107
+# note: the WA volume heading says 1513/15; the WA entry says 1513-1516
+Martin Luther — First Lectures on the Psalms | Dictata super Psalterium | Latin — 1513–1515
+
+volume: 11 | First Lectures on the Psalms II: Psalms 76–126 | isbn 9780570064114
+Martin Luther — First Lectures on the Psalms | Dictata super Psalterium | Latin — 1513–1515
+
+volume: 12 | Selected Psalms I | isbn 9780570064121
+# note: the seven psalms of this volume come from one table of contents (therebelgod.com) only
+Martin Luther — Psalm 2 | Enarratio Psalmi II | Latin — 1532
+Martin Luther — Psalm 8 | | German — 1537
+Martin Luther — Psalm 19 | | German — c. 1531
+Martin Luther — Psalm 23 | Der 23. Psalm über Tisch ausgelegt | German — 1536
+Martin Luther — Psalm 26 | Predigt über den 26. Psalm | German — 1525
+Martin Luther — Psalm 45 | Enarratio Psalmi XLV | Latin — 1532
+Martin Luther — Psalm 51 | Enarratio Psalmi LI | Latin — 1532
+
+volume: 13 | Selected Psalms II | isbn 9780570064138
+Martin Luther — Psalm 68 | Deutsche Auslegung des 67. (68.) Psalmes | German — 1521
+Martin Luther — Psalm 82 | Der 82. Psalm ausgelegt | German — 1530
+Martin Luther — Psalm 90 | Enarratio Psalmi XC | Latin — 1534–1535
+Martin Luther — Psalm 101 | Auslegung des 101. Psalms | German — 1534–1535
+# note: Open Library's subtitle for this volume leaves out Psalm 110; Logos and therebelgod include it (WA 41, sermons of 1535)
+Martin Luther — Psalm 110 | | German — 1535
+Martin Luther — Psalm 111 | Der 111. Psalm ausgelegt | German — 1530
+Martin Luther — Psalm 112 | Der 112. Psalm Davids gepredigt | German — 1526
+
+volume: 14 | Selected Psalms III | isbn 9780570064145
+Martin Luther — Psalm 117 | Der 117. Psalm ausgelegt | German — 1530
+Martin Luther — Psalm 118 | Das schöne Confitemini | German — 1530
+Martin Luther — Psalm 147 | Der 147. Psalm, Lauda Jerusalem, ausgelegt | German — 1532
+# note: the 1525 revision (WA 18) of the 1517 first version (WA 1)
+Martin Luther — The Seven Penitential Psalms | Die sieben Bußpsalmen | German — 1525
+Martin Luther — Four Psalms of Comfort | Vier tröstliche Psalmen an die Königin zu Ungarn | German — 1526
+# note: from the second Psalms lectures (WA 5, 26-74); the exact LW heading for this item was not confirmed
+Martin Luther — Psalms 1 and 2 | Operationes in Psalmos | Latin — 1519
+
+volume: 15 | Ecclesiastes, Song of Solomon, Last Words of David | isbn 9780570064152
+Martin Luther — Notes on Ecclesiastes | Annotationes in Ecclesiasten | Latin — 1526
+Martin Luther — Lectures on the Song of Solomon | Vorlesung über das Hohelied | Latin — 1530–1531
+Martin Luther — Treatise on the Last Words of David | Von den letzten Worten Davids | German — 1543
+
+volume: 16 | Lectures on Isaiah: Chapters 1–39 | isbn 9780570064169
+Martin Luther — Lectures on Isaiah | In Esaiam prophetam enarrationes | Latin — 1527–1530
+
+volume: 17 | Lectures on Isaiah: Chapters 40–66 | isbn 9780570064176
+Martin Luther — Lectures on Isaiah | In Esaiam prophetam enarrationes | Latin — 1527–1530
+
+volume: 18 | Lectures on the Minor Prophets I: Hosea–Malachi | isbn 9780570064183
+# note: WA 13 has only the editorial heading "Vorlesungen über die Kleinen Propheten 1524/26"
+Martin Luther — Lectures on the Minor Prophets | Vorlesungen über die Kleinen Propheten | Latin — 1524–1526
+
+volume: 19 | Lectures on the Minor Prophets II: Jonah, Habakkuk | isbn 9780570064190
+# note: LW prints the Latin parts here as "Lectures on Jonah/Habakkuk: The Latin Text"; this list keeps one title for the whole Latin series in vols 18-20
+Martin Luther — Lectures on the Minor Prophets | Vorlesungen über die Kleinen Propheten | Latin — 1524–1526
+Martin Luther — Lectures on Jonah: The German Text | Der Prophet Jona ausgelegt | German — 1526
+Martin Luther — Lectures on Habakkuk: The German Text | Der Prophet Habakuk ausgelegt | German — 1526
+
+volume: 20 | Lectures on the Minor Prophets III: Zechariah | isbn 9780570064206
+# note: LW prints the Latin part here as "Lectures on Zechariah: The Latin Text"
+Martin Luther — Lectures on the Minor Prophets | Vorlesungen über die Kleinen Propheten | Latin — 1524–1526
+Martin Luther — Lectures on Zechariah: The German Text | Der Prophet Sacharja ausgelegt | German — 1527
+
+volume: 21 | The Sermon on the Mount and the Magnificat | isbn 9780570064213
+Martin Luther — The Sermon on the Mount | Das fünffte, Sechste und Siebend Capitel S. Matthei gepredigt und ausgelegt | German — 1530–1532
+Martin Luther — The Magnificat | Das Magnificat verdeutschet und ausgelegt | German — 1521
+
+volume: 22 | Sermons on the Gospel of St. John: Chapters 1–4 | isbn 9780570064220
+Martin Luther — Sermons on the Gospel of St. John, Chapters 1–4 | Auslegung des ersten und zweiten Kapitels Johannis in Predigten; Auslegung des dritten und vierten Kapitels Johannis in Predigten | German — 1537–1540
+
+# note: therebelgod says "John 6-9"; Logos, Open Library and the WA 33 title say chapters 6-8
+volume: 23 | Sermons on the Gospel of St. John: Chapters 6–8 | isbn 9780570064237
+Martin Luther — Sermons on the Gospel of St. John, Chapters 6–8 | Auslegung uber das Sechste, Siebende und Achte Capitel des Euangelisten Joannis | German — 1530–1532
+
+volume: 24 | Sermons on the Gospel of St. John: Chapters 14–16 | isbn 9780570064244
+# note: preached 1533-1534, printed 1538 (WA 45-46)
+Martin Luther — Sermons on the Gospel of St. John, Chapters 14–16 | | German — 1533–1534
+
+volume: 25 | Lectures on Romans: Glosses and Scholia | isbn 9780570064251
+Martin Luther — Lectures on Romans | | Latin — 1515–1516
+
+volume: 26 | Lectures on Galatians, 1535: Chapters 1–4 | isbn 9780570064268
+# note: lectured 1531, printed 1535
+Martin Luther — Lectures on Galatians, 1535 | In epistolam S. Pauli ad Galatas commentarius | Latin — 1531–1535
+
+volume: 27 | Lectures on Galatians, 1535: Chapters 5–6; Lectures on Galatians, 1519: Chapters 1–6 | isbn 9780570064275
+Martin Luther — Lectures on Galatians, 1535 | In epistolam S. Pauli ad Galatas commentarius | Latin — 1531–1535
+Martin Luther — Lectures on Galatians, 1519 | In epistolam Pauli ad Galatas M. Lutheri commentarius | Latin — 1519
+
+volume: 28 | 1 Corinthians 7, 1 Corinthians 15, Lectures on 1 Timothy | isbn 9780570064282
+Martin Luther — Commentary on 1 Corinthians 7 | Das siebente Kapitel S. Pauli zu den Corinthern ausgelegt | German — 1523
+Martin Luther — Commentary on 1 Corinthians 15 | | German — 1532–1533
+Martin Luther — Lectures on 1 Timothy | Vorlesung über den 1. Timotheusbrief | Latin — 1528
+
+volume: 29 | Lectures on Titus, Philemon, and Hebrews | isbn 9780570064299
+Martin Luther — Lectures on Titus | Vorlesung über die Briefe an Titus und Philemon | Latin — 1527
+Martin Luther — Lectures on Philemon | Vorlesung über die Briefe an Titus und Philemon | Latin — 1527
+Martin Luther — Lectures on Hebrews | Hebräervorlesung | Latin — 1517–1518
+
+volume: 30 | The Catholic Epistles | isbn 9780570064305
+Martin Luther — Sermons on the First Epistle of St. Peter | Epistel S. Petri gepredigt und ausgelegt | German — 1523
+Martin Luther — Sermons on the Second Epistle of St. Peter | Die ander Epistel S. Petri und eine S. Judas gepredigt und ausgelegt | German — 1523–1524
+Martin Luther — Sermons on the Epistle of St. Jude | Die ander Epistel S. Petri und eine S. Judas gepredigt und ausgelegt | German — 1523–1524
+Martin Luther — Lectures on the First Epistle of St. John | Vorlesung über den 1. Johannesbrief | Latin — 1527
+
+volume: 31 | Career of the Reformer I | isbn 9780800603311
+Martin Luther — Disputation Against Scholastic Theology | Disputatio contra scholasticam theologiam | Latin — 1517
+Martin Luther — Ninety-five Theses | Disputatio pro declaratione virtutis indulgentiarum | Latin — 1517
+Martin Luther — Heidelberg Disputation | Disputatio Heidelbergae habita | Latin — 1518
+Martin Luther — Preface to the Complete Edition of a German Theology | Vorrede zu der vollständigen Ausgabe der "deutschen Theologie" | German — 1518
+Martin Luther — Explanations of the Ninety-five Theses | Resolutiones disputationum de indulgentiarum virtute | Latin — 1518
+Martin Luther — Proceedings at Augsburg | Acta Augustana | Latin — 1518
+Martin Luther — Two Kinds of Righteousness | Sermo de duplici iustitia | Latin — 1519
+Martin Luther — The Leipzig Debate | Disputatio et excusatio F. Martini Luther adversus criminationes D. Johannis Eccii | Latin — 1519
+# note: WA 7 prints both a German version (Von der Freiheit eines Christenmenschen) and a Latin one; LW 31 includes the open letter to Pope Leo X
+Martin Luther — The Freedom of a Christian | Tractatus de libertate christiana | Latin — 1520
+# note: Fortress Press adds "by Doctor Martin Luther" to the end of this title
+Martin Luther — Why the Books of the Pope and His Disciples Were Burned | Warum des Papstes und seiner Jünger Bücher von Doktor Martin Luther verbrannt sind | German — 1520
+
+volume: 32 | Career of the Reformer II | isbn 9780800603328
+Martin Luther — Defense and Explanation of All the Articles | Grund und Ursach aller Artikel D. Martin Luthers, so durch römische Bulle unrechtlich verdammt sind | German — 1521
+Martin Luther — Luther at the Diet of Worms | Verhandlungen mit D. Martin Luther auf dem Reichstage zu Worms | Latin and German — 1521
+Martin Luther — Against Latomus | Rationis Latomianae confutatio | Latin — 1521
+Martin Luther — The Burning of Brother Henry | Von Bruder Heinrich in Ditmar verbrannt | German — 1525
+
+# note: the volume title is "Career of the Reformer III" in Logos and on chedspellman.com; Fortress Press and therebelgod give only "The Bondage of the Will"
+volume: 33 | Career of the Reformer III | isbn 9780800603335
+# note: the Fortress Press contents list says 1526; WA prints it in vol 18 (writings of 1525); it appeared in December 1525
+Martin Luther — The Bondage of the Will | De servo arbitrio | Latin — 1525
+
+volume: 34 | Career of the Reformer IV | isbn 9780800603342
+Martin Luther — Exhortation to All Clergy Assembled at Augsburg | Vermahnung an die Geistlichen, versammelt auf dem Reichstag zu Augsburg | German — 1530
+Martin Luther — Commentary on the Alleged Imperial Edict | Glosse auf das vermeinte kaiserliche Edikt | German — 1531
+# note: WA 39.I gives only the heading "Die Doktorpromotion von Hieronymus Weller und Nikolaus Medler" (1535) for these theses
+Martin Luther — Theses Concerning Faith and Law | | Latin — 1535
+Martin Luther — The Disputation Concerning Man | Disputatio de homine | Latin — 1536
+# note: WA 39.I dates it "14. Januar 1536?"
+Martin Luther — The Disputation Concerning Justification | Disputatio de iustificatione | Latin — 1536
+Martin Luther — The Three Symbols or Creeds of the Christian Faith | Die drei Symbola oder Bekenntnis des Glaubens Christi | German — 1538
+Martin Luther — Counsel of a Committee of Several Cardinals with Luther's Preface | Ratschlag eines Ausschusses etlicher Kardinäle, mit Luthers Vorrede | German — 1538
+Martin Luther — Preface to Galeatius Capella's History | Vorrede zu Historia Galeatii Capellae | Latin — 1538
+Martin Luther — Preface to the Wittenberg Edition of Luther's German Writings | Vorrede zum 1. Bande der Wittenberger Ausgabe der deutschen Schriften | German — 1539
+Martin Luther — Luther's Will | | German — 1542
+Martin Luther — The Licentiate Examination of Heinrich Schmedenstede | Die Promotionsdisputation von Heinrich Schmedenstede | Latin — 1542
+Martin Luther — Preface to the Complete Edition of Luther's Latin Writings | Vorrede zum ersten Bande der Gesamtausgaben seiner lateinischen Schriften | Latin — 1545
+Martin Luther — Against the Thirty-two Articles of the Louvain Theologists | Contra XXXII articulos Lovaniensium theologistarum | Latin — 1545
+Martin Luther — An Italian Lie Concerning Dr. Martin Luther's Death | Eine wälsche Lügenschrift von Doctoris Martini Luthers Tod | German — 1545
+
+volume: 35 | Word and Sacrament I | isbn 9780800603359
+Martin Luther — The Sacrament of Penance | Ein Sermon von dem Sakrament der Buße | German — 1519
+Martin Luther — The Holy and Blessed Sacrament of Baptism | Ein Sermon von dem heiligen hochwürdigen Sakrament der Taufe | German — 1519
+# note: therebelgod gives the shorter "The Blessed Sacrament of the Body of Christ, and the Brotherhoods"
+Martin Luther — The Blessed Sacrament of the Holy and True Body of Christ, and the Brotherhoods | Ein Sermon von dem hochwürdigen Sakrament des heiligen wahren Leichnams Christi und von den Brüderschaften | German — 1519
+Martin Luther — A Treatise on the New Testament, That Is, the Holy Mass | Ein Sermon von dem neuen Testament, das ist von der heiligen Messe | German — 1520
+# note: Fortress Press says 1521 (when written); WA prints it in the Christmas Postil of 1522
+Martin Luther — A Brief Instruction on What to Look for and Expect in the Gospels | Ein klein Unterricht, was man in den Evangeliis suchen und gewarten soll | German — 1521
+Martin Luther — Avoiding the Doctrines of Men and A Reply to the Texts Cited in Defense of the Doctrines of Men | Von Menschenlehre zu meiden | German — 1522
+# note: Fortress Press says 1525 (preached); WA 16 dates the printed text 1526
+Martin Luther — How Christians Should Regard Moses | Ein Unterrichtung, wie sich die Christen in Mosen sollen schicken | German — 1525
+Martin Luther — On Translating: An Open Letter | Ein Sendbrief vom Dolmetschen | German — 1530
+# note: Fortress Press says 1531; WA 38 says 1531-33
+Martin Luther — Defense of the Translation of the Psalms | Summarien über die Psalmen und Ursachen des Dolmetschens | German — 1531–1533
+Martin Luther — Prefaces to the Old Testament | | German — 1523–1545
+Martin Luther — Prefaces to the Apocrypha | | German — 1529–1545
+Martin Luther — Prefaces to the New Testament | | German — 1522–1546
+
+volume: 36 | Word and Sacrament II | isbn 9780800603366
+Martin Luther — The Babylonian Captivity of the Church | De captivitate Babylonica ecclesiae praeludium | Latin — 1520
+Martin Luther — The Misuse of the Mass | Vom Mißbrauch der Messe | German — 1521
+Martin Luther — Receiving Both Kinds in the Sacrament | Von beider Gestalt des Sakraments zu nehmen | German — 1522
+Martin Luther — The Adoration of the Sacrament | Von Anbeten des Sakraments des heiligen Leichnams Christi | German — 1523
+Martin Luther — The Abomination of the Secret Mass | Vom Greuel der Stillmesse | German — 1525
+Martin Luther — The Sacrament of the Body and Blood of Christ—Against the Fanatics | Sermon von dem Sakrament des Leibes und Blutes Christi, wider die Schwarmgeister | German — 1526
+
+volume: 37 | Word and Sacrament III | isbn 9780800603373
+Martin Luther — That These Words of Christ, "This Is My Body," etc., Still Stand Firm Against the Fanatics | Daß diese Wort Christi "Das ist mein Leib" noch fest stehen, wider die Schwärmgeister | German — 1527
+Martin Luther — Confession Concerning Christ's Supper | Vom Abendmahl Christi, Bekenntnis | German — 1528
+
+volume: 38 | Word and Sacrament IV | isbn 9780800603380
+Martin Luther — The Marburg Colloquy and the Marburg Articles | Das Marburger Gespräch und die Marburger Artikel | Latin and German — 1529
+Martin Luther — Admonition Concerning the Sacrament of the Body and Blood of Our Lord | Vermahnung zum Sakrament des Leibes und Blutes Christi | German — 1530
+Martin Luther — The Private Mass and the Consecration of Priests | Von der Winkelmesse und Pfaffenweihe | German — 1533
+Martin Luther — A Letter of Dr. Martin Luther Concerning His Book on the Private Mass | Ein Brief D. Martin Luthers von seinem Buch der Winkelmessen | German — 1534
+Martin Luther — The Disputation Concerning the Passage: "The Word Was Made Flesh" | Disputatio de sententia: Verbum caro factum est | Latin — 1539
+# note: listed by Fortress Press; missing from therebelgod's contents for this volume
+Martin Luther — Brief Confession Concerning the Holy Sacrament | Kurzes Bekenntnis vom heiligen Sakrament | German — 1544
+
+volume: 39 | Church and Ministry I | isbn 9780800603397
+Martin Luther — A Sermon on the Ban | Ein Sermon von dem Bann | German — 1520
+Martin Luther — A Discussion on How Confession Should Be Made | Confitendi ratio | Latin — 1520
+Martin Luther — On the Papacy in Rome, Against the Most Celebrated Romanist in Leipzig | Von dem Papstthum zu Rom wider den hochberühmten Romanisten zu Leipzig | German — 1520
+Martin Luther — To the Goat in Leipzig | An den Bock zu Leipzig | German — 1521
+Martin Luther — Concerning the Answer of the Goat in Leipzig | Auf des Bocks zu Leipzig Antwort | German — 1521
+Martin Luther — Answer to the Hyperchristian, Hyperspiritual, and Hyperlearned Book by Goat Emser in Leipzig—Including Some Thoughts Regarding His Companion, the Fool Murner | Auf das überchristlich, übergeistlich und überkünstlich Buch Bocks Emsers zu Leipzig Antwort | German — 1521
+Martin Luther — Dr. Luther's Retraction of the Error Forced upon Him by the Most Highly Learned Priest of God, Sir Jerome Emser, Vicar in Meissen | Ein Widerspruch D. Luthers seines Irrthums, erzwungen durch den allerhochgelehrtesten Priester Gottes, Herrn Hieronymus Emser | German — 1521
+Martin Luther — Against the Spiritual Estate of the Pope and the Bishops Falsely So Called | Wider den falsch genannten geistlichen Stand des Papsts und der Bischöfe | German — 1522
+Martin Luther — That a Christian Assembly or Congregation Has the Right and Power to Judge All Teaching and to Call, Appoint, and Dismiss Teachers, Established and Proven by Scripture | Daß eine christliche Versammlung oder Gemeine Recht und Macht habe, alle Lehre zu urteilen | German — 1523
+
+volume: 40 | Church and Ministry II | isbn 9780800603403
+Martin Luther — Concerning the Ministry | De instituendis ministris Ecclesiae | Latin — 1523
+Martin Luther — Letter to the Princes of Saxony Concerning the Rebellious Spirit | Ein Brief an die Fürsten zu Sachsen von dem aufrührischen Geist | German — 1524
+Martin Luther — Letter to the Christians at Strassburg in Opposition to the Fanatic Spirit | Ein Brief an die Christen zu Straßburg wider den Schwärmergeist | German — 1524
+Martin Luther — Against the Heavenly Prophets in the Matter of Images and Sacraments | Wider die himmlischen Propheten, von den Bildern und Sakrament | German — 1525
+Martin Luther — Concerning Rebaptism | Von der Wiedertaufe an zwei Pfarrherrn | German — 1528
+Martin Luther — Instructions for the Visitors of Parish Pastors in Electoral Saxony | Unterricht der Visitatoren an die Pfarrherrn im Kurfürstentum zu Sachsen | German — 1528
+Martin Luther — The Keys | Von den Schlüsseln | German — 1530
+Martin Luther — Infiltrating and Clandestine Preachers | Von den Schleichern und Winkelpredigern | German — 1532
+
+volume: 41 | Church and Ministry III | isbn 9780800603410
+Martin Luther — On the Councils and the Church | Von den Konziliis und Kirchen | German — 1539
+Martin Luther — Against Hanswurst | Wider Hans Worst | German — 1541
+Martin Luther — Against the Roman Papacy, an Institution of the Devil | Wider das Papsttum zu Rom, vom Teufel gestiftet | German — 1545
+
+volume: 42 | Devotional Writings I | isbn 9780800603427
+Martin Luther — A Meditation on Christ's Passion | Ein Sermon von der Betrachtung des heiligen Leidens Christi | German — 1519
+Martin Luther — An Exposition of the Lord's Prayer for Simple Laymen | Auslegung deutsch des Vaterunsers für die einfältigen Laien | German — 1519
+Martin Luther — On Rogationtide Prayer and Procession | Ein Sermon von dem Gebet und Prozession in der Kreuzwoche | German — 1519
+Martin Luther — A Sermon on Preparing to Die | Ein Sermon von der Bereitung zum Sterben | German — 1519
+Martin Luther — Fourteen Consolations | Tessaradecas consolatoria pro laborantibus et oneratis | Latin — 1520
+Martin Luther — Sermon on the Worthy Reception of the Sacrament | Sermon von der würdigen Empfahung des heiligen wahren Leichnams Christi | German — 1521
+Martin Luther — Comfort When Facing Grave Temptations | Tröstung für eine Person in hohen Anfechtungen | German — 1521
+
+volume: 43 | Devotional Writings II | isbn 9780800603434
+Martin Luther — Personal Prayer Book | Betbüchlein | German — 1522
+Martin Luther — A Letter to Hans von Rechenberg | Eine Frage, ob auch jemand, ohne Glauben verstorben, selig werden möge | German — 1522
+Martin Luther — A Letter of Consolation to All Who Suffer Persecution | | German — 1522
+Martin Luther — To All Christians in Worms | | German — 1523
+Martin Luther — How God Rescued an Honorable Nun | Eine Geschicht, wie Gott einer Klosterjungfrau ausgeholfen hat | German — 1524
+Martin Luther — A Christian Letter of Consolation to the People of Miltenberg | Ein christlicher Trostbrief an die Miltenberger | German — 1524
+Martin Luther — Whether One May Flee from a Deadly Plague | Ob man vor dem Sterben fliehen möge | German — 1527
+Martin Luther — A Letter of Consolation to the Christians at Halle | Tröstung an die Christen zu Halle über Herr Georgen ihres Predigers Tod | German — 1527
+Martin Luther — Sayings in Which Luther Found Comfort | Sprüche, mit denen sich Luther getröstet hat | German — 1530
+Martin Luther — That a Christian Should Bear His Cross with Patience | | German — 1530
+Martin Luther — A Simple Way to Pray | Eine einfältige Weise zu beten für einen guten Freund | German — 1535
+Martin Luther — Appeal for Prayer Against the Turks | Vermahnung zum Gebet wider den Türken | German — 1541
+Martin Luther — Comfort for Women Who Have Had a Miscarriage | Ein Trost den Weibern, welchen es ungerade gegangen ist mit Kindergebären | German — 1542
+Martin Luther — To the Saxon Princes | An Kurfürsten zu Sachsen und Landgrafen zu Hessen von dem gefangenen Herzog zu Braunschweig | German — 1545
+
+# note: the volume title is "Christian in Society I" at Fortress Press and Concordia Publishing House; Logos prints "The Christian in Society I"
+volume: 44 | The Christian in Society I | isbn 9780800603441
+Martin Luther — A Sermon on the Estate of Marriage | Ein Sermon von dem ehelichen Stand | German — 1519
+Martin Luther — Treatise on Good Works | Von den guten Werken | German — 1520
+Martin Luther — To the Christian Nobility of the German Nation Concerning the Reform of the Christian Estate | An den christlichen Adel deutscher Nation von des christlichen Standes Besserung | German — 1520
+Martin Luther — An Instruction to Penitents Concerning the Forbidden Books of Dr. M. Luther | Ein Unterricht der Beichtkinder über die verbotenen Bücher | German — 1521
+Martin Luther — A Sermon on the Three Kinds of Good Life for the Instruction of Consciences | Ein Sermon von dreierlei gutem Leben, das Gewissen zu unterrichten | German — 1521
+Martin Luther — The Judgment of Martin Luther on Monastic Vows | De votis monasticis Martini Lutheri iudicium | Latin — 1521
+
+volume: 45 | The Christian in Society II | isbn 9780800603458
+Martin Luther — The Persons Related by Consanguinity and Affinity Who Are Forbidden to Marry According to the Scriptures, Leviticus 18 | Welche Personen verboten sind zu ehelichen | German — 1522
+Martin Luther — The Estate of Marriage | Vom ehelichen Leben | German — 1522
+Martin Luther — A Sincere Admonition by Martin Luther to All Christians to Guard Against Insurrection and Rebellion | Eine treue Vermahnung zu allen Christen, sich zu hüten vor Aufruhr und Empörung | German — 1522
+Martin Luther — Temporal Authority: To What Extent It Should Be Obeyed | Von weltlicher Oberkeit, wie weit man ihr Gehorsam schuldig sei | German — 1523
+Martin Luther — An Exhortation to the Knights of the Teutonic Order That They Lay Aside False Chastity and Assume the True Chastity of Wedlock | An die Herren deutsch Ordens, daß sie falsche Keuschheit meiden | German — 1523
+# note: Fortress Press lists Luther's preface and the "Fraternal Agreement on the Common Chest of the Entire Assembly at Leisnig" as two items; therebelgod lists them as one
+Martin Luther — Ordinance of a Common Chest | Ordnung eines gemeinen Kastens | German — 1523
+Martin Luther — That Jesus Christ Was Born a Jew | Daß Jesus Christus ein geborner Jude sei | German — 1523
+Martin Luther — Trade and Usury | Von Kaufshandlung und Wucher | German — 1524
+Martin Luther — Exposition of Psalm 127, for the Christians at Riga in Livonia | Der 127. Psalm ausgelegt an die Christen zu Riga in Liefland | German — 1524
+Martin Luther — To the Councilmen of All Cities in Germany That They Establish and Maintain Christian Schools | An die Ratherren aller Städte deutsches Lands, daß sie christliche Schulen aufrichten und halten sollen | German — 1524
+Martin Luther — That Parents Should Neither Compel nor Hinder the Marriage of Their Children and That Children Should Not Become Engaged Without Their Parents' Consent | Daß Eltern die Kinder zur Ehe nicht zwingen noch hindern | German — 1524
+
+volume: 46 | The Christian in Society III | isbn 9780800603465
+Martin Luther — Admonition to Peace, A Reply to the Twelve Articles of the Peasants in Swabia | Ermahnung zum Frieden auf die zwölf Artikel der Bauerschaft in Schwaben | German — 1525
+Martin Luther — Against the Robbing and Murdering Hordes of Peasants | Wider die räuberischen und mörderischen Rotten der Bauern | German — 1525
+Martin Luther — An Open Letter on the Harsh Book Against the Peasants | Ein Sendbrief von dem harten Büchlein wider die Bauern | German — 1525
+Martin Luther — Whether Soldiers, Too, Can Be Saved | Ob Kriegsleute auch in seligem Stande sein können | German — 1526
+Martin Luther — An Answer to Several Questions on Monastic Vows | Antwort auf etliche Fragen, Klostergelübde belangend | German — 1526
+Martin Luther — On War Against the Turk | Vom Kriege wider die Türken | German — 1529
+Martin Luther — A Sermon on Keeping Children in School | Eine Predigt, daß man Kinder zur Schulen halten solle | German — 1530
+Martin Luther — On Marriage Matters | Von Ehesachen | German — 1530
+
+# note: therebelgod labels this volume "Christian in Society III" (a repeat); Logos, Open Library and Fortress Press have "IV"
+volume: 47 | The Christian in Society IV | isbn 9780800603472
+Martin Luther — Dr. Martin Luther's Warning to His Dear German People | Warnung an seine lieben Deutschen | German — 1531
+Martin Luther — Against the Sabbatarians: Letter to a Good Friend | Ein Brief D. Mart. Luther. Wider die Sabbather an einen guten Freund | German — 1538
+Martin Luther — Against the Antinomians | Wider die Antinomer | German — 1539
+Martin Luther — On the Jews and Their Lies | Von den Juden und ihren Lügen | German — 1543
+
+volume: 48 | Letters I | isbn 9780800603489
+# note: letters 1-119, April 1507 to March 1522 (Fortress Press; therebelgod)
+Martin Luther — Letters I | | Latin and German — 1507–1522
+
+volume: 49 | Letters II | isbn 9780800603496
+# note: letters 120-236, March 1522 to October 1530
+Martin Luther — Letters II | | Latin and German — 1522–1530
+
+volume: 50 | Letters III | isbn 9780800603502
+# note: letters 237-325, January 1531 to February 1546
+Martin Luther — Letters III | | Latin and German — 1531–1546
+
+volume: 51 | Sermons I | isbn 9780800603519
+# note: the first sermon is dated "1510(?) or 1512(?)" (therebelgod); Fortress Press's contents list says "Early Sermons, 1510-1517"; the last is the Eisleben sermon of 1546
+Martin Luther — Sermons I | | German and Latin — 1510–1546
+
+volume: 52 | Sermons II | isbn 9780800603526
+# note: the Christmas-to-Epiphany Gospel sermons of the Church Postil (WA 10.I.1), written 1521, printed 1522
+Martin Luther — Sermons II | Weihnachtspostille | German — 1522
+
+volume: 53 | Liturgy and Hymns | isbn 9780800603533
+Martin Luther — Liturgy and Hymns | | German and Latin — 1523–1545
+
+volume: 54 | Table Talk | isbn 9780800603540
+Martin Luther — Table Talk | Tischreden | German and Latin — 1531–1544
+
+volume: 55 | Index | isbn 9780800603557
+# note: compiled by Joel W. Lundeen (Fortress Press, Open Library); it holds no work by Luther
+Joel W. Lundeen — Index | | English — 1986
