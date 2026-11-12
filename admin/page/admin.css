@@ -42,3 +42,6 @@ footer { border-top: 1px solid var(--pop); padding-top: var(--space-3); font: va
   section > h2 { break-after: avoid; }
   a { color: inherit; text-decoration: none; }
 }
+.planner textarea, .planner select, .planner input[name="place"] { border: 1px solid var(--line); border-radius: var(--radius); padding: 5px 8px; background: var(--bg); color: var(--ink); font: var(--fs-small) var(--font-mono); max-width: 100%; }
+.planner .wide { display: block; }
+.plan-output { max-height: 32rem; overflow-y: auto; }

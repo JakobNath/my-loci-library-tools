@@ -8,7 +8,7 @@
  * @typedef {{ repo: 'app'|'tools', file: string, section?: string, leaveOut?: string[] }} Source
  *   section: one section's heading (the whole document when not given);
  *   leaveOut: headings of sections not shown (with what is under them)
- * @typedef {{ id: string, title: string, opening: string, tools?: boolean, sources: Source[] }} Chapter
+ * @typedef {{ id: string, title: string, opening: string, tools?: boolean, planner?: boolean, sources: Source[] }} Chapter
  */
 
 /** @type {Chapter[]} */
@@ -36,7 +36,14 @@ export const CHAPTERS = [
     title: 'The laptop tools',
     opening: 'The buttons run the same tools as the command line, on this laptop, against the catalog named in config.json. Each says what it did when it finishes.',
     tools: true,
-    sources: [{ repo: 'tools', file: 'README.md', leaveOut: ['License', 'Tests'] }],
+    sources: [{ repo: 'tools', file: 'README.md', leaveOut: ['License', 'Tests', 'The shelf planner'] }],
+  },
+  {
+    id: 'shelves',
+    title: 'Planning the shelves',
+    opening: 'Choose a room or a bookcase, give the width of each shelf, and choose an order: the planner fits the books to the shelves by their thickness and lists what moves where. Nothing is saved until the books stand as suggested and you say so.',
+    planner: true,
+    sources: [{ repo: 'tools', file: 'README.md', section: 'The shelf planner' }],
   },
   {
     id: 'data',

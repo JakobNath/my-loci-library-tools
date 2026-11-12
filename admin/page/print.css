@@ -1,0 +1,21 @@
+/* Printed shelf lists (shelf-planner/lists.mjs): set for paper in the app's
+   book serif, from the app's design tokens, in black on white when printed. */
+
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--fs-small)/1.45 var(--font-display); }
+main { max-width: 52rem; margin: 0 auto; padding: var(--space-5); }
+h1 { font: var(--h1-weight) var(--fs-h1)/1.2 var(--font-display); margin: 0; }
+.meta { color: var(--muted); font-style: italic; margin: var(--space-1) 0 var(--space-5); }
+section { break-inside: avoid-page; margin-bottom: var(--space-5); }
+h2 { font: var(--h2-weight) var(--fs-h2)/1.3 var(--font-display); border-bottom: 1px solid var(--pop); padding-bottom: var(--space-1); margin: 0 0 var(--space-2); }
+h2 span { font: var(--fs-small) var(--font-ui); color: var(--muted); }
+table { border-collapse: collapse; width: 100%; }
+th { text-align: left; font: var(--fs-small) var(--font-ui); color: var(--muted); border-bottom: 1px solid var(--line); }
+td { border-bottom: 1px solid var(--line); padding: 2px var(--space-2) 2px 0; vertical-align: top; }
+td:first-child, th:first-child { width: 2em; color: var(--muted); }
+
+@media print {
+  body { background: none; color: black; }
+  main { max-width: none; padding: 0; }
+  .screen-only { display: none; }
+  th, td { border-color: #999; }
+}

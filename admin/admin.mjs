@@ -4,17 +4,22 @@
 // at http://127.0.0.1:8650/, reachable from this laptop only. Each button runs
 // the same tool as the command line, as its own Node process; the tools still
 // run from the command line as before.
-// Run: node admin.mjs [--port 8650] [--no-open]   (or admin.cmd / admin.sh)
+// Run: node admin.mjs [--port 8650] [--no-open] [--data <folder>]   (or admin.cmd / admin.sh)
+//   --data: the shelf planner works on this catalog instead of config.json's (for trials on the test catalog)
 
 import { createServer } from 'node:http';
 import { spawn } from 'node:child_process';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
-import { join, dirname, resolve } from 'node:path';
+import { join, dirname, resolve, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CHAPTERS, chapterNumber } from './chapters.mjs';
 import { markdownToHtml, sectionOf, escapeHtml } from './markdown.mjs';
 import { readConfig, FOLDERS } from '../shared/data-repo.mjs';
 import { APP_URL } from '../my-loci-library-to-zotero/zotero-items.mjs';
+import { shelvesFor, suggest, record } from '../shelf-planner/planner.mjs';
+import { ORDERS } from '../shelf-planner/plan.mjs';
+import { shelfLists, shelfListsHtml } from '../shelf-planner/lists.mjs';
+import { readRecords } from '../shared/data-repo.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const TOOLS_FOLDER = resolve(here, '..');
@@ -97,7 +102,7 @@ const sourceName = ({ repo, file, section }) => `${repo === 'tools' ? 'the tools
 
 function statusLine(dataRepo) {
   if (!dataRepo) return 'No config.json yet: the tools README, "Setting up on a laptop".';
-  const parts = [];
+  const parts = [`Catalog: ${basename(dataRepo)}`];
   const status = join(dataRepo, 'backup-status.json');
   if (existsSync(status)) {
     const { lastMirror } = JSON.parse(readFileSync(status, 'utf8'));
@@ -105,7 +110,7 @@ function statusLine(dataRepo) {
   }
   const editions = join(dataRepo, FOLDERS.edition);
   if (existsSync(editions)) parts.push(`${readdirSync(editions).filter(name => name.endsWith('.json')).length} editions`);
-  return parts.join(' · ') || 'The catalog has no backup yet.';
+  return parts.join(' · ');
 }
 
 function toolsHtml() {
@@ -140,7 +145,7 @@ export async function buildPage({ appRepo = APP_REPO, toolsFolder = TOOLS_FOLDER
       }
     }
     chapters.push(`<section id="${chapter.id}"><h2>${chapterNumber(i)}. ${escapeHtml(chapter.title)}</h2>
-<p class="opening">${escapeHtml(chapter.opening)}</p>${chapter.tools ? toolsHtml() : ''}${parts.join('\n')}</section>`);
+<p class="opening">${escapeHtml(chapter.opening)}</p>${chapter.tools ? toolsHtml() : ''}${chapter.planner ? plannerHtml() : ''}${parts.join('\n')}</section>`);
   }
   return `<!doctype html>
 <html lang="en">
@@ -164,6 +169,38 @@ ${chapters.join('\n')}
 `;
 }
 
+// ---------- the shelf planner (shelf-planner/planner.mjs) ----------
+
+const PLANNER_ACTIONS = ['shelves', 'plan', 'record'];
+
+function plannerAction(dataRepo, { action, place, shelves, order }) {
+  try {
+    if (action === 'shelves') return { ok: true, output: shelvesFor(dataRepo, place) };
+    if (action === 'plan') { const { ok, output } = suggest(dataRepo, { place, shelves, order }); return { ok, output }; }
+    return record(dataRepo, { place, shelves, order }, { now: new Date().toISOString().slice(0, 19) + 'Z' });
+  } catch (error) {
+    return { ok: false, output: error.message };
+  }
+}
+
+function plannerHtml() {
+  const orders = Object.entries(ORDERS).map(([key, order]) => `<option value="${key}">${escapeHtml(order.label)}</option>`).join('');
+  return `<div class="tools planner">
+  <p><label>The place to arrange <input name="place" size="36" placeholder="Home › Office › Case 1"></label>
+    <button type="button" class="tool" data-planner="shelves">List its shelves</button></p>
+  <p><label class="wide">Its shelves in order, top to bottom and left to right, each with its width in cm<br>
+    <textarea name="shelves" rows="6" cols="60" placeholder="Home › Office › Case 1 › Shelf 1 = 80"></textarea></label></p>
+  <p><label>Order <select name="order">${orders}</select></label>
+    <button type="button" class="tool" data-planner="plan">Suggest an arrangement</button>
+    <button type="button" class="tool" data-print-plan>Print it</button></p>
+  <p>Shelf lists to print, for the same place:
+    <label><select name="list-order"><option value="shelf">in order along each shelf</option><option value="date">by original date</option></select></label>
+    <button type="button" class="tool" data-print-lists>Open the shelf lists</button></p>
+  <p><button type="button" class="tool" data-planner="record" data-confirm="Record the arrangement as it now stands? Only do this once the books are on the shelves as suggested: each copy's shelf and place along it are saved, and the phones show them after their next sync.">The books are moved: record their places</button></p>
+  <pre class="plan-output" aria-live="polite" hidden></pre>
+</div>`;
+}
+
 // ---------- the server ----------
 
 const TYPES = { '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8' };
@@ -183,22 +220,33 @@ export function createAdminServer({ port = PORT, appRepo = APP_REPO, toolsFolder
     const url = new URL(request.url, `http://${own}`);
     try {
       if (request.method === 'GET' && url.pathname === '/') return send(200, 'text/html; charset=utf-8', await buildPage({ appRepo, toolsFolder, dataRepo, fetchFn }));
-      if (request.method === 'GET' && ['/admin.css', '/admin.js'].includes(url.pathname)) {
+      // Printed shelf lists for a place: read only, so a plain link opens them.
+      if (request.method === 'GET' && url.pathname === '/print') {
+        if (!dataRepo) return send(400, 'text/plain', 'No catalog: config.json names none.');
+        const place = (url.searchParams.get('place') || '').split('›').map(part => part.trim()).filter(Boolean);
+        const order = url.searchParams.get('order') === 'date' ? 'date' : 'shelf';
+        return send(200, 'text/html; charset=utf-8', shelfListsHtml(shelfLists(readRecords(dataRepo), place, order), { place, order, today: new Date().toISOString().slice(0, 10) }));
+      }
+      if (request.method === 'GET' && ['/admin.css', '/admin.js', '/print.css'].includes(url.pathname)) {
         return send(200, TYPES[url.pathname.endsWith('.css') ? '.css' : '.js'], readFileSync(join(here, 'page', url.pathname.slice(1))));
       }
       if (request.method === 'GET' && url.pathname === '/tokens.css') {
         return send(200, TYPES['.css'], await readDocument({ repo: 'app', file: 'styles/tokens.css' }, { appRepo, toolsFolder, fetchFn }));
       }
-      if (request.method === 'POST' && url.pathname === '/run') {
+      if (request.method === 'POST' && ['/run', '/planner'].includes(url.pathname)) {
         if (request.headers.origin !== `http://${own}` && request.headers.origin !== `http://localhost:${server.address().port}`) return send(403, 'text/plain', 'Tools run only from this page.');
         let body = '';
         for await (const chunk of request) body += chunk;
-        const { tool, input } = JSON.parse(body || '{}');
-        if (!TOOLS[tool]) return send(404, 'application/json', JSON.stringify({ ok: false, output: `No tool named "${tool}".` }));
-        if (busy) return send(409, 'application/json', JSON.stringify({ ok: false, output: 'Another tool is still running; wait for it to finish.' }));
+        const asked = JSON.parse(body || '{}');
+        const json = (status, answer) => send(status, 'application/json', JSON.stringify(answer));
+        if (url.pathname === '/run' && !TOOLS[asked.tool]) return json(404, { ok: false, output: `No tool named "${asked.tool}".` });
+        if (url.pathname === '/planner' && !PLANNER_ACTIONS.includes(asked.action)) return json(404, { ok: false, output: `No planner action "${asked.action}".` });
+        if (url.pathname === '/planner' && !dataRepo) return json(400, { ok: false, output: 'No catalog: config.json names none (the tools README, "Setting up on a laptop").' });
+        if (busy) return json(409, { ok: false, output: 'Another tool is still running; wait for it to finish.' });
         busy = true;
         try {
-          return send(200, 'application/json', JSON.stringify(await run(tool, input || {}, toolsFolder)));
+          if (url.pathname === '/run') return json(200, await run(asked.tool, asked.input || {}, toolsFolder));
+          return json(200, plannerAction(dataRepo, asked));
         } finally {
           busy = false;
         }
@@ -223,6 +271,8 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
   const portAt = args.indexOf('--port');
   let dataRepo = null;
   try { ({ dataRepo } = readConfig()); } catch (error) { console.log(error.message); }
+  const dataAt = args.indexOf('--data');
+  if (dataAt >= 0) dataRepo = resolve(args[dataAt + 1]);
   const server = await createAdminServer({ port: portAt >= 0 ? Number(args[portAt + 1]) : PORT, dataRepo });
   const address = `http://127.0.0.1:${server.address().port}/`;
   console.log(`The admin page is at ${address}\nLeave this window open while using it; close it (or press Ctrl+C) to stop.`);
