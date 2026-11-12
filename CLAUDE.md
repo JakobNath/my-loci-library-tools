@@ -35,7 +35,7 @@ The real catalog lives in a private repository, `my-loci-library-data`; sample d
 - Size budget: the app's own HTML, CSS and JS stay under about 100 KB, not counting the vendored barcode decoder, which loads only on the scan screen. Heavy work (bulk covers, re-cropping, the HTML catalog, building `catalog.json`) belongs on the laptop, never in the phone app.
 - All styling comes from the design tokens file (`styles/tokens.css`). Don't hard-code colors, fonts or spacing elsewhere.
 - All GitHub-specific code lives in one sync module. No other file talks to GitHub.
-- The app never talks to Zotero, Obsidian, Logos or any AI service. Its only outside calls are the optional Open Library and Google Books lookups, and GitHub through the sync module.
+- The app never talks to Zotero, Obsidian, Logos or any AI service. Its only outside calls are the optional Open Library, Google Books, HathiTrust and Wikidata lookups, and GitHub through the sync module. Each lookup is optional, identifies the app, backs off when refused, and never stops a book being entered by hand (`SOURCES.md`).
 - Tools must run on Windows and Linux: use `node:path` for paths, and ship any launcher as a matching `.cmd` and `.sh` pair.
 
 **Data**
@@ -43,7 +43,7 @@ The real catalog lives in a private repository, `my-loci-library-data`; sample d
 - One pretty-printed JSON file per record, keys always in the same order, UTF-8, newline at the end of the file.
 - Record IDs are random, permanent, and never changed or reused.
 - Never change the data format without updating `DATA_FORMAT.md`, raising the format version, and keeping older records readable.
-- Original dates are never filled in automatically from lookups. Only a person sets them.
+- Original dates are set by a person: typed, chosen, or confirmed with one tap from a suggestion or a checked known-set list. They are never saved from a lookup without that.
 - Never commit keys, tokens or personal data. Sync keys live only on our devices and in the setup links we send each other; never in a repository or in the app's code.
 
 **Tests**
