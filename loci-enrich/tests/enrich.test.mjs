@@ -65,9 +65,9 @@ test('empty fields are filled from all three sources, and a field a person typed
     assert.deepEqual(book.contributors, [{ name: 'John M. Cooper', role: 'editor' }], 'translators and editors only');
     assert.equal(book.place, 'Indianapolis', 'typed by a person');
     assert.equal(book.thickness, null, "Google Books' impossible thickness is not used");
-    assert.deepEqual(book.identifiers, { lccn: '96053280', oclc: null, lcc: 'B358 .C3 1997', ddc: '184' });
+    assert.deepEqual(book.identifiers, { lccn: '96053280', oclc: null, lcc: 'B358 .C3 1997', ddc: '184', openLibrary: 'OL49233743M', hathiTrust: null });
     assert.deepEqual(book.subjects, ['Socrates', 'Philosophy, Ancient']);
-    assert.equal(book.format, 2);
+    assert.equal(book.format, 3);
     assert.equal(after.get(platoWork.id).originalLanguage, 'Ancient Greek');
     assert.deepEqual(after.get(platoWork.id).datings, [], 'an original date is never filled');
     const memory = JSON.parse(readFileSync(join(folder, MEMORY), 'utf8'));

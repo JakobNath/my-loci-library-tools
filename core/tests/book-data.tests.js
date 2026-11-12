@@ -20,6 +20,9 @@ import * as iliad from './answers/9780674995796.js';
 import * as oct from './answers/9780198145288.js';
 import * as greatBooks from './answers/9780852291634.js';
 import * as poe from './answers/9780940450189.js';
+import * as wikidata from './answers/wikidata.js';
+import { worksQuery, worksFromWikidata, wikidataDateText } from '../wikidata.js';
+import { parseDating } from '../dating.js';
 
 const json = text => (text === null ? null : JSON.parse(text));
 
@@ -45,7 +48,7 @@ export const tests = [
       same([found.pages, found.height, found.publisher, found.place, found.year], ['xxx, 1808', 240, 'Hackett Publishing', 'Indianapolis, Ind.', '1997']);
       equal(found.originalLanguage, 'Ancient Greek');
       equal(found.originalTitle, '', '"Works" names a kind of collection, not an original title');
-      same(found.identifiers, { lccn: '96053280', oclc: '', lcc: 'B358 .C3 1997', ddc: '184' });
+      same(found.identifiers, { lccn: '96053280', oclc: '', lcc: 'B358 .C3 1997', ddc: '184', openLibrary: 'OL49233743M', hathiTrust: '' });
       same(found.subjects, ['Socrates', 'Philosophy, Ancient']);
     },
   },
@@ -65,7 +68,7 @@ export const tests = [
       const found = merged(confessions);
       same(names(found), ['Henry Chadwick (translator)']);
       same([found.pages, found.series, found.originalLanguage, found.height, found.thickness], ['xxviii, 311', "Oxford World's Classics", 'Latin', 200, 17]);
-      same(found.identifiers, { lccn: '2008491261', oclc: '228195188', lcc: 'BR65.A6 E5 2008', ddc: '270.2092' });
+      same(found.identifiers, { lccn: '2008491261', oclc: '228195188', lcc: 'BR65.A6 E5 2008', ddc: '270.2092', openLibrary: 'OL23154103M', hathiTrust: '' });
     },
   },
   {
@@ -264,6 +267,44 @@ export const tests = [
       equal(fromLibraryOfCongress(fathers.libraryOfCongress, { lccn: '2002032744' }).title, 'The Apostolic Fathers', 'the Library of Congress gives its own LCCN');
       equal(fromHathiTrust(fathers.hathiTrust, { oclc: '(OCoLC)56058333' }).title, 'The Apostolic Fathers', 'by OCLC number, as catalogued');
       equal(fromHathiTrust(fathers.hathiTrust, { lccn: '1234567' }), null, 'a number no record has');
+    },
+  },
+  // Wikidata (phase 15, step 7), against answers recorded on 12 November 2026.
+  {
+    name: 'Wikidata dates the five dialogues of Loeb Plato I and gives their Greek titles and standard abbreviations',
+    fn() {
+      const found = worksFromWikidata(JSON.parse(wikidata.plato.answer), wikidata.plato.titles);
+      same([...found.keys()], ['Euthyphro', 'Apology', 'Crito', 'Phaedo', 'Phaedrus']);
+      same(['wikidata', 'date', 'originalTitle'].map(key => found.get('Phaedo')[key]), ['Q244161', 'c. 360 BC', 'Φαίδων']);
+      ok(found.get('Phaedo').otherTitles.includes('Plat. Phaedo'), 'the standard abbreviation');
+      equal(found.get('Crito').wikidata, 'Q267634', 'of the two items called "Crito", only the dated dialogue');
+      for (const [title, work] of found) ok(parseDating(work.date).ok, `${title}: "${work.date}" reads as a date`);
+    },
+  },
+  {
+    name: 'Wikidata dates Poe\'s tales by when they were written or first published, not by later editions',
+    fn() {
+      const found = worksFromWikidata(JSON.parse(wikidata.poe.answer), wikidata.poe.titles);
+      same(['The Raven', 'The Fall of the House of Usher', 'The Cask of Amontillado', 'Ligeia'].map(title => found.get(title).date), ['1845', '1839', '1846', '1838']);
+      equal(found.get('The Raven').originalTitle, '', 'an English work has no other original title');
+    },
+  },
+  {
+    name: 'a Wikidata date is written as a person types one, so the date parser reads it',
+    fn() {
+      same([wikidataDateText('-0360-01-01T00:00:00Z', 8), wikidataDateText('-0400-01-01T00:00:00Z', 7), wikidataDateText('+1845-01-29T00:00:00Z', 11), wikidataDateText('+1900-01-01T00:00:00Z', 7), wikidataDateText('+2000-01-01T00:00:00Z', 6)],
+        ['c. 360 BC', '4th c. BC', '1845', '19th c.', '']);
+    },
+  },
+  {
+    name: 'the Wikidata query uses only standard SPARQL, asks all of a book\'s titles at once, and asks nothing without an author',
+    fn() {
+      const query = worksQuery(['The Raven', 'Say "hello"'], 'Edgar Allan Poe');
+      ok(!query.includes('wikibase:label') && !query.includes('mwapi'), 'no label service');
+      ok(query.includes('"The Raven"@en') && query.includes('"Raven"@en'), 'with and without the article');
+      ok(query.includes('"Say \\"hello\\""@en'), 'quotes escaped');
+      ok(query.includes('"poe"'), 'by the author\'s surname');
+      equal(worksQuery(['Didache'], ''), '', 'an anonymous work is not asked by title alone');
     },
   },
 ];

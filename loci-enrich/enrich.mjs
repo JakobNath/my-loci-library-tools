@@ -16,7 +16,7 @@ const EDITION_FIELDS = [['pages', 'pages'], ['editionStatement', 'edition'], ['s
 // Fields of the work, filled only for a book holding one work.
 const WORK_FIELDS = ['originalTitle', 'originalLanguage'];
 // The catalogue numbers (DATA_FORMAT.md, "Identifiers"), as the report names them.
-const NUMBER_NAMES = { lccn: 'LCCN', oclc: 'OCLC', lcc: 'call number', ddc: 'Dewey' };
+const NUMBER_NAMES = { lccn: 'LCCN', oclc: 'OCLC', lcc: 'call number', ddc: 'Dewey', openLibrary: 'Open Library ID', hathiTrust: 'HathiTrust record' };
 // The roles taken from a record into an edition that names no contributors yet.
 const ROLES = ['translator', 'editor'];
 

@@ -291,6 +291,9 @@ function fromMarc(xml, isbn, source) {
     oclc: ((fieldsOf(record, '035').map(item => subfield(item, 'a')).find(text => text.startsWith('(OCoLC)')) || '').match(/\d+/) || [''])[0],
     lcc: field('050') ? callNumber(field('050')) : '',
     ddc: subfield(field('082'), 'a').replace(/\//g, ''),
+    openLibrary: '',
+    // HathiTrust's own record number is the record's control number (001); it gives the link to a free scan.
+    hathiTrust: source === 'hathitrust' ? tidy((record.find(item => item.tag === '001') || {}).text) : '',
   };
   return found;
 }

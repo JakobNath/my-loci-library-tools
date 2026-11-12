@@ -9,7 +9,7 @@ export const SHARED_DEFAULTS = {
   anthologiesInShelfLists: 'once',
   batchAddPrompts: ['title', 'subtitle', 'authors', 'datings', 'binding', 'publisher', 'year'],
   defaultSort: { library: 'title', wishlist: 'added' },
-  lookups: { openLibrary: true, hathiTrust: true, googleBooks: true },
+  lookups: { openLibrary: true, hathiTrust: true, googleBooks: true, wikidata: true },
   bindings: ['Hardcover', 'Hardcover with dust jacket', 'Paperback', 'Mass-market paperback', 'Leather', 'Bonded leather', 'Cloth', 'Library binding', 'Journal issue'],
   views: [],
 };
