@@ -155,7 +155,7 @@ export function recordsFromForm(form, existing, context) {
       const shared = { originalLanguage: form.work.originalLanguage || null, category: form.work.category || null, tags: form.work.tags };
       const work = match ? update(match, values, now) : newRecord('work', newId(), now, { ...values, ...shared });
       if (work !== match) records.push(work);
-      contents.push({ work: work.id, extent: 'complete', translator: null, pages: null });
+      contents.push({ work: work.id, piece: null, extent: 'complete', translator: null, pages: null, cite: false });
     }
     if (!contents.length) problems.push('List at least one work in the contents, one per line.');
   } else if (form.workId && context.works) {
@@ -167,7 +167,7 @@ export function recordsFromForm(form, existing, context) {
       const reading = datingsFromRows(form.work.datings);
       problems.push(...reading.problems);
       if (!work.datings.length && reading.datings.length) records.push(withField(work, 'datings', reading.datings, now));
-      contents = [{ work: work.id, extent: 'complete', translator: null, pages: null }];
+      contents = [{ work: work.id, piece: null, extent: 'complete', translator: null, pages: null, cite: false }];
     }
   } else {
     const reading = datingsFromRows(form.work.datings);
@@ -180,7 +180,7 @@ export function recordsFromForm(form, existing, context) {
     const old = oldWorks.length === 1 ? oldWorks[0] : null;
     const work = old ? update(old, values, now) : newRecord('work', newId(), now, values);
     if (work !== old) records.push(work);
-    contents = [{ work: work.id, extent: 'complete', translator: null, pages: null }];
+    contents = [{ work: work.id, piece: null, extent: 'complete', translator: null, pages: null, cite: false }];
   }
   if (problems.length) return { records: [], editionId: null, problems };
   // A work this book no longer lists goes to the trash, unless another book holds it too

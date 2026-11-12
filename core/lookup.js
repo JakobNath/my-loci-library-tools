@@ -15,14 +15,14 @@
  *   publisher: string, place: string, year: string, pages: string, languages: string[], isbn: string,
  *   editionStatement: string, series: string, seriesNumber: string, height: number|null, thickness: number|null,
  *   binding: string, originalTitle: string, originalLanguage: string, contents: { title: string, author: string }[],
- *   subjects: string[], identifiers: { lccn: string, oclc: string, lcc: string, ddc: string },
+ *   subjects: string[], identifiers: { lccn: string, oclc: string, lcc: string, ddc: string, openLibrary: string, hathiTrust: string },
  *   cover: { url: string, source: string, waiting: boolean } | null, set: string, volume: string, source: string }} Found
  */
 export function emptyFound(source) {
   return {
     title: '', subtitle: '', authors: [], contributors: [], publisher: '', place: '', year: '', pages: '', languages: [], isbn: '',
     editionStatement: '', series: '', seriesNumber: '', height: null, thickness: null, binding: '', originalTitle: '', originalLanguage: '',
-    contents: [], subjects: [], identifiers: { lccn: '', oclc: '', lcc: '', ddc: '' }, cover: null, set: '', volume: '', source,
+    contents: [], subjects: [], identifiers: { lccn: '', oclc: '', lcc: '', ddc: '', openLibrary: '', hathiTrust: '' }, cover: null, set: '', volume: '', source,
   };
 }
 

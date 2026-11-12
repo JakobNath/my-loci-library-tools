@@ -4,7 +4,7 @@
 
 import { sortYearOf } from './dating.js';
 import { anthologyRange } from './anthology.js';
-import { searchTextOf, normalizeForSearch } from './search.js';
+import { searchTextOf, piecesTextOf, normalizeForSearch } from './search.js';
 
 /**
  * Build the library from all records.
@@ -72,6 +72,7 @@ export function entryOf(edition, copies, worksById, authorsById, withSearch = tr
     tags: [...new Set(works.flatMap(work => work.tags))],
     needsDate: works.some(work => sortYearOf(work) === null),
     searchText: withSearch ? searchTextOf(edition, worksById, authorsById, copies) : null,
+    piecesText: withSearch ? piecesTextOf(edition) : null,
   };
 }
 
@@ -90,7 +91,7 @@ export function authorLineOf(works, authors, editors) {
 /** The library with every entry's search text filled in. Never changes its input. */
 export function withSearchText(library) {
   const entries = library.entries.map(entry => (entry.searchText !== null ? entry
-    : { ...entry, searchText: searchTextOf(entry.edition, library.worksById, library.authorsById, entry.copies) }));
+    : { ...entry, searchText: searchTextOf(entry.edition, library.worksById, library.authorsById, entry.copies), piecesText: piecesTextOf(entry.edition) }));
   return { ...library, entries };
 }
 
@@ -235,4 +236,24 @@ export function searchEntries(library, query, limit = 50) {
   const keyed = found.map(entry => ({ entry, key: firstWork(entry), title: SORTS.title.key(entry) }));
   keyed.sort((a, b) => compareKeys(a.key, b.key, false) || compareKeys(a.title, b.title, false));
   return keyed.map(item => item.entry);
+}
+
+/**
+ * The pieces inside books (poems, hymns, sermons, letters) whose title, author
+ * or original title holds every word typed: the folded "Also inside" line
+ * under search results (PLAN.md, "Search").
+ * @returns {{ entry: object, piece: object }[]} at most `limit`, in library order
+ */
+export function searchPieces(library, query, limit = 50) {
+  const words = normalizeForSearch(query).split(' ').filter(Boolean);
+  const found = [];
+  if (!words.length) return found;
+  for (const entry of library.entries) {
+    for (const { index, text } of entry.piecesText ?? piecesTextOf(entry.edition)) {
+      if (!words.every(word => text.includes(word))) continue;
+      found.push({ entry, piece: entry.edition.contents[index].piece });
+      if (found.length >= limit) return found;
+    }
+  }
+  return found;
 }

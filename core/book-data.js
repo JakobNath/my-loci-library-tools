@@ -114,6 +114,7 @@ export function fromOpenLibraryEdition(edition, isbn) {
   found.identifiers = {
     lccn: first(edition.lccn), oclc: first(edition.oclc_numbers),
     lcc: first(edition.lc_classifications), ddc: first(edition.dewey_decimal_class).replace(/\//g, ''),
+    openLibrary: tidy(edition.key).split('/').pop(), hathiTrust: '', // "/books/OL23154103M"
   };
   return found;
 }

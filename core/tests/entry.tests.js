@@ -3,7 +3,7 @@
 
 import { recordsFromForm, isbn13, anotherCopy, isBookBarcode, wishFromForm, formFromWish, isbnInText, volumesFromLines, nextVolumeLabel, withSetFacts, worksFromRows } from '../entry.js';
 import { emptyFound } from '../lookup.js';
-import { validateRecord } from '../records.js';
+import { validateRecord } from '../validate.js';
 import { equal, same, ok } from './check.js';
 
 let counter = 0;

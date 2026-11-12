@@ -40,7 +40,7 @@ export function searchTextOf(edition, worksById, authorsById, copies = []) {
   for (const entry of edition.contents) {
     const work = worksById.get(entry.work);
     if (!work) continue;
-    parts.push(work.title, work.subtitle, work.originalTitle, ...work.tags, work.category);
+    parts.push(work.title, work.subtitle, work.originalTitle, ...(work.otherTitles || []), ...work.tags, work.category);
     for (const authorId of work.authors) {
       const author = authorsById.get(authorId);
       if (author) parts.push(author.name, ...author.otherNames);
@@ -48,6 +48,20 @@ export function searchTextOf(edition, worksById, authorsById, copies = []) {
   }
   for (const copy of copies) parts.push(copy.notes);
   return normalizeForSearch(parts.filter(Boolean).join(' '));
+}
+
+/**
+ * The search text of each piece inside an edition (a poem, hymn, sermon or
+ * letter kept in its contents, DATA_FORMAT.md "Contents"), in order. Pieces
+ * are searched apart from books, so they never crowd everyday results.
+ * @returns {{ index: number, text: string }[]} index: the piece's place in the contents
+ */
+export function piecesTextOf(edition) {
+  const pieces = [];
+  edition.contents.forEach((entry, index) => {
+    if (entry.piece) pieces.push({ index, text: normalizeForSearch([entry.piece.title, entry.piece.author, entry.piece.originalTitle].filter(Boolean).join(' ')) });
+  });
+  return pieces;
 }
 
 /**

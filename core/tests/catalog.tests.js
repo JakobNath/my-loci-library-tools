@@ -5,7 +5,7 @@ import { countPages } from '../pages.js';
 import { estimateSize } from '../sizes.js';
 import { normalizeForSearch, searchTextOf, matchesSearch } from '../search.js';
 import { parseContentsLines, contentsLine } from '../contents.js';
-import { buildLibrary, viewEntries, searchEntries, authorLineOf, sortEntries, filterChoices, missingDetails, SORTS } from '../library.js';
+import { buildLibrary, viewEntries, searchEntries, searchPieces, authorLineOf, sortEntries, filterChoices, missingDetails, SORTS } from '../library.js';
 import { equal, same, ok } from './check.js';
 import { newRecord } from '../records.js';
 import { isBible, isBibleBook } from '../bible.js';
@@ -215,6 +215,30 @@ export const tests = [
       ok(isBible({ edition: { logosExtra: { 'Resource Type': 'Bible' } }, works: [{ title: 'Lexham English Bible' }] }), 'Logos says so');
       ok(isBible({ edition: {}, works: [{ title: 'Genesis' }, { title: 'Exodus' }, { title: 'Preface' }] }), 'contents read from a catalog record');
       same(['First Corinthians', '1 Corinthians', 'The Acts of the Apostles', 'Confessions'].map(isBibleBook), [true, true, true, false]);
+    },
+  },
+  // Pieces and other titles (data format 3, phase 15 step 6).
+  {
+    name: 'a piece inside a book is found only in the folded "Also inside" search, and gives the book its date range',
+    fn() {
+      const raven = { work: null, piece: { title: 'The Raven', author: 'Edgar Allan Poe', originalTitle: null, date: '1845' }, extent: 'complete', translator: null, pages: '81–86', cite: false };
+      const tales = work('t4lesw0rk001', 'Tales', [{ text: '1839', earliest: 1839, latest: 1839, certainty: 'exact', kind: null, note: '', working: true }]);
+      const poe = edition('p0etryta1es1', 'Poetry and Tales', [tales.id], { contents: [{ work: tales.id, piece: null, extent: 'complete', translator: null, pages: null, cite: false }, raven] });
+      const library = buildLibrary([tales, poe]);
+      same(searchEntries(library, 'raven').map(entry => entry.id), [], 'not among the books');
+      same(searchPieces(library, 'the raven').map(hit => [hit.entry.id, hit.piece.title]), [['p0etryta1es1', 'The Raven']]);
+      same(searchPieces(library, 'poe raven').length, 1, 'by its author too');
+      same(anthologyRange(poe, byId([tales])), { earliest: 1839, latest: 1845, count: 2, missing: [] });
+      same(anthologyRange({ ...poe, contents: [{ ...raven, piece: { ...raven.piece, date: null } }] }, byId([])).missing, ['The Raven'], 'a piece without a date');
+    },
+  },
+  {
+    name: 'a work\'s other titles and abbreviations are searched ("Ethica Nicomachea", "Eth. Nic.")',
+    fn() {
+      const ethics = work('eth1csw0rk01', 'Nicomachean Ethics', [], { otherTitles: ['Ethica Nicomachea', 'Eth. Nic.'] });
+      const book = edition('eth1csed0001', 'Nicomachean Ethics', [ethics.id]);
+      const library = buildLibrary([ethics, book]);
+      for (const query of ['ethica nicomachea', 'eth nic']) same(searchEntries(library, query).map(entry => entry.id), ['eth1csed0001'], query);
     },
   },
 ];

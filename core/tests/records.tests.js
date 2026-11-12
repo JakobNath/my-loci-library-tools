@@ -1,7 +1,8 @@
 // Records, IDs, merging, shelf order, HTML escaping and the CSL mapping.
 
 import { makeId, isId, ID_ALPHABET } from '../ids.js';
-import { newRecord, withField, validateRecord, recordToFileText, FIELDS, migrate, FORMAT_VERSION } from '../records.js';
+import { newRecord, withField, recordToFileText, FIELDS, migrate, FORMAT_VERSION } from '../records.js';
+import { validateRecord } from '../validate.js';
 import { mergeRecords } from '../merge.js';
 import { keyBetween, keysForShelf, keysAfterMove } from '../shelf-order.js';
 import { escapeHtml } from '../html.js';
@@ -57,7 +58,7 @@ export const tests = [
       ok(problems.some(p => p.includes('13 digits')), 'ISBN');
       const twoWorking = { ...na28Works[3], datings: na28Works[3].datings.map(d => ({ ...d, working: true })) };
       ok(validateRecord(twoWorking).some(p => p.includes('Exactly one dating')), 'one working dating');
-      ok(validateRecord({ ...chadwick, format: 3 }).some(p => p.includes('version 3')), 'newer format');
+      ok(validateRecord({ ...chadwick, format: 4 }).some(p => p.includes('version 4')), 'newer format');
     },
   },
   {
@@ -65,7 +66,7 @@ export const tests = [
     fn() {
       const text = recordToFileText(chadwick);
       ok(text.endsWith('}\n'), 'newline at the end');
-      ok(text.startsWith('{\n  "format": 2,\n  "type": "edition",\n  "id": "chadw1ck1991",\n  "title"'), 'key order');
+      ok(text.startsWith('{\n  "format": 3,\n  "type": "edition",\n  "id": "chadw1ck1991",\n  "title"'), 'key order');
       same(JSON.parse(text), JSON.parse(recordToFileText(JSON.parse(text))), 'stable when rewritten');
       ok(text.includes('"contributors": [\n    {\n      "name": "Henry Chadwick",\n      "role": "translator"'), 'nested order');
     },
@@ -284,15 +285,16 @@ export const tests = [
     },
   },
   {
-    name: 'a version-1 edition reads, edits and saves as version 2, with nothing lost',
+    name: 'a version-1 edition reads, edits and saves as the current version, with nothing lost',
     fn() {
       // An edition file as the test catalog held it before November 2026.
       const stored = JSON.parse("{\n  \"format\": 1,\n  \"type\": \"edition\",\n  \"id\": \"2gebc2ep9fp2\",\n  \"title\": \"Confessions\",\n  \"subtitle\": null,\n  \"contents\": [\n    {\n      \"work\": \"6jwwbbrvgvdy\",\n      \"extent\": \"complete\",\n      \"translator\": null,\n      \"pages\": null\n    }\n  ],\n  \"contributors\": [\n    {\n      \"name\": \"Henry Chadwick\",\n      \"role\": \"translator\"\n    }\n  ],\n  \"publisher\": \"Oxford University Press\",\n  \"place\": \"Oxford\",\n  \"year\": 1991,\n  \"editionStatement\": null,\n  \"translationFirstPublished\": null,\n  \"series\": \"Oxford World's Classics\",\n  \"seriesNumber\": null,\n  \"set\": null,\n  \"volume\": null,\n  \"isbn\": \"9780199537822\",\n  \"languages\": [\n    \"English\"\n  ],\n  \"pages\": \"311\",\n  \"height\": null,\n  \"heightSource\": null,\n  \"thickness\": null,\n  \"thicknessSource\": null,\n  \"medium\": \"physical\",\n  \"logosId\": null,\n  \"logosExtra\": {},\n  \"cite\": false,\n  \"images\": [],\n  \"trashed\": null,\n  \"created\": \"2026-11-09T12:00:00Z\",\n  \"changed\": {}\n}");
       const read = migrate(stored);
       equal(stored.format, 1, 'the record read is not changed');
       equal(recordToFileText(stored), `${JSON.stringify(stored, null, 2)}\n`, 'a version-1 record is written exactly as stored, for comparing with its file');
-      same([read.format, read.identifiers, read.subjects], [2, { lccn: null, oclc: null, lcc: null, ddc: null }, []]);
-      for (const name of Object.keys(stored).filter(name => name !== 'format')) same(read[name], stored[name], name);
+      same([read.format, read.identifiers, read.subjects, read.foundContents], [3, { lccn: null, oclc: null, lcc: null, ddc: null, openLibrary: null, hathiTrust: null }, [], []]);
+      same(read.contents, [{ work: '6jwwbbrvgvdy', piece: null, extent: 'complete', translator: null, pages: null, cite: false }], 'each contents entry gains no piece and is not cited');
+      for (const name of Object.keys(stored).filter(name => !['format', 'contents'].includes(name))) same(read[name], stored[name], name);
       const edited = withField(read, 'pages', 'xxviii, 311', '2026-11-12T09:00:00Z');
       same(validateRecord(edited), []);
       const text = recordToFileText(edited);
@@ -306,20 +308,47 @@ export const tests = [
     name: 'other version-1 records only change their format number, and a newer record is left alone',
     fn() {
       const work = { ...newRecord('work', 'c0nf3ss10n5x', NOW_TEST, { title: 'Confessions' }), format: 1 };
-      same(migrate(work), { ...work, format: 2 });
+      same(migrate(work), { ...work, format: 3 });
       same(validateRecord(migrate(work)), []);
       const newer = { ...work, format: FORMAT_VERSION + 1, futureField: 'kept' };
       equal(migrate(newer), newer);
     },
   },
   {
-    name: 'two devices merge a version-1 and a version-2 copy of one record field by field',
+    name: 'two devices merge a version-1 and a current copy of one record field by field',
     fn() {
       const old = JSON.parse("{\"format\":1,\"type\":\"edition\",\"id\":\"2gebc2ep9fp2\",\"title\":\"Confessions\",\"subtitle\":null,\"contents\":[{\"work\":\"6jwwbbrvgvdy\",\"extent\":\"complete\",\"translator\":null,\"pages\":null}],\"contributors\":[{\"name\":\"Henry Chadwick\",\"role\":\"translator\"}],\"publisher\":\"Oxford University Press\",\"place\":\"Oxford\",\"year\":1991,\"editionStatement\":null,\"translationFirstPublished\":null,\"series\":\"Oxford World's Classics\",\"seriesNumber\":null,\"set\":null,\"volume\":null,\"isbn\":\"9780199537822\",\"languages\":[\"English\"],\"pages\":\"311\",\"height\":null,\"heightSource\":null,\"thickness\":null,\"thicknessSource\":null,\"medium\":\"physical\",\"logosId\":null,\"logosExtra\":{},\"cite\":false,\"images\":[],\"trashed\":null,\"created\":\"2026-11-09T12:00:00Z\",\"changed\":{}}");
       const theirs = withField(migrate(old), 'identifiers', { lccn: '2008491261', oclc: null, lcc: 'BR65.A6 E5 2008', ddc: null }, '2026-11-12T09:00:00Z');
       const mine = withField(migrate(old), 'pages', 'xxviii, 311', '2026-11-12T10:00:00Z');
       const merged = mergeRecords(mine, theirs);
-      same([merged.format, merged.pages, merged.identifiers.lcc, merged.subjects], [2, 'xxviii, 311', 'BR65.A6 E5 2008', []]);
+      same([merged.format, merged.pages, merged.identifiers.lcc, merged.subjects], [3, 'xxviii, 311', 'BR65.A6 E5 2008', []]);
+    },
+  },
+  {
+    name: 'a version-2 work, edition and contents read as version 3, and are written exactly as stored until edited',
+    fn() {
+      const work = { ...newRecord('work', 'c0nf3ss10n5x', NOW_TEST, { title: 'Confessions' }), format: 2 };
+      delete work.otherTitles;
+      delete work.wikidata;
+      equal(recordToFileText(work), `${JSON.stringify(work, null, 2)}\n`, 'a version-2 work, as stored');
+      same([migrate(work).format, migrate(work).otherTitles, migrate(work).wikidata], [3, [], null]);
+      const edition = { ...newRecord('edition', 'chadw1ck1991', NOW_TEST, { title: 'Confessions', contents: [{ work: 'c0nf3ss10n5x', extent: 'complete', translator: null, pages: null }] }), format: 2, identifiers: { lccn: null, oclc: null, lcc: null, ddc: null } };
+      delete edition.foundContents;
+      equal(recordToFileText(edition), `${JSON.stringify(edition, null, 2)}\n`, 'a version-2 edition, as stored');
+      const read = migrate(edition);
+      same(validateRecord(read), []);
+      ok(recordToFileText(read).includes('"piece": null,'), 'written as version 3 once read');
+    },
+  },
+  {
+    name: 'a piece inside a book is a contents entry with no work; it needs a title',
+    fn() {
+      const piece = { work: null, piece: { title: 'The Raven', author: 'Edgar Allan Poe', originalTitle: null, date: '1845' }, extent: 'complete', translator: null, pages: '81–86', cite: false };
+      const poe = newRecord('edition', 'p0etryta1es1', NOW_TEST, { title: 'Poetry and Tales', contents: [{ work: 'c0nf3ss10n5x', extent: 'complete', translator: null, pages: null, piece: null, cite: false }, piece] });
+      same(validateRecord(poe), []);
+      ok(recordToFileText(poe).includes('"title": "The Raven",\n        "author": "Edgar Allan Poe",'), 'the piece keeps its keys in order');
+      ok(validateRecord({ ...poe, contents: [{ ...piece, piece: { ...piece.piece, title: '' } }] }).length > 0, 'a piece without a title');
+      ok(validateRecord({ ...poe, foundContents: [{ author: null, title: '', extent: null }] }).length > 0, 'found contents need titles');
     },
   },
 ];

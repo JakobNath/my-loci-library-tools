@@ -45,7 +45,7 @@ export const tests = [
       same([found.pages, found.height, found.publisher, found.place, found.year], ['xxx, 1808', 240, 'Hackett Publishing', 'Indianapolis, Ind.', '1997']);
       equal(found.originalLanguage, 'Ancient Greek');
       equal(found.originalTitle, '', '"Works" names a kind of collection, not an original title');
-      same(found.identifiers, { lccn: '96053280', oclc: '', lcc: 'B358 .C3 1997', ddc: '184' });
+      same(found.identifiers, { lccn: '96053280', oclc: '', lcc: 'B358 .C3 1997', ddc: '184', openLibrary: 'OL49233743M', hathiTrust: '' });
       same(found.subjects, ['Socrates', 'Philosophy, Ancient']);
     },
   },
@@ -65,7 +65,7 @@ export const tests = [
       const found = merged(confessions);
       same(names(found), ['Henry Chadwick (translator)']);
       same([found.pages, found.series, found.originalLanguage, found.height, found.thickness], ['xxviii, 311', "Oxford World's Classics", 'Latin', 200, 17]);
-      same(found.identifiers, { lccn: '2008491261', oclc: '228195188', lcc: 'BR65.A6 E5 2008', ddc: '270.2092' });
+      same(found.identifiers, { lccn: '2008491261', oclc: '228195188', lcc: 'BR65.A6 E5 2008', ddc: '270.2092', openLibrary: 'OL23154103M', hathiTrust: '' });
     },
   },
   {
