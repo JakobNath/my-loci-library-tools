@@ -1,4 +1,4 @@
-// Recorded answers for 9780852291634: Great Books of the Western World, second edition (Encyclopaedia Britannica, 1990): one ISBN printed on every volume.
+// Recorded answers for 9780852291634: Great Books of the Western World, first edition (Encyclopaedia Britannica, 1952, and its later printings): one ISBN for the whole set. (The 1990 second edition has its own, 9780852295311.)
 // Asked on 11 November 2026 (phase 15, step 3); each export is the text exactly as the
 // source sent it. No key is included.
 

@@ -257,3 +257,16 @@ export function searchPieces(library, query, limit = 50) {
   }
   return found;
 }
+
+/**
+ * The books holding a work's text in its original language, not only a
+ * translation: the "original-text marker" (PLAN.md, "Library and Wishlist
+ * views"). An edition's languages list says what is printed in it; "Greek"
+ * there matches a work first written in "Ancient Greek". Nothing is stored.
+ * @returns {object[]} library entries, in library order
+ */
+export function originalTextHolders(work, library) {
+  const original = normalizeForSearch(work.originalLanguage || '');
+  const printsIt = language => { const printed = normalizeForSearch(language); return printed === original || original.endsWith(` ${printed}`); };
+  return original ? library.entries.filter(entry => entry.works.includes(work) && entry.edition.languages.some(printsIt)) : [];
+}

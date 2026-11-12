@@ -22,6 +22,41 @@ function blankForm(values) {
 
 export const tests = [
   {
+    name: 'contents from a known set take each work\'s original title, language and translator; a piece stays inside the book; a changed line is saved as typed',
+    fn() {
+      const knownWorks = { set: 'Great Books of the Western World', works: [
+        { author: 'Plato', title: 'Phaedo', originalTitle: 'Φαίδων', originalLanguage: 'Greek', date: 'c. 360 BC', translator: 'Benjamin Jowett', pages: '', piece: false },
+        { author: 'Plato', title: 'Crito', originalTitle: 'Κρίτων', originalLanguage: 'Greek', date: 'c. 399 BC', translator: 'Benjamin Jowett', pages: '', piece: false },
+        { author: 'Edgar Allan Poe', title: 'The Raven', originalTitle: '', originalLanguage: 'English', date: '1845', translator: '', pages: '', piece: true },
+      ] };
+      const form = blankForm({ title: 'Plato', contents: 'Plato — Phaedo — c. 360 BC\nPlato — Crito — 4th c. BC\nEdgar Allan Poe — The Raven — 1845', knownWorks });
+      const result = recordsFromForm(form, null, context());
+      same(result.problems, []);
+      const works = result.records.filter(record => record.type === 'work');
+      same(works.map(work => [work.title, work.originalTitle, work.originalLanguage, work.datings[0].note]),
+        [['Phaedo', 'Φαίδων', 'Greek', 'from the Great Books of the Western World list'], ['Crito', 'Κρίτων', 'Greek', '']], 'a date typed over the list\'s has no list note');
+      const edition = result.records.find(record => record.type === 'edition');
+      same(edition.contents.map(entry => entry.translator), ['Benjamin Jowett', 'Benjamin Jowett', null]);
+      same(edition.contents[2].piece, { title: 'The Raven', author: 'Edgar Allan Poe', originalTitle: null, date: '1845' });
+      equal(edition.contents[2].work, null);
+      for (const record of result.records) same(validateRecord(record), [], record.type);
+    },
+  },
+  {
+    name: 'a work the list puts in two volumes stays one work: the second volume links to the first volume\'s work',
+    fn() {
+      const knownWorks = { set: 'Great Books of the Western World', works: [
+        { author: 'Edward Gibbon', title: 'The Decline and Fall of the Roman Empire', originalTitle: '', originalLanguage: 'English', date: '1776–1789', translator: '', pages: '', piece: false },
+      ] };
+      const lines = 'Edward Gibbon — The Decline and Fall of the Roman Empire — 1776–1789';
+      const first = recordsFromForm(blankForm({ title: 'Gibbon I', contents: lines, knownWorks }), null, context());
+      const work = first.records.find(record => record.type === 'work');
+      const second = recordsFromForm(blankForm({ title: 'Gibbon II', contents: lines, knownWorks }), null, { ...context(), setWorks: [work] });
+      equal(second.records.filter(record => record.type === 'work').length, 0, 'no second work');
+      equal(second.records.find(record => record.type === 'edition').contents[0].work, work.id);
+    },
+  },
+  {
     name: 'volumes of a set pasted one per line give each its label and title',
     fn() {
       same(volumesFromLines('7 Plato\n8 Aristotle I\n\n  I/1 The Doctrine of the Word of God\n31\nIV – Church Dogmatics', 'Great Books'), [

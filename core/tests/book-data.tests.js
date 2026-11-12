@@ -232,7 +232,7 @@ export const tests = [
     },
   },
   {
-    name: 'records of different books sharing one ISBN (Great Books, 1990) give nothing rather than one of them at random',
+    name: 'records of different books sharing one ISBN (Great Books of the Western World) give nothing rather than one of them at random',
     fn() {
       equal(fromHathiTrust(greatBooks.hathiTrust, greatBooks.isbn), null);
       equal(fromHathiTrust(poe.hathiTrust, poe.isbn), null, 'a book HathiTrust does not hold');

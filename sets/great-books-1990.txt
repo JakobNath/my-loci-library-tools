@@ -1,0 +1,502 @@
+# Great Books of the Western World, second edition (1990): every volume and the works it holds.
+# Researched 12 November 2026 from the Library of Congress set record (LCCN 90080213), CiNii's
+# volume records, Logos, holtz.org, the DAIICT 1990 list and Wikipedia; each line against two
+# sources where they could be found. The disagreements and choices are kept with the project's
+# working notes. The first edition (1952, 54 volumes) numbers its volumes differently and is not
+# this list; its set ISBN, 0-85229-163-9, is listed too, because some volumes of our 1990 set may
+# print it (not yet confirmed). A 1952 volume scanned is then offered these volumes: tap "Not in the list".
+set: Great Books of the Western World
+publisher: Encyclopaedia Britannica
+place: Chicago
+year: 1990
+edition: 2nd ed.
+isbn: 9780852295311
+isbn: 9780852291634
+
+volume: 1 | The Syntopicon I
+# The Syntopicon: An Index to the Great Ideas, volume 1 (Angel to Love). Reference index.
+Mortimer J. Adler — The Syntopicon: An Index to the Great Ideas | | English — 1952
+
+volume: 2 | The Syntopicon II
+# The Syntopicon, volume 2 (Man to World).
+Mortimer J. Adler — The Syntopicon: An Index to the Great Ideas | | English — 1952
+
+volume: 3 | Homer
+Homer — The Iliad | Ἰλιάς | Ancient Greek — 8th c. BC | trans. Richmond Lattimore
+Homer — The Odyssey | Ὀδύσσεια | Ancient Greek — 8th c. BC | trans. Richmond Lattimore
+
+volume: 4 | Aeschylus, Sophocles, Euripides, Aristophanes
+Aeschylus — The Suppliant Maidens | Ἱκέτιδες | Ancient Greek — c. 463 BC | trans. Seth G. Benardete
+Aeschylus — The Persians | Πέρσαι | Ancient Greek — 472 BC | trans. Seth G. Benardete
+Aeschylus — Seven Against Thebes | Ἑπτὰ ἐπὶ Θήβας | Ancient Greek — 467 BC | trans. David Grene
+Aeschylus — Prometheus Bound | Προμηθεὺς Δεσμώτης | Ancient Greek — 5th c. BC | trans. David Grene
+Aeschylus — Agamemnon | Ἀγαμέμνων | Ancient Greek — 458 BC | trans. Richmond Lattimore
+Aeschylus — The Libation Bearers | Χοηφόροι | Ancient Greek — 458 BC | trans. Richmond Lattimore
+Aeschylus — The Eumenides | Εὐμενίδες | Ancient Greek — 458 BC | trans. Richmond Lattimore
+Sophocles — Oedipus the King | Οἰδίπους Τύραννος | Ancient Greek — c. 429 BC | trans. David Grene
+Sophocles — Oedipus at Colonus | Οἰδίπους ἐπὶ Κολωνῷ | Ancient Greek — c. 406 BC | trans. Robert Fitzgerald
+Sophocles — Antigone | Ἀντιγόνη | Ancient Greek — c. 441 BC | trans. Elizabeth Wyckoff
+Sophocles — Ajax | Αἴας | Ancient Greek — c. 442 BC | trans. John Moore
+Sophocles — Electra | Ἠλέκτρα | Ancient Greek — c. 420–414 BC | trans. David Grene
+Sophocles — The Women of Trachis | Τραχίνιαι | Ancient Greek — c. 450–425 BC | trans. Michael Jameson
+Sophocles — Philoctetes | Φιλοκτήτης | Ancient Greek — 409 BC | trans. David Grene
+Euripides — Rhesus | Ῥῆσος | Ancient Greek — 5th c. BC | trans. Richmond Lattimore
+Euripides — The Medea | Μήδεια | Ancient Greek — 431 BC | trans. Rex Warner
+Euripides — Hippolytus | Ἱππόλυτος | Ancient Greek — 428 BC | trans. David Grene
+Euripides — Alcestis | Ἄλκηστις | Ancient Greek — 438 BC | trans. Richmond Lattimore
+Euripides — The Heracleidae | Ἡρακλεῖδαι | Ancient Greek — c. 430 BC | trans. Ralph Gladstone
+Euripides — The Suppliant Women | Ἱκέτιδες | Ancient Greek — 423 BC | trans. Frank William Jones
+Euripides — The Trojan Women | Τρῳάδες | Ancient Greek — 415 BC | trans. Richmond Lattimore
+Euripides — Ion | Ἴων | Ancient Greek — 5th c. BC | trans. Ronald Frederick Willetts
+Euripides — Helen | Ἑλένη | Ancient Greek — 412 BC | trans. Richmond Lattimore
+Euripides — Andromache | Ἀνδρομάχη | Ancient Greek — c. 428–425 BC | trans. John Frederick Nims
+Euripides — Electra | Ἠλέκτρα | Ancient Greek — c. 420–413 BC | trans. Emily Townsend Vermeule
+Euripides — The Bacchae | Βάκχαι | Ancient Greek — 405 BC | trans. William Arrowsmith
+Euripides — Hecuba | Ἑκάβη | Ancient Greek — c. 424 BC | trans. William Arrowsmith
+Euripides — Heracles | Ἡρακλῆς | Ancient Greek — c. 416 BC | trans. William Arrowsmith
+Euripides — The Phoenician Women | Φοίνισσαι | Ancient Greek — c. 410 BC | trans. Elizabeth Wyckoff
+Euripides — Orestes | Ὀρέστης | Ancient Greek — 408 BC | trans. William Arrowsmith
+Euripides — Iphigenia in Tauris | Ἰφιγένεια ἐν Ταύροις | Ancient Greek — c. 414–412 BC | trans. Witter Bynner
+Euripides — Iphigenia in Aulis | Ἰφιγένεια ἐν Αὐλίδι | Ancient Greek — 405 BC | trans. Charles R. Walker
+Euripides — The Cyclops | Κύκλωψ | Ancient Greek — c. 408 BC | trans. William Arrowsmith
+Aristophanes — The Acharnians | Ἀχαρνῆς | Ancient Greek — 425 BC | trans. Alan H. Sommerstein
+Aristophanes — The Knights | Ἱππῆς | Ancient Greek — 424 BC | trans. Alan H. Sommerstein
+Aristophanes — The Clouds | Νεφέλαι | Ancient Greek — 423 BC | trans. Alan H. Sommerstein
+Aristophanes — The Wasps | Σφῆκες | Ancient Greek — 422 BC | trans. David Barrett
+Aristophanes — Peace | Εἰρήνη | Ancient Greek — 421 BC | trans. Alan H. Sommerstein
+Aristophanes — The Birds | Ὄρνιθες | Ancient Greek — 414 BC | trans. David Barrett
+Aristophanes — The Frogs | Βάτραχοι | Ancient Greek — 405 BC | trans. David Barrett
+Aristophanes — Lysistrata | Λυσιστράτη | Ancient Greek — 411 BC | trans. Alan H. Sommerstein
+Aristophanes — The Poet and the Women | Θεσμοφοριάζουσαι | Ancient Greek — 411 BC | trans. David Barrett
+Aristophanes — The Assemblywomen | Ἐκκλησιάζουσαι | Ancient Greek — c. 391 BC | trans. David Barrett
+Aristophanes — Wealth | Πλοῦτος | Ancient Greek — 388 BC | trans. Alan H. Sommerstein
+
+volume: 5 | Herodotus, Thucydides
+Herodotus — The History | Ἱστορίαι | Ancient Greek — c. 430 BC | trans. George Rawlinson
+Thucydides — The History of the Peloponnesian War | Ἱστορίαι | Ancient Greek — c. 400 BC | trans. Richard Crawley, rev. R. Feetham
+
+volume: 6 | Plato
+Plato — Charmides | Χαρμίδης | Ancient Greek — 4th c. BC | trans. Benjamin Jowett
+Plato — Lysis | Λύσις | Ancient Greek — 4th c. BC | trans. Benjamin Jowett
+Plato — Laches | Λάχης | Ancient Greek — 4th c. BC | trans. Benjamin Jowett
+Plato — Protagoras | Πρωταγόρας | Ancient Greek — 4th c. BC | trans. Benjamin Jowett
+Plato — Euthydemus | Εὐθύδημος | Ancient Greek — 4th c. BC | trans. Benjamin Jowett
+Plato — Cratylus | Κρατύλος | Ancient Greek — 4th c. BC | trans. Benjamin Jowett
+Plato — Phaedrus | Φαῖδρος | Ancient Greek — 4th c. BC | trans. Benjamin Jowett
+Plato — Ion | Ἴων | Ancient Greek — 4th c. BC | trans. Benjamin Jowett
+Plato — Symposium | Συμπόσιον | Ancient Greek — 4th c. BC | trans. Benjamin Jowett
+Plato — Meno | Μένων | Ancient Greek — 4th c. BC | trans. Benjamin Jowett
+Plato — Euthyphro | Εὐθύφρων | Ancient Greek — 4th c. BC | trans. Benjamin Jowett
+Plato — Apology | Ἀπολογία Σωκράτους | Ancient Greek — 4th c. BC | trans. Benjamin Jowett
+Plato — Crito | Κρίτων | Ancient Greek — 4th c. BC | trans. Benjamin Jowett
+Plato — Phaedo | Φαίδων | Ancient Greek — 4th c. BC | trans. Benjamin Jowett
+Plato — Gorgias | Γοργίας | Ancient Greek — 4th c. BC | trans. Benjamin Jowett
+Plato — The Republic | Πολιτεία | Ancient Greek — c. 375 BC | trans. Benjamin Jowett
+Plato — Timaeus | Τίμαιος | Ancient Greek — 4th c. BC | trans. Benjamin Jowett
+Plato — Critias | Κριτίας | Ancient Greek — 4th c. BC | trans. Benjamin Jowett
+Plato — Parmenides | Παρμενίδης | Ancient Greek — 4th c. BC | trans. Benjamin Jowett
+Plato — Theaetetus | Θεαίτητος | Ancient Greek — 4th c. BC | trans. Benjamin Jowett
+Plato — Sophist | Σοφιστής | Ancient Greek — 4th c. BC | trans. Benjamin Jowett
+Plato — Statesman | Πολιτικός | Ancient Greek — 4th c. BC | trans. Benjamin Jowett
+Plato — Philebus | Φίληβος | Ancient Greek — 4th c. BC | trans. Benjamin Jowett
+Plato — Laws | Νόμοι | Ancient Greek — 4th c. BC | trans. Benjamin Jowett
+Plato — The Seventh Letter | Ἐπιστολὴ Ζʹ | Ancient Greek — c. 353 BC | trans. J. Harward
+
+volume: 7 | Aristotle I
+Aristotle — Categories | Κατηγορίαι | Ancient Greek — 4th c. BC | trans. E. M. Edghill
+Aristotle — On Interpretation | Περὶ Ἑρμηνείας | Ancient Greek — 4th c. BC | trans. E. M. Edghill
+Aristotle — Prior Analytics | Ἀναλυτικὰ Πρότερα | Ancient Greek — 4th c. BC | trans. A. J. Jenkinson
+Aristotle — Posterior Analytics | Ἀναλυτικὰ Ὕστερα | Ancient Greek — 4th c. BC | trans. G. R. G. Mure
+Aristotle — Topics | Τοπικά | Ancient Greek — 4th c. BC | trans. W. A. Pickard-Cambridge
+Aristotle — On Sophistical Refutations | Περὶ τῶν Σοφιστικῶν Ἐλέγχων | Ancient Greek — 4th c. BC | trans. W. A. Pickard-Cambridge
+Aristotle — Physics | Φυσικὴ ἀκρόασις | Ancient Greek — 4th c. BC | trans. R. P. Hardie and R. K. Gaye
+Aristotle — On the Heavens | Περὶ οὐρανοῦ | Ancient Greek — 4th c. BC | trans. J. L. Stocks
+Aristotle — On Generation and Corruption | Περὶ γενέσεως καὶ φθορᾶς | Ancient Greek — 4th c. BC | trans. H. H. Joachim
+Aristotle — Meteorology | Μετεωρολογικά | Ancient Greek — 4th c. BC | trans. E. W. Webster
+Aristotle — Metaphysics | Τὰ μετὰ τὰ φυσικά | Ancient Greek — 4th c. BC | trans. W. D. Ross
+Aristotle — On the Soul | Περὶ ψυχῆς | Ancient Greek — 4th c. BC | trans. J. A. Smith
+Aristotle — On Sense and the Sensible | Περὶ αἰσθήσεως καὶ αἰσθητῶν | Ancient Greek — 4th c. BC | trans. J. I. Beare
+Aristotle — On Memory and Reminiscence | Περὶ μνήμης καὶ ἀναμνήσεως | Ancient Greek — 4th c. BC | trans. J. I. Beare
+Aristotle — On Sleep and Sleeplessness | Περὶ ὕπνου καὶ ἐγρηγόρσεως | Ancient Greek — 4th c. BC | trans. J. I. Beare
+Aristotle — On Dreams | Περὶ ἐνυπνίων | Ancient Greek — 4th c. BC | trans. J. I. Beare
+Aristotle — On Prophesying by Dreams | Περὶ τῆς καθ᾽ ὕπνον μαντικῆς | Ancient Greek — 4th c. BC | trans. J. I. Beare
+Aristotle — On Longevity and Shortness of Life | Περὶ μακροβιότητος καὶ βραχυβιότητος | Ancient Greek — 4th c. BC | trans. G. R. T. Ross
+Aristotle — On Youth and Old Age, On Life and Death, On Breathing | Περὶ νεότητος καὶ γήρως, περὶ ζωῆς καὶ θανάτου, περὶ ἀναπνοῆς | Ancient Greek — 4th c. BC | trans. G. R. T. Ross
+
+volume: 8 | Aristotle II
+Aristotle — History of Animals | Τῶν περὶ τὰ ζῷα ἱστοριῶν | Ancient Greek — 4th c. BC | trans. D'Arcy Wentworth Thompson
+Aristotle — On the Parts of Animals | Περὶ ζῴων μορίων | Ancient Greek — 4th c. BC | trans. William Ogle
+Aristotle — On the Motion of Animals | Περὶ ζῴων κινήσεως | Ancient Greek — 4th c. BC | trans. A. S. L. Farquharson
+Aristotle — On the Gait of Animals | Περὶ πορείας ζῴων | Ancient Greek — 4th c. BC | trans. A. S. L. Farquharson
+Aristotle — On the Generation of Animals | Περὶ ζῴων γενέσεως | Ancient Greek — 4th c. BC | trans. Arthur Platt
+Aristotle — Nicomachean Ethics | Ἠθικὰ Νικομάχεια | Ancient Greek — 4th c. BC | trans. W. D. Ross
+Aristotle — Politics | Πολιτικά | Ancient Greek — 4th c. BC | trans. Benjamin Jowett
+Aristotle — The Athenian Constitution | Ἀθηναίων πολιτεία | Ancient Greek — 4th c. BC | trans. Frederic G. Kenyon
+Aristotle — Rhetoric | Ῥητορική | Ancient Greek — 4th c. BC | trans. W. Rhys Roberts
+Aristotle — On Poetics | Περὶ ποιητικῆς | Ancient Greek — 4th c. BC | trans. Ingram Bywater
+
+volume: 9 | Hippocrates, Galen
+# The Hippocratic treatises are printed under the title "Hippocratic Writings".
+Hippocrates — The Oath | Ὅρκος | Ancient Greek — 5th–4th c. BC | trans. Francis Adams | piece
+Hippocrates — On Ancient Medicine | Περὶ ἀρχαίης ἰητρικῆς | Ancient Greek — 5th–4th c. BC | trans. Francis Adams | piece
+Hippocrates — On Airs, Waters, and Places | Περὶ ἀέρων, ὑδάτων, τόπων | Ancient Greek — 5th–4th c. BC | trans. Francis Adams | piece
+Hippocrates — The Book of Prognostics | Προγνωστικόν | Ancient Greek — 5th–4th c. BC | trans. Francis Adams | piece
+Hippocrates — On Regimen in Acute Diseases | Περὶ διαίτης ὀξέων | Ancient Greek — 5th–4th c. BC | trans. Francis Adams | piece
+Hippocrates — Of the Epidemics | Ἐπιδημίαι | Ancient Greek — 5th–4th c. BC | trans. Francis Adams | piece
+Hippocrates — On Injuries of the Head | Περὶ τῶν ἐν κεφαλῇ τρωμάτων | Ancient Greek — 5th–4th c. BC | trans. Francis Adams | piece
+Hippocrates — On the Surgery | Κατ᾽ ἰητρεῖον | Ancient Greek — 5th–4th c. BC | trans. Francis Adams | piece
+Hippocrates — On Fractures | Περὶ ἀγμῶν | Ancient Greek — 5th–4th c. BC | trans. Francis Adams | piece
+Hippocrates — On the Articulations | Περὶ ἄρθρων | Ancient Greek — 5th–4th c. BC | trans. Francis Adams | piece
+Hippocrates — Instruments of Reduction | Μοχλικόν | Ancient Greek — 5th–4th c. BC | trans. Francis Adams | piece
+Hippocrates — Aphorisms | Ἀφορισμοί | Ancient Greek — 5th–4th c. BC | trans. Francis Adams | piece
+Hippocrates — The Law | Νόμος | Ancient Greek — 5th–4th c. BC | trans. Francis Adams | piece
+Hippocrates — On Ulcers | Περὶ ἑλκῶν | Ancient Greek — 5th–4th c. BC | trans. Francis Adams | piece
+Hippocrates — On Fistulae | Περὶ συρίγγων | Ancient Greek — 5th–4th c. BC | trans. Francis Adams | piece
+Hippocrates — On Hemorrhoids | Περὶ αἱμορροΐδων | Ancient Greek — 5th–4th c. BC | trans. Francis Adams | piece
+Hippocrates — On the Sacred Disease | Περὶ ἱερῆς νούσου | Ancient Greek — 5th–4th c. BC | trans. Francis Adams | piece
+Galen — On the Natural Faculties | Περὶ φυσικῶν δυνάμεων | Ancient Greek — 2nd c. | trans. Arthur John Brock
+
+volume: 10 | Euclid, Archimedes, Nicomachus
+Euclid — The Thirteen Books of Euclid's Elements | Στοιχεῖα | Ancient Greek — c. 300 BC | trans. Thomas L. Heath
+# The Archimedes treatises are printed under "The Works of Archimedes Including The Method".
+Archimedes — On the Sphere and Cylinder | Περὶ σφαίρας καὶ κυλίνδρου | Ancient Greek — 3rd c. BC | trans. Thomas L. Heath | piece
+Archimedes — Measurement of a Circle | Κύκλου μέτρησις | Ancient Greek — 3rd c. BC | trans. Thomas L. Heath | piece
+Archimedes — On Conoids and Spheroids | Περὶ κωνοειδέων καὶ σφαιροειδέων | Ancient Greek — 3rd c. BC | trans. Thomas L. Heath | piece
+Archimedes — On Spirals | Περὶ ἑλίκων | Ancient Greek — 3rd c. BC | trans. Thomas L. Heath | piece
+Archimedes — On the Equilibrium of Planes | Περὶ ἐπιπέδων ἰσορροπιῶν | Ancient Greek — 3rd c. BC | trans. Thomas L. Heath | piece
+Archimedes — The Sand-Reckoner | Ψαμμίτης | Ancient Greek — 3rd c. BC | trans. Thomas L. Heath | piece
+Archimedes — Quadrature of the Parabola | Τετραγωνισμὸς παραβολῆς | Ancient Greek — 3rd c. BC | trans. Thomas L. Heath | piece
+Archimedes — On Floating Bodies | Περὶ τῶν ὀχουμένων | Ancient Greek — 3rd c. BC | trans. Thomas L. Heath | piece
+Archimedes — Book of Lemmas | | Ancient Greek — 3rd c. BC | trans. Thomas L. Heath | piece
+Archimedes — The Method Treating of Mechanical Problems | Περὶ τῶν μηχανικῶν θεωρημάτων πρὸς Ἐρατοσθένη ἔφοδος | Ancient Greek — 3rd c. BC | trans. Thomas L. Heath | piece
+Nicomachus — Introduction to Arithmetic | Ἀριθμητικὴ εἰσαγωγή | Ancient Greek — c. 100 | trans. Martin L. D'Ooge
+
+volume: 11 | Lucretius, Epictetus, Marcus Aurelius, Plotinus
+Lucretius — The Way Things Are | De rerum natura | Latin — c. 55 BC | trans. Rolfe Humphries
+Epictetus — The Discourses | Ἐπικτήτου διατριβαί | Ancient Greek — c. 108 | trans. George Long
+Marcus Aurelius — The Meditations | Τὰ εἰς ἑαυτόν | Ancient Greek — c. 170–180 | trans. George Long
+Plotinus — The Six Enneads | Ἐννεάδες | Ancient Greek — c. 253–270 | trans. Stephen MacKenna and B. S. Page
+
+volume: 12 | Virgil
+Virgil — The Eclogues | Eclogae | Latin — c. 39–38 BC | trans. C. Day Lewis
+Virgil — The Georgics | Georgica | Latin — 29 BC | trans. C. Day Lewis
+Virgil — The Aeneid | Aeneis | Latin — 29–19 BC | trans. C. Day Lewis
+
+volume: 13 | Plutarch
+Plutarch — The Lives of the Noble Grecians and Romans | Βίοι Παράλληλοι | Ancient Greek — early 2nd c. | trans. John Dryden
+
+volume: 14 | Tacitus
+Tacitus — The Annals | Annales | Latin — c. 116 | trans. Alfred John Church and William Jackson Brodribb
+Tacitus — The Histories | Historiae | Latin — c. 100–110 | trans. Alfred John Church and William Jackson Brodribb
+
+volume: 15 | Ptolemy, Copernicus, Kepler
+Ptolemy — The Almagest | Μαθηματικὴ σύνταξις | Ancient Greek — c. 150 | trans. R. Catesby Taliaferro
+Nicolaus Copernicus — On the Revolutions of the Heavenly Spheres | De revolutionibus orbium coelestium | Latin — 1543 | trans. Charles Glenn Wallis
+Johannes Kepler — Epitome of Copernican Astronomy: IV and V | Epitome astronomiae Copernicanae | Latin — 1620–1621 | trans. Charles Glenn Wallis
+Johannes Kepler — The Harmonies of the World: V | Harmonices mundi | Latin — 1619 | trans. Charles Glenn Wallis
+
+volume: 16 | Augustine
+Augustine — The Confessions | Confessiones | Latin — c. 397–400 | trans. R. S. Pine-Coffin
+Augustine — The City of God | De civitate Dei | Latin — c. 413–426 | trans. Marcus Dods
+Augustine — On Christian Doctrine | De doctrina christiana | Latin — 397–426 | trans. J. F. Shaw
+
+volume: 17 | Aquinas I
+# Treatises on God, the Trinity, the Creation, the Angels, the Work of the Six Days, Man, the Divine Government, the Last End, Human Acts.
+Thomas Aquinas — The Summa Theologica | Summa theologiae | Latin — c. 1265–1274 | trans. Laurence Shapcote, rev. Daniel J. Sullivan
+
+volume: 18 | Aquinas II
+# Treatises on Habits, Law, Grace, Faith, Hope and Charity, the Active and Contemplative Life, the States of Life, the Incarnation, the Sacraments, the Resurrection, the Last Things.
+Thomas Aquinas — The Summa Theologica | Summa theologiae | Latin — c. 1265–1274 | trans. Laurence Shapcote, rev. Daniel J. Sullivan
+
+volume: 19 | Dante, Chaucer
+Dante Alighieri — The Divine Comedy | Commedia | Italian — c. 1308–1321 | trans. Charles S. Singleton
+Geoffrey Chaucer — Troilus and Criseyde | | Middle English — c. 1385 | trans. Nevill Coghill
+Geoffrey Chaucer — The Canterbury Tales | | Middle English — c. 1387–1400 | trans. Nevill Coghill
+
+volume: 20 | Calvin
+John Calvin — Institutes of the Christian Religion | Institutio Christianae religionis | Latin — 1536 | trans. Henry Beveridge
+
+volume: 21 | Machiavelli, Hobbes
+Niccolò Machiavelli — The Prince | Il Principe | Italian — c. 1513 | trans. W. K. Marriott
+Thomas Hobbes — Leviathan, or Matter, Form, and Power of a Commonwealth Ecclesiastical and Civil | | English — 1651
+
+volume: 22 | Rabelais
+François Rabelais — Gargantua and Pantagruel | Les Cinq livres des faits et dits de Gargantua et Pantagruel | French — 1532–1564 | trans. Thomas Urquhart and Peter Motteux
+
+volume: 23 | Erasmus, Montaigne
+Desiderius Erasmus — Praise of Folly | Moriae encomium | Latin — 1511 | trans. Betty Radice
+Michel de Montaigne — The Essays | Essais | French — 1580 | trans. Donald M. Frame
+
+volume: 24 | Shakespeare I
+William Shakespeare — The First Part of King Henry the Sixth | | English — c. 1591
+William Shakespeare — The Second Part of King Henry the Sixth | | English — c. 1591
+William Shakespeare — The Third Part of King Henry the Sixth | | English — c. 1591
+William Shakespeare — The Tragedy of King Richard the Third | | English — c. 1592–1594
+William Shakespeare — The Comedy of Errors | | English — c. 1594
+William Shakespeare — Titus Andronicus | | English — c. 1588–1593
+William Shakespeare — The Taming of the Shrew | | English — c. 1590–1592
+William Shakespeare — The Two Gentlemen of Verona | | English — c. 1589–1593
+William Shakespeare — Love's Labour's Lost | | English — c. 1595
+William Shakespeare — Romeo and Juliet | | English — c. 1591–1595
+William Shakespeare — The Tragedy of King Richard the Second | | English — c. 1595
+William Shakespeare — A Midsummer-Night's Dream | | English — c. 1594–1596
+William Shakespeare — The Life and Death of King John | | English — c. 1596
+William Shakespeare — The Merchant of Venice | | English — c. 1596–1598
+William Shakespeare — The First Part of King Henry the Fourth | | English — c. 1597
+William Shakespeare — The Second Part of King Henry the Fourth | | English — c. 1596–1599
+William Shakespeare — Much Ado About Nothing | | English — c. 1598–1599
+William Shakespeare — The Life of King Henry the Fifth | | English — c. 1599
+William Shakespeare — Julius Caesar | | English — 1599
+William Shakespeare — As You Like It | | English — c. 1599
+
+volume: 25 | Shakespeare II
+William Shakespeare — Twelfth Night; or, What You Will | | English — c. 1601–1602
+William Shakespeare — Hamlet, Prince of Denmark | | English — c. 1599–1601
+William Shakespeare — The Merry Wives of Windsor | | English — c. 1597
+William Shakespeare — Troilus and Cressida | | English — c. 1602
+William Shakespeare — All's Well That Ends Well | | English — c. 1598–1608
+William Shakespeare — Measure for Measure | | English — c. 1603–1604
+William Shakespeare — Othello, the Moor of Venice | | English — c. 1603
+William Shakespeare — King Lear | | English — c. 1605–1606
+William Shakespeare — Macbeth | | English — c. 1606
+William Shakespeare — Antony and Cleopatra | | English — c. 1607
+William Shakespeare — Coriolanus | | English — c. 1605–1608
+William Shakespeare — Timon of Athens | | English — c. 1606
+William Shakespeare — Pericles, Prince of Tyre | | English — c. 1608
+William Shakespeare — Cymbeline | | English — c. 1610
+William Shakespeare — The Winter's Tale | | English — c. 1611
+William Shakespeare — The Tempest | | English — c. 1610–1611
+William Shakespeare — The Famous History of the Life of King Henry the Eighth | | English — 1613
+William Shakespeare — Sonnets | | English — 1609
+
+volume: 26 | Gilbert, Galileo, Harvey
+William Gilbert — On the Loadstone and Magnetic Bodies | De Magnete | Latin — 1600 | trans. P. Fleury Mottelay
+Galileo Galilei — Concerning the Two New Sciences | Discorsi e dimostrazioni matematiche intorno a due nuove scienze | Italian — 1638 | trans. Henry Crew and Alfonso de Salvio
+William Harvey — On the Motion of the Heart and Blood in Animals | Exercitatio anatomica de motu cordis et sanguinis in animalibus | Latin — 1628 | trans. Robert Willis
+William Harvey — On the Circulation of the Blood | Exercitationes duae anatomicae de circulatione sanguinis | Latin — 1649 | trans. Robert Willis
+William Harvey — On the Generation of Animals | Exercitationes de generatione animalium | Latin — 1651 | trans. Robert Willis
+
+volume: 27 | Cervantes
+Miguel de Cervantes — The History of Don Quixote de la Mancha | El ingenioso hidalgo don Quijote de la Mancha | Spanish — 1605–1615 | trans. Samuel Putnam
+
+volume: 28 | Bacon, Descartes, Spinoza
+Francis Bacon — Advancement of Learning | | English — 1605
+Francis Bacon — Novum Organum | Novum Organum | Latin — 1620
+Francis Bacon — New Atlantis | | English — 1626
+René Descartes — Rules for the Direction of the Mind | Regulae ad directionem ingenii | Latin — c. 1628 | trans. Elizabeth S. Haldane and G. R. T. Ross
+René Descartes — Discourse on the Method | Discours de la méthode | French — 1637 | trans. Elizabeth S. Haldane and G. R. T. Ross
+René Descartes — Meditations on First Philosophy | Meditationes de prima philosophia | Latin — 1641 | trans. Elizabeth S. Haldane and G. R. T. Ross
+René Descartes — Objections Against the Meditations and Replies | Objectiones et responsiones | Latin — 1641 | trans. Elizabeth S. Haldane and G. R. T. Ross
+René Descartes — The Geometry | La Géométrie | French — 1637 | trans. David Eugene Smith and Marcia L. Latham
+Benedict de Spinoza — Ethics | Ethica, ordine geometrico demonstrata | Latin — 1677 | trans. W. H. White, rev. A. H. Stirling
+
+volume: 29 | Milton
+John Milton — English Minor Poems | | English — 1645
+John Milton — Paradise Lost | | English — 1667
+John Milton — Samson Agonistes | | English — 1671
+John Milton — Areopagitica | | English — 1644
+
+volume: 30 | Pascal
+Blaise Pascal — The Provincial Letters | Les Provinciales | French — 1656–1657 | trans. Thomas M'Crie
+Blaise Pascal — Pensées | Pensées | French — 1670 | trans. W. F. Trotter
+Blaise Pascal — Scientific Treatises | | French — 1647–1665 | trans. Richard Scofield
+
+
+volume: 31 | Molière, Racine
+Molière — The School for Wives | L'École des femmes | French — 1662 | trans. Morris Bishop
+Molière — The Critique of the School for Wives | La Critique de l'École des femmes | French — 1663 | trans. Morris Bishop
+Molière — Tartuffe | Le Tartuffe, ou l'Imposteur | French — 1664 | trans. Morris Bishop
+Molière — Don Juan | Dom Juan, ou le Festin de pierre | French — 1665 | trans. John Wood
+Molière — The Miser | L'Avare | French — 1668 | trans. Wallace Fowlie
+Molière — The Would-Be Gentleman | Le Bourgeois gentilhomme | French — 1670 | trans. Morris Bishop
+Molière — The Would-Be Invalid | Le Malade imaginaire | French — 1673 | trans. Morris Bishop
+Jean Racine — Berenice | Bérénice | French — 1670 | trans. Samuel Solomon
+Jean Racine — Phaedra | Phèdre | French — 1677 | trans. Samuel Solomon
+
+volume: 32 | Newton, Huygens
+Isaac Newton — Mathematical Principles of Natural Philosophy | Philosophiae Naturalis Principia Mathematica | Latin — 1687 | trans. Andrew Motte, revised by Florian Cajori
+Isaac Newton — Optics | | English — 1704
+Christiaan Huygens — Treatise on Light | Traité de la lumière | French — 1690 | trans. Silvanus P. Thompson
+
+volume: 33 | Locke, Berkeley, Hume
+John Locke — A Letter Concerning Toleration | Epistola de Tolerantia | Latin — 1689 | trans. William Popple
+John Locke — Concerning Civil Government, Second Essay | | English — 1689
+John Locke — An Essay Concerning Human Understanding | | English — 1689
+George Berkeley — The Principles of Human Knowledge | | English — 1710
+David Hume — An Enquiry Concerning Human Understanding | | English — 1748
+
+volume: 34 | Swift, Voltaire, Diderot
+Jonathan Swift — Gulliver's Travels | | English — 1726
+Voltaire — Candide | Candide, ou l'Optimisme | French — 1759 | trans. Peter Gay
+Denis Diderot — Rameau's Nephew | Le Neveu de Rameau | French — c. 1761–1774 | trans. Jacques Barzun
+
+volume: 35 | Montesquieu, Rousseau
+Montesquieu — The Spirit of Laws | De l'esprit des lois | French — 1748 | trans. Thomas Nugent, revised by J. V. Prichard
+Jean-Jacques Rousseau — On the Origin of Inequality | Discours sur l'origine et les fondements de l'inégalité parmi les hommes | French — 1755 | trans. G. D. H. Cole
+Jean-Jacques Rousseau — On Political Economy | Discours sur l'économie politique | French — 1755 | trans. G. D. H. Cole
+Jean-Jacques Rousseau — The Social Contract | Du contrat social | French — 1762 | trans. G. D. H. Cole
+
+volume: 36 | Adam Smith
+Adam Smith — An Inquiry into the Nature and Causes of the Wealth of Nations | | English — 1776
+
+volume: 37 | Gibbon I
+Edward Gibbon — The Decline and Fall of the Roman Empire | | English — 1776–1789
+
+volume: 38 | Gibbon II
+Edward Gibbon — The Decline and Fall of the Roman Empire | | English — 1776–1789
+
+volume: 39 | Kant
+Immanuel Kant — The Critique of Pure Reason | Kritik der reinen Vernunft | German — 1781 | trans. J. M. D. Meiklejohn
+Immanuel Kant — Fundamental Principles of the Metaphysic of Morals | Grundlegung zur Metaphysik der Sitten | German — 1785 | trans. Thomas Kingsmill Abbott
+Immanuel Kant — The Critique of Practical Reason | Kritik der praktischen Vernunft | German — 1788 | trans. Thomas Kingsmill Abbott
+Immanuel Kant — Preface and Introduction to the Metaphysical Elements of Ethics, with a Note on Conscience | Metaphysische Anfangsgründe der Tugendlehre | German — 1797 | trans. Thomas Kingsmill Abbott | piece
+Immanuel Kant — General Introduction to the Metaphysic of Morals | Die Metaphysik der Sitten | German — 1797 | trans. W. Hastie | piece
+Immanuel Kant — The Science of Right | Metaphysische Anfangsgründe der Rechtslehre | German — 1797 | trans. W. Hastie
+Immanuel Kant — The Critique of Judgement | Kritik der Urteilskraft | German — 1790 | trans. James Creed Meredith
+
+volume: 40 | American State Papers, The Federalist, J. S. Mill
+Second Continental Congress — Declaration of Independence | | English — 1776
+Second Continental Congress — Articles of Confederation | | English — 1777
+Constitutional Convention — The Constitution of the United States of America | | English — 1787
+Alexander Hamilton and James Madison and John Jay — The Federalist | | English — 1787–1788
+John Stuart Mill — On Liberty | | English — 1859
+John Stuart Mill — Representative Government | | English — 1861
+John Stuart Mill — Utilitarianism | | English — 1861
+
+volume: 41 | Boswell
+James Boswell — Life of Samuel Johnson, LL.D. | | English — 1791
+
+volume: 42 | Lavoisier, Faraday
+Antoine Laurent Lavoisier — Elements of Chemistry | Traité élémentaire de chimie | French — 1789 | trans. Robert Kerr
+Michael Faraday — Experimental Researches in Electricity | | English — 1839–1855
+
+volume: 43 | Hegel, Kierkegaard, Nietzsche
+Georg Wilhelm Friedrich Hegel — The Philosophy of Right | Grundlinien der Philosophie des Rechts | German — 1820 | trans. T. M. Knox
+Georg Wilhelm Friedrich Hegel — The Philosophy of History | Vorlesungen über die Philosophie der Geschichte | German — 1837 | trans. J. Sibree
+Søren Kierkegaard — Fear and Trembling | Frygt og Bæven | Danish — 1843 | trans. Walter Lowrie
+Friedrich Nietzsche — Beyond Good and Evil | Jenseits von Gut und Böse | German — 1886 | trans. R. J. Hollingdale
+
+volume: 44 | Tocqueville
+Alexis de Tocqueville — Democracy in America | De la démocratie en Amérique | French — 1835–1840 | trans. George Lawrence
+
+volume: 45 | Goethe, Balzac
+Johann Wolfgang von Goethe — Faust, Parts One and Two | Faust | German — 1808–1832 | trans. Philip Wayne
+Honoré de Balzac — Cousin Bette | La Cousine Bette | French — 1846 | trans. Marion Ayton Crawford
+
+volume: 46 | Austen, George Eliot
+Jane Austen — Emma | | English — 1815
+George Eliot — Middlemarch | | English — 1871–1872
+
+volume: 47 | Dickens
+Charles Dickens — Little Dorrit | | English — 1855–1857
+
+volume: 48 | Melville, Twain
+Herman Melville — Moby Dick; or, The Whale | | English — 1851
+Mark Twain — Adventures of Huckleberry Finn | | English — 1884
+
+volume: 49 | Darwin
+Charles Darwin — The Origin of Species by Means of Natural Selection | | English — 1859
+Charles Darwin — The Descent of Man and Selection in Relation to Sex | | English — 1871
+
+volume: 50 | Marx
+Karl Marx — Capital | Das Kapital | German — 1867 | trans. Samuel Moore and Edward Aveling, revised by Marie Sachey and Herbert Lamm
+Karl Marx and Friedrich Engels — Manifesto of the Communist Party | Manifest der Kommunistischen Partei | German — 1848 | trans. Samuel Moore
+
+volume: 51 | Tolstoy
+Leo Tolstoy — War and Peace | Война и мир | Russian — 1865–1869 | trans. Louise and Aylmer Maude
+
+volume: 52 | Dostoevsky, Ibsen
+Fyodor Dostoevsky — The Brothers Karamazov | Братья Карамазовы | Russian — 1879–1880 | trans. Constance Garnett
+Henrik Ibsen — A Doll's House | Et dukkehjem | Norwegian — 1879 | trans. James W. McFarlane
+Henrik Ibsen — The Wild Duck | Vildanden | Norwegian — 1884 | trans. James W. McFarlane
+Henrik Ibsen — Hedda Gabler | Hedda Gabler | Norwegian — 1890 | trans. Jens Arup
+Henrik Ibsen — The Master Builder | Bygmester Solness | Norwegian — 1892 | trans. James W. McFarlane
+
+volume: 53 | William James
+William James — The Principles of Psychology | | English — 1890
+
+volume: 54 | Freud
+Sigmund Freud — The Origin and Development of Psycho-Analysis | Über Psychoanalyse | German — 1910 | trans. Harry W. Chase
+Sigmund Freud — Selected Papers on Hysteria | | German — 1893–1908 | trans. A. A. Brill
+Sigmund Freud — The Sexual Enlightenment of Children | Zur sexuellen Aufklärung der Kinder | German — 1907 | trans. E. B. M. Herford | piece
+Sigmund Freud — The Future Prospects of Psycho-Analytic Therapy | Die zukünftigen Chancen der psychoanalytischen Therapie | German — 1910 | trans. Joan Riviere | piece
+Sigmund Freud — Observations on "Wild" Psycho-Analysis | Über "wilde" Psychoanalyse | German — 1910 | trans. Joan Riviere | piece
+Sigmund Freud — The Interpretation of Dreams | Die Traumdeutung | German — 1899 | trans. A. A. Brill
+Sigmund Freud — On Narcissism | Zur Einführung des Narzißmus | German — 1914 | trans. Cecil M. Baines | piece
+Sigmund Freud — Instincts and Their Vicissitudes | Triebe und Triebschicksale | German — 1915 | trans. Cecil M. Baines | piece
+Sigmund Freud — Repression | Die Verdrängung | German — 1915 | trans. Cecil M. Baines | piece
+Sigmund Freud — The Unconscious | Das Unbewußte | German — 1915 | trans. Cecil M. Baines | piece
+Sigmund Freud — A General Introduction to Psycho-Analysis | Vorlesungen zur Einführung in die Psychoanalyse | German — 1916–1917 | trans. Joan Riviere
+Sigmund Freud — Beyond the Pleasure Principle | Jenseits des Lustprinzips | German — 1920 | trans. C. J. M. Hubback
+Sigmund Freud — Group Psychology and the Analysis of the Ego | Massenpsychologie und Ich-Analyse | German — 1921 | trans. James Strachey
+Sigmund Freud — The Ego and the Id | Das Ich und das Es | German — 1923 | trans. Joan Riviere
+Sigmund Freud — Inhibitions, Symptoms, and Anxiety | Hemmung, Symptom und Angst | German — 1926 | trans. Alix Strachey
+Sigmund Freud — Thoughts for the Times on War and Death | Zeitgemäßes über Krieg und Tod | German — 1915 | trans. E. Colburn Mayne | piece
+Sigmund Freud — Civilization and Its Discontents | Das Unbehagen in der Kultur | German — 1930 | trans. Joan Riviere
+Sigmund Freud — New Introductory Lectures on Psycho-Analysis | Neue Folge der Vorlesungen zur Einführung in die Psychoanalyse | German — 1933 | trans. W. J. H. Sprott
+
+volume: 55 | 20th Century Philosophy and Religion
+William James — Pragmatism | | English — 1907
+Henri Bergson — An Introduction to Metaphysics | Introduction à la métaphysique | French — 1903 | trans. T. E. Hulme | piece
+John Dewey — Experience and Education | | English — 1938
+Alfred North Whitehead — Science and the Modern World | | English — 1925
+Bertrand Russell — The Problems of Philosophy | | English — 1912
+Martin Heidegger — What Is Metaphysics? | Was ist Metaphysik? | German — 1929 | trans. R. F. C. Hull and Alan Crick | piece
+Ludwig Wittgenstein — Philosophical Investigations | Philosophische Untersuchungen | German — 1953 | trans. G. E. M. Anscombe
+Karl Barth — The Word of God and the Word of Man | Das Wort Gottes und die Theologie | German — 1924 | trans. Douglas Horton
+
+volume: 56 | 20th Century Natural Science
+Henri Poincaré — Science and Hypothesis | La Science et l'Hypothèse | French — 1902 | trans. W. J. Greenstreet
+Max Planck — Scientific Autobiography and Other Papers | | German — 1949 | trans. Frank Gaynor
+Alfred North Whitehead — An Introduction to Mathematics | | English — 1911
+Albert Einstein — Relativity: The Special and the General Theory | Über die spezielle und die allgemeine Relativitätstheorie | German — 1917 | trans. Robert W. Lawson
+Arthur Eddington — The Expanding Universe | | English — 1933
+Niels Bohr — Atomic Theory and the Description of Nature (selections) | | English — 1934
+Niels Bohr — Discussion with Einstein on Epistemological Problems in Atomic Physics | | English — 1949 | | piece
+G. H. Hardy — A Mathematician's Apology | | English — 1940
+Werner Heisenberg — Physics and Philosophy | | English — 1958
+Erwin Schrödinger — What Is Life? | | English — 1944
+Theodosius Dobzhansky — Genetics and the Origin of Species | | English — 1937
+C. H. Waddington — The Nature of Life | | English — 1961
+
+volume: 57 | 20th Century Social Science I
+Thorstein Veblen — The Theory of the Leisure Class | | English — 1899
+R. H. Tawney — The Acquisitive Society | | English — 1920
+John Maynard Keynes — The General Theory of Employment, Interest and Money | | English — 1936
+
+volume: 58 | 20th Century Social Science II
+James George Frazer — The Golden Bough (selections) | | English — 1890
+Max Weber — Essays in Sociology (selections) | | German — 1946 | trans. H. H. Gerth and C. Wright Mills
+Johan Huizinga — The Waning of the Middle Ages | Herfsttij der Middeleeuwen | Dutch — 1919 | trans. F. Hopman
+Claude Lévi-Strauss — Structural Anthropology (selections) | Anthropologie structurale | French — 1958 | trans. Claire Jacobson and Brooke Grundfest Schoepf
+
+volume: 59 | 20th Century Imaginative Literature I
+Henry James — The Beast in the Jungle | | English — 1903 | | piece
+George Bernard Shaw — Saint Joan | | English — 1923
+Joseph Conrad — Heart of Darkness | | English — 1899
+Anton Chekhov — Uncle Vania | Дядя Ваня | Russian — 1897 | trans. Elisaveta Fen
+Luigi Pirandello — Six Characters in Search of an Author | Sei personaggi in cerca d'autore | Italian — 1921 | trans. Edward Storer
+Marcel Proust — Swann in Love | Un amour de Swann | French — 1913 | trans. C. K. Scott Moncrieff and Terence Kilmartin
+Willa Cather — A Lost Lady | | English — 1923
+Thomas Mann — Death in Venice | Der Tod in Venedig | German — 1912 | trans. H. T. Lowe-Porter
+James Joyce — A Portrait of the Artist as a Young Man | | English — 1916
+
+volume: 60 | 20th Century Imaginative Literature II
+Virginia Woolf — To the Lighthouse | | English — 1927
+Franz Kafka — The Metamorphosis | Die Verwandlung | German — 1915 | trans. Willa and Edwin Muir
+D. H. Lawrence — The Prussian Officer | | English — 1914 | | piece
+T. S. Eliot — The Waste Land | | English — 1922 | | piece
+Eugene O'Neill — Mourning Becomes Electra | | English — 1931
+F. Scott Fitzgerald — The Great Gatsby | | English — 1925
+William Faulkner — A Rose for Emily | | English — 1930 | | piece
+Bertolt Brecht — Mother Courage and Her Children | Mutter Courage und ihre Kinder | German — 1939 | trans. Ralph Manheim
+Ernest Hemingway — The Short Happy Life of Francis Macomber | | English — 1936 | | piece
+George Orwell — Animal Farm | | English — 1945
+Samuel Beckett — Waiting for Godot | En attendant Godot | French — 1952 | trans. Samuel Beckett
+
+volume: The Great Conversation
+# The unnumbered companion volume (catalogued as [61]): a reader's guide with a chronology, indexes and a ten-year reading plan.
+Mortimer J. Adler — The Great Conversation: A Reader's Guide to Great Books of the Western World | | English — 1990
+Mortimer J. Adler — The Great Conversation Revisited | | English — 1990 | | piece
+Clifton Fadiman — The Contributions of the 20th Century | | English — 1990 | | piece
+Robert M. Hutchins — The Great Conversation (excerpts) | | English — 1952 | | piece

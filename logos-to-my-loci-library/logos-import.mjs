@@ -15,6 +15,7 @@ import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomBytes } from 'node:crypto';
 import { readConfig, readRecords, writeRecord, isGitRepo, git, commitAndPush } from '../shared/data-repo.mjs';
+import { readKnownSets } from '../shared/known-sets.mjs';
 import { makeId } from '../core/ids.js';
 import { parseCsv, decodeExport } from './columns.mjs';
 import { importRows, linkEditions } from './import.mjs';
@@ -48,7 +49,7 @@ function writeMemory(dataRepo, memory) {
 export function importFile(dataRepo, file, { full = false, now = nowText(), linksFile = LINKS_FILE } = {}) {
   const rows = parseCsv(decodeExport(readFileSync(file)));
   const memory = readMemory(dataRepo);
-  const result = importRows(rows, readRecords(dataRepo), memory, { now, today: now.slice(0, 10), newId: () => makeId(randomBytes(12)), full });
+  const result = importRows(rows, readRecords(dataRepo), memory, { now, today: now.slice(0, 10), newId: () => makeId(randomBytes(12)), full, sets: readKnownSets() });
   for (const record of result.changed) writeRecord(dataRepo, record);
   writeMemory(dataRepo, memory);
   if (result.suggestions.length) {
@@ -64,6 +65,7 @@ export function importFile(dataRepo, file, { full = false, now = nowText(), link
     `${rows.length} rows read: ${result.added.length} new books, ${result.updated.length} updated, ${result.kept} unchanged.`,
     ...(full ? [`${result.gone.length} marked gone from Logos (not in this full export).`] : ['A filtered export: nothing was marked gone.']),
     ...(result.back.length ? [`${result.back.length} back in Logos after being marked gone.`] : []),
+    ...(result.fromSets.length ? [`${result.fromSets.length} new books took their works from a known set's list.`] : []),
     ...(result.suggestions.length ? [`${result.suggestions.length} possible links to existing works: see ${linksFile}.`] : []),
     ...result.problems,
     ...result.updated.slice(0, 50).map(title => `  Updated: ${title}`),
