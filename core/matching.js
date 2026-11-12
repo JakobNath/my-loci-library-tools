@@ -41,3 +41,20 @@ export function suggestWorks(title, authorNames, library) {
   }
   return suggestions;
 }
+
+/**
+ * "Possibly the same as…" (PLAN.md, "Anthologies"): works already in the
+ * library that Wikidata names with the same item as a new work. They are only
+ * offered: the new work's ID came from a search by its title, not from a
+ * person, so nothing is joined until a person taps.
+ * @param {Map<string, { wikidata: string }>} found Wikidata's answers, by the title asked
+ * @param {Map<string, object>} worksById the library's works
+ * @returns {Map<string, object>} the work already held, by the title asked
+ */
+export function sameWikidataWorks(found, worksById) {
+  const held = new Map();
+  for (const work of worksById.values()) if (work.wikidata && !work.trashed) held.set(work.wikidata, work);
+  const same = new Map();
+  for (const [title, answer] of found) if (answer && held.has(answer.wikidata)) same.set(title, held.get(answer.wikidata));
+  return same;
+}

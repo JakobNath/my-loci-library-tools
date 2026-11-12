@@ -21,7 +21,7 @@ import * as oct from './answers/9780198145288.js';
 import * as greatBooks from './answers/9780852291634.js';
 import * as poe from './answers/9780940450189.js';
 import * as wikidata from './answers/wikidata.js';
-import { worksQuery, worksFromWikidata, wikidataDateText } from '../wikidata.js';
+import { worksQuery, worksFromWikidata, wikidataDateText, idsQuery, readIdChecks } from '../wikidata.js';
 import { parseDating } from '../dating.js';
 
 const json = text => (text === null ? null : JSON.parse(text));
@@ -305,6 +305,15 @@ export const tests = [
       ok(query.includes('"Say \\"hello\\""@en'), 'quotes escaped');
       ok(query.includes('"poe"'), 'by the author\'s surname');
       equal(worksQuery(['Didache'], ''), '', 'an anonymous work is not asked by title alone');
+    },
+  },
+  {
+    name: 'stored Wikidata IDs are checked again: a merged item gives its new ID, a deleted one is named, a live one is left alone',
+    fn() {
+      ok(idsQuery(['Q68', 'not an id']).includes('wd:Q68') && !idsQuery(['Q68', 'not an id']).includes('not an id'));
+      equal(idsQuery([]), '');
+      const changes = readIdChecks(wikidata.idChecks, ['Q68', 'Q21697683', 'Q999999999999']);
+      same([...changes], [['Q21697683', { mergedInto: 'Q68' }], ['Q999999999999', { missing: true }]]);
     },
   },
 ];

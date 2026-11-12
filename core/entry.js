@@ -115,7 +115,7 @@ export function formFromWish(wish) {
  * @param {object} form the values typed (see ui/edit.js for its shape)
  * @param {{ edition: object, copy: object|null, works: object[] }|null} existing the book being edited, or null for a new one
  * @param {{ newId: () => string, now: string, today: string, authors: object[], works?: Map<string, object>, setWorks?: object[], usedElsewhere?: (workId: string) => boolean }} context
- *   works: every work by ID, needed when form.workId links the book to an existing work;
+ *   works: every work by ID, needed when form.workId or form.sameWorks links the book to existing works;
  *   setWorks: the works of our other volumes of the same known set (form.knownWorks), so a work
  *   spanning volumes stays one work;
  *   usedElsewhere: whether another book holds a work, so a work this book no longer lists is
@@ -163,6 +163,14 @@ export function recordsFromForm(form, existing, context) {
         && (context.setWorks || []).find(work => key(work.title) === key(line.title));
       if (inSet) {
         contents.push({ work: inSet.id, piece: null, extent: 'complete', translator: listed.translator || null, pages: listed.pages || null, cite: false });
+        continue;
+      }
+      // A line a person joined to a work already held ("Possibly the same as…", form.sameWorks:
+      // work IDs by the line's title) links to that work and leaves it as it is.
+      const joined = form.sameWorks && !oldWorks.some(work => key(work.title) === key(line.title))
+        && context.works && context.works.get(form.sameWorks[key(line.title)]);
+      if (joined) {
+        contents.push({ work: joined.id, piece: null, extent: 'complete', translator: (listed && listed.translator) || null, pages: (listed && listed.pages) || null, cite: false });
         continue;
       }
       const ids = authorIds(line.author ? line.author.split(/\s+and\s+/) : []);

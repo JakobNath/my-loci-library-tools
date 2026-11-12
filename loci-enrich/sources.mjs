@@ -24,6 +24,8 @@ export const ADDRESSES = {
   hathiTrust: 'https://catalog.hathitrust.org/api/volumes/full',
   openLibrary: 'https://openlibrary.org',
   googleBooks: 'https://www.googleapis.com/books/v1',
+  // Moving to query-next.wikidata.org once that is open to everyone (SOURCES.md, "Wikidata").
+  wikidata: 'https://query.wikidata.org/sparql',
 };
 
 /** The Library of Congress catalog's answer for one ISBN (SRU, MARC XML). */

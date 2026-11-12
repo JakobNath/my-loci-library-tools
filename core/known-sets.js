@@ -163,18 +163,24 @@ export function wishesForGaps(set, missing, wishes) {
  * The works and contents of a known set's volume, as records, for a book made
  * without the entry form (a Logos resource of the set, on the laptop). Each
  * work gets the list's original title and language, and, when the list is
- * checked, its date; a piece stays inside the contents.
+ * checked, its date; a piece stays inside the contents. A work the list puts in
+ * several volumes (Gibbon, the Summa) stays one work: a work an earlier volume
+ * of the same set already made is linked, not made again.
  * @param {ReturnType<parseKnownSet>} set
  * @param {object} volume one of set.volumes
- * @param {{ newId: () => string, now: string, authorIds: (names: string[]) => string[] }} context
- *   authorIds: the IDs of authors by name, making any not yet in the catalog
+ * @param {{ newId: () => string, now: string, authorIds: (names: string[]) => string[], setWorks?: object[] }} context
+ *   authorIds: the IDs of authors by name, making any not yet in the catalog;
+ *   setWorks: the works of the catalog's other volumes of this set
  * @returns {{ works: object[], contents: object[] }}
  */
-export function recordsForKnownVolume(set, volume, { newId, now, authorIds }) {
+export function recordsForKnownVolume(set, volume, { newId, now, authorIds, setWorks = [] }) {
   const works = [];
+  const held = new Map(setWorks.map(work => [normalizeForSearch(work.title), work]));
   const contents = volume.works.map(item => {
     const entry = { work: null, piece: null, extent: 'complete', translator: item.translator || null, pages: item.pages || null, cite: false };
     if (item.piece) return { ...entry, piece: { title: item.title, author: item.author || null, originalTitle: item.originalTitle || null, date: item.date || null } };
+    const inSet = held.get(normalizeForSearch(item.title));
+    if (inSet) return { ...entry, work: inSet.id };
     const reading = set.checked && item.date ? datingsFromRows([{ text: item.date, working: true, note: `from the ${set.set} list` }]) : { datings: [] };
     const work = newRecord('work', newId(), now, {
       title: item.title, authors: authorIds(item.author ? item.author.split(/\s+and\s+/) : []),

@@ -3,6 +3,7 @@
 
 import { recordsFromForm, isbn13, anotherCopy, isBookBarcode, wishFromForm, formFromWish, isbnInText, volumesFromLines, nextVolumeLabel, withSetFacts, worksFromRows } from '../entry.js';
 import { emptyFound } from '../lookup.js';
+import { sameWikidataWorks } from '../matching.js';
 import { validateRecord } from '../validate.js';
 import { equal, same, ok } from './check.js';
 
@@ -168,6 +169,21 @@ export const tests = [
       ok(!types.includes('author'), 'no new author');
       same(types, ['work', 'edition', 'copy'], 'the work only gains its missing dating');
       equal(second.records[1].contents[0].work, work.id);
+    },
+  },
+  {
+    name: '"Possibly the same as…": a work Wikidata names with the same item is offered, and joined only when a person chose it',
+    fn() {
+      const phaedo = { ...recordsFromForm(blankForm({ title: 'Phaedo', authors: ['Plato'] }), null, context()).records.find(record => record.type === 'work'), wikidata: 'Q1059449' };
+      const worksById = new Map([[phaedo.id, phaedo]]);
+      const found = new Map([['Phaedo', { wikidata: 'Q1059449' }], ['Crito', { wikidata: 'Q1131620' }]]);
+      same([...sameWikidataWorks(found, worksById)].map(([title, work]) => [title, work.id]), [['Phaedo', phaedo.id]], 'only the work with the same item');
+      const lines = 'Plato — Crito\nPlato — Phaedo';
+      const apart = recordsFromForm(blankForm({ title: 'Five Dialogues', contents: lines }), null, { ...context(), works: worksById });
+      equal(apart.records.filter(record => record.type === 'work').length, 2, 'not joined on its own');
+      const joined = recordsFromForm(blankForm({ title: 'Five Dialogues', contents: lines, sameWorks: { phaedo: phaedo.id } }), null, { ...context(), works: worksById });
+      equal(joined.records.filter(record => record.type === 'work').length, 1, 'only Crito is new');
+      equal(joined.records.find(record => record.type === 'edition').contents[1].work, phaedo.id);
     },
   },
   {

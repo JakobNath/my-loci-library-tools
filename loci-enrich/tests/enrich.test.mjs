@@ -17,6 +17,7 @@ import { writeRecord, readRecords } from '../../shared/data-repo.mjs';
 import * as plato from '../../core/tests/answers/9780872203495.js';
 import * as holmes from '../../core/tests/answers/9780801031083.js';
 import * as anna from '../../core/tests/answers/9781857150582.js';
+import * as wikidata from '../../core/tests/answers/wikidata.js';
 import { askSources, IDENTITY } from '../sources.mjs';
 import { checkSources } from '../check-sources.mjs';
 
@@ -218,6 +219,36 @@ test('a book without an ISBN is asked by its LCCN, of the Library of Congress an
     assert.ok(asked[0].includes('bath.lccn=55009893') && asked[1].endsWith('/lccn/55009893.json'));
     const memory = JSON.parse(readFileSync(join(folder, MEMORY), 'utf8'));
     assert.equal(memory.books['0ldb00ked001'].isbn, 'lccn:55009893');
+  } finally {
+    rmSync(folder, { recursive: true, force: true });
+  }
+});
+
+test('stored Wikidata IDs are checked every 90 days: a merged item takes its new ID, a missing one is only reported', async () => {
+  const merged = work('m3rgedw0rk01', 'A merged work', { wikidata: 'Q21697683' });
+  const gone = work('g0new0rk0001', 'A work whose item is gone', { wikidata: 'Q999999999999' });
+  const live = work('l1vew0rk0001', 'A live work', { wikidata: 'Q68' });
+  const folder = dataRepo([merged, gone, live]);
+  const asked = [];
+  const fetchFn = async (url, options) => {
+    asked.push(url);
+    assert.match(options.body, /Q21697683/);
+    return { ok: true, status: 200, json: async () => wikidata.idChecks };
+  };
+  try {
+    const report = await runEnrich(folder, { useGit: false, fetchFn, now: NOW, reportFile: null });
+    assert.equal(asked.length, 1, 'one query for all the IDs');
+    const byId = new Map(readRecords(folder).map(record => [record.id, record]));
+    assert.equal(byId.get(merged.id).wikidata, 'Q68');
+    assert.equal(byId.get(gone.id).wikidata, 'Q999999999999', 'a missing item changes nothing');
+    assert.deepEqual(byId.get(live.id).changed, live.changed, 'a live item is left alone');
+    assert.ok(byId.get(merged.id).changed.wikidata, 'the merged one records its edit');
+    assert.ok(report.some(line => line.includes('is no longer on Wikidata')));
+    assert.equal(JSON.parse(readFileSync(join(folder, MEMORY), 'utf8')).wikidataChecked, '2026-11-10');
+    await runEnrich(folder, { useGit: false, fetchFn, now: NOW, reportFile: null });
+    assert.equal(asked.length, 1, 'not asked again within 90 days');
+    await runEnrich(folder, { useGit: false, fetchFn, now: LATER, reportFile: null });
+    assert.equal(asked.length, 2, 'asked again after 90 days');
   } finally {
     rmSync(folder, { recursive: true, force: true });
   }

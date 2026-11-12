@@ -13,7 +13,8 @@ import { gzipSync, gunzipSync } from 'node:zlib';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readConfig, readRecords, writeRecord, isGitRepo, git, commitAndPush, FOLDERS } from '../shared/data-repo.mjs';
-import { editionsToAsk, fillBook, askKey, sourcesOfWritten } from './enrich.mjs';
+import { editionsToAsk, fillBook, askKey, sourcesOfWritten, RECHECK_DAYS } from './enrich.mjs';
+import { checkWikidataIds } from './wikidata-ids.mjs';
 import { askSources } from './sources.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -34,7 +35,9 @@ function readMemory(dataRepo) {
 function writeMemory(dataRepo, memory) {
   mkdirSync(join(dataRepo, 'integrations'), { recursive: true });
   const books = Object.fromEntries(Object.entries(memory.books).sort(([a], [b]) => a.localeCompare(b)));
-  writeFileSync(join(dataRepo, MEMORY), `${JSON.stringify({ format: 1, books }, null, 2)}\n`);
+  // wikidataChecked: the day the stored Wikidata IDs were last checked (wikidata-ids.mjs).
+  const checked = memory.wikidataChecked ? { wikidataChecked: memory.wikidataChecked } : {};
+  writeFileSync(join(dataRepo, MEMORY), `${JSON.stringify({ format: 1, ...checked, books }, null, 2)}\n`);
 }
 
 /**
@@ -95,6 +98,21 @@ export async function runEnrich(dataRepo, { useGit = true, commit = true, limit 
     }
     if (pauseMs && i < asking.length - 1) await new Promise(done => setTimeout(done, pauseMs));
   }
+  // Every 90 days the stored Wikidata IDs are checked again: a merged item's new ID is stored (wikidata-ids.mjs).
+  const wikidataLines = [];
+  const withIds = [...byId.values()].filter(record => record.type === 'work' && !record.trashed && record.wikidata);
+  const lastCheck = memory.wikidataChecked;
+  if (withIds.length && (!lastCheck || (Date.parse(today) - Date.parse(lastCheck)) / 86400000 >= RECHECK_DAYS)) {
+    try {
+      const checked = await checkWikidataIds(withIds, { fetchFn, now });
+      for (const record of checked.changed) { writeRecord(dataRepo, record); byId.set(record.id, record); }
+      wikidataLines.push(`Wikidata IDs checked again (${withIds.length} works; next in ${RECHECK_DAYS} days): ${checked.lines.length ? `${checked.lines.length} changed.` : 'none changed.'}`, ...checked.lines);
+      memory.wikidataChecked = today;
+      writeMemory(dataRepo, memory);
+    } catch (error) {
+      problemLines.push(`  Wikidata IDs: ${error.message}`);
+    }
+  }
   const lines = [
     `Book data (${today}): asked about ${asking.length} of ${due.length} books due; ${filledLines.length} filled, ${notFound} not known to any source, ${problemLines.length} problems.`,
     ...(googleBooksKey ? [] : ['  Google Books was not asked: there is no "googleBooksKey" in config.json (tools README, "A Google Books key").']),
@@ -102,9 +120,10 @@ export async function runEnrich(dataRepo, { useGit = true, commit = true, limit 
     ...(due.length > asking.length ? [`  ${due.length - asking.length} books are left for the next run.`] : []),
     ...(filledLines.length ? ['Filled (empty fields only):', ...filledLines] : []),
     ...(suggestionLines.length ? ['Works a catalog lists inside books entered as one work (offered on the Edit page of each in the app, to use or decline):', ...suggestionLines] : []),
+    ...wikidataLines,
     ...(problemLines.length ? ['Problems (these books are asked again next time):', ...problemLines] : []),
   ];
-  if (useGit && commit && asking.length) {
+  if (useGit && commit && (asking.length || wikidataLines.length)) {
     if (commitAndPush(dataRepo, [FOLDERS.edition, FOLDERS.work, MEMORY, ANSWERS], `Fill book data for ${filledLines.length} books`)) lines.push('Committed and pushed.');
   }
   if (reportFile) writeFileSync(reportFile, `${lines.join('\n')}\n`);

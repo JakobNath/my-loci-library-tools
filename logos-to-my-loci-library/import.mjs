@@ -90,7 +90,12 @@ export function importRows(rows, records, memory, { now, today, newId, full = fa
       // A volume of a known set: its works come from the list, with the set and volume, and no links are suggested.
       const known = knownVolumeOf(read, sets);
       if (known) {
-        const made = recordsForKnownVolume(known.set, known.volume, { newId, now, authorIds: names => names.map(name => authorId({ name })) });
+        // The works of our other volumes of this set, including those made earlier in this run, so a work across volumes stays one.
+        const all = [...records, ...result.changed];
+        const editions = all.filter(record => record.type === 'edition' && !record.trashed && record.set && normalizeForSearch(record.set) === normalizeForSearch(known.set.set));
+        const workIds = new Set(editions.flatMap(edition => edition.contents.map(piece => piece.work)).filter(Boolean));
+        const setWorks = all.filter(record => record.type === 'work' && workIds.has(record.id));
+        const made = recordsForKnownVolume(known.set, known.volume, { newId, now, setWorks, authorIds: names => names.map(name => authorId({ name })) });
         const edition = newRecord('edition', newId(), now, {
           ...values, contents: made.contents, set: known.set.set, volume: known.volume.label, medium: 'logos', logosId: read.logosId,
         });

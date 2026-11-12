@@ -109,3 +109,44 @@ export function worksFromWikidata(answer, titles) {
   }
   return found;
 }
+
+// An item's ID, the last part of its address ("…/entity/Q68").
+const itemId = address => (String(address).match(/Q\d+$/) || [''])[0];
+
+/**
+ * The query that checks stored Wikidata IDs (the laptop's loci-enrich, from
+ * time to time): Wikidata merges items, and a merged item points to the one
+ * it became; a deleted item answers nothing.
+ * @param {string[]} ids "Q1059449"
+ * @param {string} [prefixes] the PREFIX lines for owl, wd and wikibase
+ */
+export function idsQuery(ids, prefixes = '') {
+  const valid = ids.filter(id => /^Q\d+$/.test(id));
+  if (!valid.length) return '';
+  return `${prefixes}
+SELECT ?item ?target ?sitelinks WHERE {
+  VALUES ?item { ${valid.map(id => `wd:${id}`).join(' ')} }
+  OPTIONAL { ?item owl:sameAs ?target }
+  OPTIONAL { ?item wikibase:sitelinks ?sitelinks }
+}`;
+}
+
+/**
+ * Read the answer to idsQuery: only the IDs that changed.
+ * @returns {Map<string, { mergedInto: string } | { missing: true }>} by the ID asked
+ */
+export function readIdChecks(json, ids) {
+  const seen = new Map();
+  for (const row of (json && json.results && json.results.bindings) || []) {
+    const id = itemId(row.item.value);
+    if (row.target) seen.set(id, { mergedInto: itemId(row.target.value) });
+    else if (row.sitelinks && !seen.has(id)) seen.set(id, null);
+  }
+  const changes = new Map();
+  for (const id of ids) {
+    const seenAs = seen.get(id);
+    if (seenAs) changes.set(id, seenAs);
+    else if (seenAs === undefined) changes.set(id, { missing: true });
+  }
+  return changes;
+}

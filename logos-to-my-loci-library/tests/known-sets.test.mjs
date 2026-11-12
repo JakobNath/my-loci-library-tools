@@ -41,3 +41,27 @@ test('a new Logos volume of a known set gets the list\'s works, with their check
   assert.deepEqual(result.suggestions, [], 'works from a list are not offered as links');
   for (const record of result.changed) assert.deepEqual(validateRecord(record), [], record.type);
 });
+
+test('a work the list puts in several volumes stays one work across Logos volumes, in one run or the next', () => {
+  const gibbon = [parseKnownSet(`set: Great Books of the Western World
+publisher: Encyclopaedia Britannica
+
+volume: 37 | Gibbon I
+Edward Gibbon — The History of the Decline and Fall of the Roman Empire | | English — 1776–1789
+
+volume: 38 | Gibbon II
+Edward Gibbon — The History of the Decline and Fall of the Roman Empire | | English — 1776–1789
+`)];
+  const gibbonRow = volume => ({ 'Resource ID': `LLS:GBWW${volume}`, Title: `Great Books of the Western World, Vol. ${volume}`, Author: 'Gibbon, Edward', Publishers: 'Encyclopaedia Britannica', Series: 'Great Books of the Western World' });
+  let counter = 0;
+  const options = { now: '2026-11-12T12:00:00Z', today: '2026-11-12', newId: () => `gb${String(++counter).padStart(10, '0')}`, sets: gibbon };
+  const both = importRows([gibbonRow(37), gibbonRow(38)], [], { imported: {} }, options);
+  const works = both.changed.filter(record => record.type === 'work');
+  assert.equal(works.length, 1, 'one work in one run');
+  const editions = both.changed.filter(record => record.type === 'edition');
+  assert.deepEqual(editions.map(edition => edition.contents[0].work), [works[0].id, works[0].id]);
+  const first = importRows([gibbonRow(37)], [], { imported: {} }, options);
+  const later = importRows([gibbonRow(38)], first.changed, { imported: {} }, options);
+  assert.equal(later.changed.filter(record => record.type === 'work').length, 0, 'the next run links to the work already held');
+  assert.equal(later.changed.find(record => record.type === 'edition').contents[0].work, first.changed.find(record => record.type === 'work').id);
+});
