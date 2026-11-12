@@ -43,6 +43,20 @@ export const tests = [
     },
   },
   {
+    name: 'a work the list puts in two volumes stays one work: the second volume links to the first volume\'s work',
+    fn() {
+      const knownWorks = { set: 'Great Books of the Western World', works: [
+        { author: 'Edward Gibbon', title: 'The Decline and Fall of the Roman Empire', originalTitle: '', originalLanguage: 'English', date: '1776–1789', translator: '', pages: '', piece: false },
+      ] };
+      const lines = 'Edward Gibbon — The Decline and Fall of the Roman Empire — 1776–1789';
+      const first = recordsFromForm(blankForm({ title: 'Gibbon I', contents: lines, knownWorks }), null, context());
+      const work = first.records.find(record => record.type === 'work');
+      const second = recordsFromForm(blankForm({ title: 'Gibbon II', contents: lines, knownWorks }), null, { ...context(), setWorks: [work] });
+      equal(second.records.filter(record => record.type === 'work').length, 0, 'no second work');
+      equal(second.records.find(record => record.type === 'edition').contents[0].work, work.id);
+    },
+  },
+  {
     name: 'volumes of a set pasted one per line give each its label and title',
     fn() {
       same(volumesFromLines('7 Plato\n8 Aristotle I\n\n  I/1 The Doctrine of the Word of God\n31\nIV – Church Dogmatics', 'Great Books'), [

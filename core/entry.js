@@ -114,8 +114,10 @@ export function formFromWish(wish) {
  * Build the records for one book from the form.
  * @param {object} form the values typed (see ui/edit.js for its shape)
  * @param {{ edition: object, copy: object|null, works: object[] }|null} existing the book being edited, or null for a new one
- * @param {{ newId: () => string, now: string, today: string, authors: object[], works?: Map<string, object>, usedElsewhere?: (workId: string) => boolean }} context
+ * @param {{ newId: () => string, now: string, today: string, authors: object[], works?: Map<string, object>, setWorks?: object[], usedElsewhere?: (workId: string) => boolean }} context
  *   works: every work by ID, needed when form.workId links the book to an existing work;
+ *   setWorks: the works of our other volumes of the same known set (form.knownWorks), so a work
+ *   spanning volumes stays one work;
  *   usedElsewhere: whether another book holds a work, so a work this book no longer lists is
  *   trashed only when nothing else holds it (without it, nothing is trashed)
  * @returns {{ records: object[], editionId: string|null, problems: string[] }}
@@ -153,6 +155,14 @@ export function recordsFromForm(form, existing, context) {
       if (listed && listed.piece) {
         const piece = { title: line.title, author: line.author || null, originalTitle: listed.originalTitle || null, date: line.date || null };
         contents.push({ work: null, piece, extent: 'complete', translator: listed.translator || null, pages: listed.pages || null, cite: false });
+        continue;
+      }
+      // A work the list puts in several volumes (Gibbon, the Summa) is one work: a later volume links to the
+      // work an earlier volume of the same set made, and leaves its datings as they are.
+      const inSet = listed && !oldWorks.some(work => key(work.title) === key(line.title))
+        && (context.setWorks || []).find(work => key(work.title) === key(line.title));
+      if (inSet) {
+        contents.push({ work: inSet.id, piece: null, extent: 'complete', translator: listed.translator || null, pages: listed.pages || null, cite: false });
         continue;
       }
       const ids = authorIds(line.author ? line.author.split(/\s+and\s+/) : []);
