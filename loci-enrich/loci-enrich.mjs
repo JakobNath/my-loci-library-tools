@@ -101,7 +101,7 @@ export async function runEnrich(dataRepo, { useGit = true, commit = true, limit 
     ...(resting.size ? [`  Refused by ${[...resting].join(' and ')}, so not asked again this run; try again later (SOURCES.md).`] : []),
     ...(due.length > asking.length ? [`  ${due.length - asking.length} books are left for the next run.`] : []),
     ...(filledLines.length ? ['Filled (empty fields only):', ...filledLines] : []),
-    ...(suggestionLines.length ? ['Contents listed by a catalog, to enter by hand if they are right (nothing was changed):', ...suggestionLines] : []),
+    ...(suggestionLines.length ? ['Works a catalog lists inside books entered as one work (offered on the Edit page of each in the app, to use or decline):', ...suggestionLines] : []),
     ...(problemLines.length ? ['Problems (these books are asked again next time):', ...problemLines] : []),
   ];
   if (useGit && commit && asking.length) {

@@ -124,13 +124,18 @@ test('a book no source knows is asked again only after 90 days, and --limit asks
   }
 });
 
-test('anthology contents are only suggested in the report, and never for a Bible', async () => {
+test('works found inside a book are offered (foundContents), not entered, only once, and never for a Bible', async () => {
   const found = mergeFound([fromLibraryOfCongress(holmes.libraryOfCongress, holmes.isbn)]);
   const fathers = work('ap0st0l1cfa1', 'The Apostolic Fathers in English');
   const book = edition('h0lmes000001', 'The Apostolic Fathers in English', fathers.id, { isbn: holmes.isbn });
   const result = fillBook({ edition: book, works: [fathers] }, found, {}, NOW);
   assert.equal(result.contents.length, 21);
-  assert.equal(result.changed.find(record => record.type === 'edition').contents.length, 1, 'the contents themselves are not changed');
+  const changed = result.changed.find(record => record.type === 'edition');
+  assert.equal(changed.contents.length, 1, 'the contents themselves are not changed');
+  assert.equal(changed.foundContents.length, 21, 'they wait for a person');
+  assert.deepEqual(Object.keys(changed.foundContents[0]), ['author', 'title', 'extent']);
+  const declined = fillBook({ edition: { ...changed, foundContents: [] }, works: [fathers] }, found, { wrote: result.wrote }, NOW);
+  assert.ok(!declined.changed.some(record => record.type === 'edition' && record.foundContents.length), 'declined in the app, they are not offered again');
   const bible = work('b1b1e0000001', 'The Holy Bible', { category: 'Bibles' });
   assert.deepEqual(fillBook({ edition: { ...book, contents: [{ work: bible.id }] }, works: [bible] }, found, {}, NOW).contents, []);
   const inSet = fillBook({ edition: { ...book, set: "Chemnitz's Works", volume: '5' }, works: [fathers] }, { ...found, series: "Chemnitz's Works", seriesNumber: '7, 8' }, {}, NOW);

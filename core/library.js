@@ -149,13 +149,14 @@ export const VIEW_DEFAULTS = { medium: 'physical', sort: 'title', status: 'owned
  * The catalog details a physical book still lacks ("Needs details"): adding
  * asks only what a person knows, and these are left to the lookups and the
  * laptop's nightly check. A Logos book's details come from the Logos export,
- * so it never needs them here.
- * @returns {string[]} the names of the empty ones, of publisher, year, pages and binding
+ * so it never needs them here. Works the laptop found inside a book entered
+ * as one work wait here too, until a person uses or declines them.
+ * @returns {string[]} the names of the empty ones, of publisher, year, pages and binding, and "works found inside"
  */
 export function missingDetails(entry) {
   if (entry.isDigital) return [];
-  const { publisher, year, pages } = entry.edition;
-  return Object.entries({ publisher, year, pages, binding: entry.binding }).filter(([, value]) => !value).map(([name]) => name);
+  const { publisher, year, pages, foundContents } = entry.edition;
+  return Object.entries({ publisher, year, pages, binding: entry.binding, 'works found inside': !foundContents?.length }).filter(([, value]) => !value).map(([name]) => name);
 }
 
 /** Whether a location lies at or inside another (["Home", "Office"] is inside ["Home"]). */

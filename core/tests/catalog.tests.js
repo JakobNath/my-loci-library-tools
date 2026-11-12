@@ -193,6 +193,8 @@ export const tests = [
       same(missingDetails(find(bare.id)), ['publisher', 'year', 'pages', 'binding']);
       same(missingDetails(find(logos.id)), [], 'a Logos book never needs them');
       same(viewEntries(entries, { needsDetails: true, medium: 'all' }).map(entry => entry.id), [bare.id]);
+      const withFound = { ...find(chadwick.id), edition: { ...chadwick, foundContents: [{ author: 'Augustine', title: 'Soliloquies', extent: null }] } };
+      same(missingDetails(withFound), ['works found inside'], 'works the laptop found wait for a person');
     },
   },
   {

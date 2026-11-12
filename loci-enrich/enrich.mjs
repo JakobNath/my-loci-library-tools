@@ -3,7 +3,8 @@
 // the tool wrote is kept in the data repository (integrations/enrich.json),
 // and a field it once wrote is never touched again, so a value a person
 // changed or cleared stays as they left it. Original dates are never filled;
-// the contents of an anthology are only suggested, and never for a Bible.
+// works a catalog lists inside a book entered as one work are only offered
+// ("foundContents", used or declined in the app), and never for a Bible.
 
 import { withField } from '../core/records.js';
 import { isBible } from '../core/bible.js';
@@ -60,7 +61,7 @@ export function editionsToAsk(editions, memory, today) {
  * @param {string} now timestamp for the changed fields
  * @returns {{ changed: object[], filled: string[], wrote: Record<string, unknown>, contents: string[] }}
  *   changed: the records that changed; filled: what was filled, for the report;
- *   wrote: everything this tool has written for the book; contents: suggested works for an anthology
+ *   wrote: everything this tool has written for the book; contents: works found inside, as lines for the report
  */
 export function fillBook({ edition, works }, found, previous = {}, now) {
   const wrote = { ...(previous.wrote || {}) };
@@ -102,6 +103,15 @@ export function fillBook({ edition, works }, found, previous = {}, now) {
   if (people.length && mayFill('contributors', next.contributors)) {
     fill('contributors', people, people.map(person => `${person.role} ${person.name}`).join(', '));
   }
+  // Works a catalog lists inside a book entered as one work wait in "foundContents" for a person
+  // (the app's entry form offers them), never for a Bible, and only once: declined, they stay declined.
+  const listed = works.length === 1 ? found.contents.filter(entry => entry.title) : [];
+  if (listed.length > 1 && !isBible({ edition, works }) && !isBible({ edition, works: listed })) {
+    result.contents = listed.map(entry => (entry.author ? `${entry.author} — ${entry.title}` : entry.title));
+    if (mayFill('foundContents', next.foundContents)) {
+      fill('foundContents', listed.map(entry => ({ author: entry.author || null, title: entry.title, extent: null })), `${listed.length} works found inside, offered in the app`);
+    }
+  }
   if (next !== edition) result.changed.push(next);
 
   if (works.length === 1) {
@@ -115,9 +125,6 @@ export function fillBook({ edition, works }, found, previous = {}, now) {
       }
     }
     if (work !== works[0]) result.changed.push(work);
-    // Contents are suggested for a person to enter, never written, and never for a Bible.
-    const listed = found.contents.map(entry => (entry.author ? `${entry.author} — ${entry.title}` : entry.title));
-    if (listed.length > 1 && !isBible({ edition, works }) && !isBible({ edition, works: found.contents })) result.contents = listed;
   }
   return result;
 }
