@@ -256,4 +256,14 @@ export const tests = [
       equal(withLibraryContents(null, [hathi]), null);
     },
   },
+  {
+    name: 'a book without an ISBN is found by its LCCN or OCLC number, as typed or as catalogued',
+    fn() {
+      const byLccn = fromHathiTrust(fathers.hathiTrust, { lccn: '2003032744' });
+      same([byLccn.title, byLccn.isbn, byLccn.identifiers.lccn], ['The Apostolic Fathers', '', '2003032744']);
+      equal(fromLibraryOfCongress(fathers.libraryOfCongress, { lccn: '2002032744' }).title, 'The Apostolic Fathers', 'the Library of Congress gives its own LCCN');
+      equal(fromHathiTrust(fathers.hathiTrust, { oclc: '(OCoLC)56058333' }).title, 'The Apostolic Fathers', 'by OCLC number, as catalogued');
+      equal(fromHathiTrust(fathers.hathiTrust, { lccn: '1234567' }), null, 'a number no record has');
+    },
+  },
 ];

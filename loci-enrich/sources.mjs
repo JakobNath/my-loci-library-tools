@@ -56,50 +56,75 @@ async function askGoogleBooks(isbn, key, fetchFn) {
   return fromGoogleBooksVolume(volume, isbn);
 }
 
+// The Library of Congress and HathiTrust, asked by catalogue number for a book without an ISBN.
+const catalogUrlByLccn = lccn => `${ADDRESSES.libraryOfCongress}?version=1.1&operation=searchRetrieve&query=bath.lccn=${lccn}&maximumRecords=3&recordSchema=marcxml`;
+const hathiTrustUrlByNumber = ({ lccn, oclc }) => (lccn ? `${ADDRESSES.hathiTrust}/lccn/${lccn}.json` : `${ADDRESSES.hathiTrust}/oclc/${oclc}.json`);
+const digits = text => String(text || '').replace(/D/g, '');
+
 /**
- * Each source's own reading of one ISBN, as [name, ask] pairs: ask() gives
+ * Each source's own reading of one book, as [name, ask] pairs: ask() gives
  * the source's answer read into our fields (core/lookup.js, "Found"), or null.
+ * A book is asked by its ISBN; a book without one, by its LCCN or OCLC number,
+ * from the Library of Congress (LCCN only) and HathiTrust, the two that are
+ * searched by those numbers. Each source's raw answer is kept in `raw`, by
+ * source name, for the record of answers (loci-enrich.mjs).
  * Used by askSources and by the source check (check-sources.mjs).
- * @param {string} isbn 13 digits
- * @param {{ fetchFn: typeof fetch, googleBooksKey?: string }} options without a key, Google Books is left out
+ * @param {string|{ lccn?: string, oclc?: string }} isbn 13 digits, or catalogue numbers
+ * @param {{ fetchFn: typeof fetch, googleBooksKey?: string, raw?: Record<string, string> }} options without a key, Google Books is left out
  * @returns {[string, () => Promise<object|null>][]}
  */
-export function sourcesFor(isbn, { fetchFn, googleBooksKey = '' }) {
+export function sourcesFor(isbn, { fetchFn, googleBooksKey = '', raw = {} }) {
+  const keep = (name, answer) => { if (answer !== null) raw[name] = answer; return answer; };
+  if (typeof isbn !== 'string') {
+    const numbers = { lccn: digits(isbn.lccn), oclc: digits(isbn.oclc) };
+    return [
+      ...(numbers.lccn ? [['Library of Congress', async () => fromLibraryOfCongress(keep('Library of Congress', await getText(catalogUrlByLccn(numbers.lccn), fetchFn, 'The Library of Congress')), numbers)]] : []),
+      ['HathiTrust', async () => {
+        const text = keep('HathiTrust', await getText(hathiTrustUrlByNumber(numbers), fetchFn, 'HathiTrust'));
+        return text && fromHathiTrust(text, numbers);
+      }],
+    ];
+  }
   return [
-    ['Library of Congress', async () => fromLibraryOfCongress(await getText(catalogUrl(isbn), fetchFn, 'The Library of Congress'), isbn)],
+    ['Library of Congress', async () => fromLibraryOfCongress(keep('Library of Congress', await getText(catalogUrl(isbn), fetchFn, 'The Library of Congress')), isbn)],
     ['HathiTrust', async () => {
-      const text = await getText(hathiTrustUrl(isbn), fetchFn, 'HathiTrust');
+      const text = keep('HathiTrust', await getText(hathiTrustUrl(isbn), fetchFn, 'HathiTrust'));
       return text && fromHathiTrust(text, isbn);
     }],
     ['Open Library', async () => {
-      const text = await getText(openLibraryUrl(isbn), fetchFn, 'Open Library');
+      const text = keep('Open Library', await getText(openLibraryUrl(isbn), fetchFn, 'Open Library'));
       return text && fromOpenLibraryEdition(JSON.parse(text), isbn);
     }],
+    // Google's answers are read but not kept: Google's terms ask that its results not be stored apart from showing them (SOURCES.md).
     ...(googleBooksKey ? [['Google Books', () => askGoogleBooks(isbn, googleBooksKey, fetchFn)]] : []),
   ];
 }
 
 /**
- * Ask every source about one ISBN, at the same moment (they are different
+ * Ask every source about one book, at the same moment (they are different
  * services), and merge their answers, the Library of Congress first. A
  * source that fails is reported and left out; the others still count. A
  * source that refuses is added to `resting` and not asked again while it is
  * there (the caller keeps one `resting` set for a whole run).
- * @param {string} isbn 13 digits
+ * @param {string|{ lccn?: string, oclc?: string }} isbn 13 digits, or catalogue numbers for a book without an ISBN
  * @param {{ fetchFn: typeof fetch, googleBooksKey?: string, resting?: Set<string> }} options
- * @returns {Promise<{ found: object|null, sources: string[], problems: string[] }>}
+ * @returns {Promise<{ found: object|null, sources: string[], problems: string[], answers: { name: string, found: object|null }[], raw: Record<string, string> }>}
+ *   answers: each source's own reading, best first; raw: the answers as the sources sent them (not Google's)
  */
 export async function askSources(isbn, { fetchFn, googleBooksKey = '', resting = new Set() }) {
-  const asking = sourcesFor(isbn, { fetchFn, googleBooksKey }).filter(([name]) => !resting.has(name));
+  const raw = {};
+  const asking = sourcesFor(isbn, { fetchFn, googleBooksKey, raw }).filter(([name]) => !resting.has(name));
   const problems = [];
-  const answers = await Promise.all(asking.map(([name, ask]) => ask().catch(error => {
+  const readings = await Promise.all(asking.map(([name, ask]) => ask().catch(error => {
     if (error.refused) resting.add(name);
     problems.push(`${name}: ${error.message}${error.refused ? ' (not asked again this run)' : ''}`);
     return null;
   })));
   return {
-    found: mergeFound(answers),
-    sources: asking.filter((source, i) => answers[i]).map(([name]) => name),
+    found: mergeFound(readings),
+    sources: asking.filter((source, i) => readings[i]).map(([name]) => name),
     problems,
+    answers: asking.map(([name], i) => ({ name, found: readings[i] })),
+    raw,
   };
 }

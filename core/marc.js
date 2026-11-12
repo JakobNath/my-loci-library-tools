@@ -122,9 +122,23 @@ function labelValue(label) {
 // The volume an ISBN's note names: "(v. 1)", "v.2", "vol. III"; empty when it names none ("(hardcover)").
 const volumeInNote = note => (String(note).match(/\bv(?:ol)?\.?\s*(\d+|[ivxlc]+)\b/i) || ['', ''])[1];
 
-// The records listing the ISBN, each with the volume its ISBN note names.
+// The digits of a catalogue number, for comparing "  2003032744 " and "(OCoLC)56058333" with typed ones.
+const digitsOf = text => String(text || '').replace(/\D/g, '');
+
+// The records listing the ISBN, each with the volume its ISBN note names. A
+// book without an ISBN is found by its LCCN or OCLC number instead ({ lccn, oclc }).
 function recordsListing(records, isbn) {
   const listing = [];
+  if (typeof isbn === 'object' && isbn) {
+    const lccn = digitsOf(isbn.lccn);
+    const oclc = digitsOf(isbn.oclc);
+    for (const fields of records) {
+      const hasLccn = lccn && fieldsOf(fields, '010').some(field => digitsOf(subfield(field, 'a')) === lccn);
+      const hasOclc = oclc && fieldsOf(fields, '035').some(field => /^\(OCoLC\)/.test(subfield(field, 'a')) && digitsOf(subfield(field, 'a')) === oclc);
+      if (hasLccn || hasOclc) listing.push({ fields, volume: '' });
+    }
+    return listing;
+  }
   for (const fields of records) {
     for (const field of fieldsOf(fields, '020')) {
       const [number, ...rest] = subfield(field, 'a').split(' ');
@@ -199,7 +213,7 @@ function contentsInTitle(title) {
  * record that lists the book's own ISBN is read: the catalog sometimes
  * answers with other books too. Original dates are never read.
  * @param {string} xml the whole answer
- * @param {string} isbn 13 digits
+ * @param {string|{ lccn?: string, oclc?: string }} isbn 13 digits; or, for a book without one, its LCCN or OCLC number
  * @returns {import('./lookup.js').Found|null} null when no record lists the ISBN
  */
 export function fromLibraryOfCongress(xml, isbn) {
@@ -212,7 +226,7 @@ export function fromLibraryOfCongress(xml, isbn) {
  * records come from university libraries, many copied from the Library of
  * Congress; it holds only books those libraries have scanned (SOURCES.md).
  * @param {string} text the whole answer
- * @param {string} isbn 13 digits
+ * @param {string|{ lccn?: string, oclc?: string }} isbn 13 digits, or an LCCN or OCLC number (as for fromLibraryOfCongress)
  * @returns {import('./lookup.js').Found|null}
  */
 export function fromHathiTrust(text, isbn) {
@@ -236,7 +250,7 @@ function fromMarc(xml, isbn, source) {
   const found = emptyFound(source);
   const field = tag => fieldsOf(record, tag)[0];
   const titleField = field('245');
-  found.isbn = isbn;
+  found.isbn = typeof isbn === 'string' ? isbn : '';
   found.title = sentenceToTitleCase(withoutStop([subfield(titleField, 'a'), ...allSubfields(titleField, 'n'), ...allSubfields(titleField, 'p')].join(' ')));
   found.subtitle = sentenceToTitleCase(withoutStop(subfield(titleField, 'b')));
   found.authors = fieldsOf(record, '100').map(personName);

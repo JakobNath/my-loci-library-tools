@@ -9,14 +9,17 @@
 // last-report.txt beside this file.
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { gzipSync, gunzipSync } from 'node:zlib';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readConfig, readRecords, writeRecord, isGitRepo, git, commitAndPush, FOLDERS } from '../shared/data-repo.mjs';
-import { editionsToAsk, fillBook } from './enrich.mjs';
+import { editionsToAsk, fillBook, askKey, sourcesOfWritten } from './enrich.mjs';
 import { askSources } from './sources.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 export const MEMORY = join('integrations', 'enrich.json');
+// Each book's raw answers, as the sources sent them, compressed: integrations/answers/<edition id>.json.gz.
+export const ANSWERS = join('integrations', 'answers');
 const REPORT_FILE = join(here, 'last-report.txt');
 const PAUSE_MS = 1000; // between books, to be gentle on free public services
 
@@ -32,6 +35,27 @@ function writeMemory(dataRepo, memory) {
   mkdirSync(join(dataRepo, 'integrations'), { recursive: true });
   const books = Object.fromEntries(Object.entries(memory.books).sort(([a], [b]) => a.localeCompare(b)));
   writeFileSync(join(dataRepo, MEMORY), `${JSON.stringify({ format: 1, books }, null, 2)}\n`);
+}
+
+/**
+ * Keep a book's raw answers (DATA_FORMAT.md, "integrations/answers/"), so they
+ * can be read again if a source changes or closes. The file is rewritten only
+ * when an answer differs from the one kept, so a quiet re-check adds nothing to
+ * the history. Google Books' answers are not kept (sources.mjs).
+ * @returns {boolean} whether the file was written
+ */
+export function keepAnswers(dataRepo, editionId, key, asked, raw) {
+  if (!Object.keys(raw).length) return false;
+  const folder = join(dataRepo, ANSWERS);
+  const path = join(folder, `${editionId}.json.gz`);
+  const sorted = Object.fromEntries(Object.entries(raw).sort(([a], [b]) => a.localeCompare(b)));
+  if (existsSync(path)) {
+    const kept = JSON.parse(gunzipSync(readFileSync(path)).toString('utf8'));
+    if (kept.isbn === key && JSON.stringify(kept.answers) === JSON.stringify(sorted)) return false;
+  }
+  mkdirSync(folder, { recursive: true });
+  writeFileSync(path, gzipSync(`${JSON.stringify({ format: 1, isbn: key, asked, answers: sorted }, null, 2)}\n`));
+  return true;
 }
 
 /**
@@ -52,17 +76,21 @@ export async function runEnrich(dataRepo, { useGit = true, commit = true, limit 
   let notFound = 0;
   const resting = new Set(); // sources that refused a request: not asked again this run (sources.mjs)
   for (const [i, edition] of asking.entries()) {
-    const answer = await askSources(edition.isbn, { fetchFn, googleBooksKey, resting });
+    const key = askKey(edition);
+    const answer = await askSources(edition.isbn || { lccn: edition.identifiers.lccn, oclc: edition.identifiers.oclc }, { fetchFn, googleBooksKey, resting });
+    keepAnswers(dataRepo, edition.id, key, today, answer.raw);
     problemLines.push(...answer.problems.map(problem => `  ${edition.title}: ${problem}`));
     const works = edition.contents.map(entry => byId.get(entry.work)).filter(Boolean);
     const result = fillBook({ edition, works }, answer.found, memory.books[edition.id], now);
     for (const record of result.changed) { writeRecord(dataRepo, record); byId.set(record.id, record); }
     if (result.filled.length) filledLines.push(`  ${edition.title} (${answer.sources.join(', ')}): ${result.filled.join('; ')}`);
-    if (result.contents.length) suggestionLines.push(`  ${edition.title} (${edition.isbn}), ${result.contents.length} works:`, ...result.contents.map(line => `      ${line}`));
+    if (result.contents.length) suggestionLines.push(`  ${edition.title} (${key}), ${result.contents.length} works:`, ...result.contents.map(line => `      ${line}`));
     if (!answer.found) notFound++;
     // A book no source could answer, because of a failure, is asked again next time.
     if (!answer.problems.length || answer.found) {
-      memory.books[edition.id] = { isbn: edition.isbn, asked: today, found: Boolean(answer.found), wrote: result.wrote };
+      const before = (memory.books[edition.id] || {}).wrote || {};
+      const from = { ...((memory.books[edition.id] || {}).from || {}), ...sourcesOfWritten(result.wrote, before, answer.answers) };
+      memory.books[edition.id] = { isbn: key, asked: today, found: Boolean(answer.found), wrote: result.wrote, from };
       writeMemory(dataRepo, memory);
     }
     if (pauseMs && i < asking.length - 1) await new Promise(done => setTimeout(done, pauseMs));
@@ -77,7 +105,7 @@ export async function runEnrich(dataRepo, { useGit = true, commit = true, limit 
     ...(problemLines.length ? ['Problems (these books are asked again next time):', ...problemLines] : []),
   ];
   if (useGit && commit && asking.length) {
-    if (commitAndPush(dataRepo, [FOLDERS.edition, FOLDERS.work, MEMORY], `Fill book data for ${filledLines.length} books`)) lines.push('Committed and pushed.');
+    if (commitAndPush(dataRepo, [FOLDERS.edition, FOLDERS.work, MEMORY, ANSWERS], `Fill book data for ${filledLines.length} books`)) lines.push('Committed and pushed.');
   }
   if (reportFile) writeFileSync(reportFile, `${lines.join('\n')}\n`);
   return lines;

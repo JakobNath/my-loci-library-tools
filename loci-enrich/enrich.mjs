@@ -24,19 +24,30 @@ const isEmpty = value => value === null || value === '' || (Array.isArray(value)
 const daysBetween = (from, to) => (Date.parse(to) - Date.parse(from)) / 86400000;
 
 /**
- * The editions to ask about this time: every edition with an ISBN, not in
- * the trash, never asked, asked under another ISBN, or asked more than
- * RECHECK_DAYS ago. Those never asked come first, so a long first run
- * carries on where it stopped.
+ * What a book is asked by: its ISBN, or for a book without one its LCCN or
+ * OCLC number ("lccn:2002032744", "oclc:52839448"), or '' when it has none.
+ * Kept in integrations/enrich.json as "isbn", so a changed number is asked again.
+ */
+export function askKey(edition) {
+  if (edition.isbn) return edition.isbn;
+  const { lccn, oclc } = edition.identifiers || {};
+  return lccn ? `lccn:${lccn}` : oclc ? `oclc:${oclc}` : '';
+}
+
+/**
+ * The editions to ask about this time: every edition with an ISBN (or, without
+ * one, an LCCN or OCLC number), not in the trash, never asked, asked under
+ * another number, or asked more than RECHECK_DAYS ago. Those never asked come
+ * first, so a long first run carries on where it stopped.
  * @param {object[]} editions
  * @param {{ books: Record<string, { isbn: string, asked: string }> }} memory integrations/enrich.json
  * @param {string} today YYYY-MM-DD
  */
 export function editionsToAsk(editions, memory, today) {
   const due = editions.filter(edition => {
-    if (edition.trashed || !edition.isbn) return false;
+    if (edition.trashed || !askKey(edition)) return false;
     const known = memory.books[edition.id];
-    return !known || known.isbn !== edition.isbn || daysBetween(known.asked, today) >= RECHECK_DAYS;
+    return !known || known.isbn !== askKey(edition) || daysBetween(known.asked, today) >= RECHECK_DAYS;
   });
   return due.sort((a, b) => Number(Boolean(memory.books[a.id])) - Number(Boolean(memory.books[b.id])));
 }
@@ -109,4 +120,32 @@ export function fillBook({ edition, works }, found, previous = {}, now) {
     if (listed.length > 1 && !isBible({ edition, works }) && !isBible({ edition, works: found.contents })) result.contents = listed;
   }
   return result;
+}
+
+// A written value's field in a source's reading: "identifiers.lccn", "work.originalTitle", "pages".
+function readingOf(found, key) {
+  if (key.startsWith('identifiers.')) return found.identifiers[key.slice(12)];
+  if (key.startsWith('work.')) return found[key.slice(5)];
+  return found[key];
+}
+
+/**
+ * Which source gave each value written this time: the first, in the order
+ * asked, whose own reading holds that value. Kept in integrations/enrich.json
+ * ("from"), so a wrong value can be traced to its source.
+ * @param {Record<string, unknown>} wrote everything the tool has written for the book
+ * @param {Record<string, unknown>} before what it had written before this run
+ * @param {{ name: string, found: object|null }[]} answers each source's reading, best first
+ * @returns {Record<string, string>} field to source name, for the fields written this time
+ */
+export function sourcesOfWritten(wrote, before, answers) {
+  const from = {};
+  for (const [key, value] of Object.entries(wrote)) {
+    if (key in before) continue;
+    const giving = answers.find(answer => answer.found && (key === 'contributors'
+      ? answer.found.contributors.some(person => (value || []).some(written => written.name === person.name))
+      : JSON.stringify(readingOf(answer.found, key)) === JSON.stringify(value)));
+    if (giving) from[key] = giving.name;
+  }
+  return from;
 }

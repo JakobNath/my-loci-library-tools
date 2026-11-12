@@ -4,10 +4,11 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, existsSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, existsSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { runEnrich, MEMORY } from '../loci-enrich.mjs';
+import { runEnrich, MEMORY, ANSWERS } from '../loci-enrich.mjs';
+import { gunzipSync } from 'node:zlib';
 import { fillBook } from '../enrich.mjs';
 import { mergeFound } from '../../core/book-data.js';
 import { fromLibraryOfCongress } from '../../core/marc.js';
@@ -179,4 +180,40 @@ test('the source check reports nothing when every source answers as recorded, an
   assert.equal(broken.failed, true);
   assert.ok(broken.lines.some(line => line.includes('Library of Congress: The Library of Congress answered 503')));
   assert.ok(broken.lines.some(line => line.includes('Open Library: no longer knows the book')));
+});
+
+test('the raw answers are kept compressed, written again only when they change, and each filled field names its source', async () => {
+  const folder = dataRepo([work('p1at0w0rk001', 'Complete Works'), edition('p1at0ed00001', 'Complete Works', 'p1at0w0rk001', { isbn: plato.isbn })]);
+  try {
+    const { fetchFn } = recordedServices([plato]);
+    await runEnrich(folder, { useGit: false, fetchFn, googleBooksKey: 'test-key', now: NOW, reportFile: null });
+    const file = join(folder, ANSWERS, 'p1at0ed00001.json.gz');
+    const kept = JSON.parse(gunzipSync(readFileSync(file)).toString('utf8'));
+    assert.equal(kept.isbn, plato.isbn);
+    assert.equal(kept.answers['Library of Congress'], plato.libraryOfCongress, 'exactly as sent');
+    assert.ok(!('Google Books' in kept.answers), "Google's answers are not kept");
+    const memory = JSON.parse(readFileSync(join(folder, MEMORY), 'utf8'));
+    assert.equal(memory.books.p1at0ed00001.from.pages, 'Library of Congress');
+    assert.equal(memory.books.p1at0ed00001.from['identifiers.lccn'], 'Library of Congress');
+    const written = statSync(file).mtimeMs;
+    await runEnrich(folder, { useGit: false, fetchFn, now: LATER, reportFile: null });
+    assert.equal(statSync(file).mtimeMs, written, 'the same answers are not written again');
+  } finally {
+    rmSync(folder, { recursive: true, force: true });
+  }
+});
+
+test('a book without an ISBN is asked by its LCCN, of the Library of Congress and HathiTrust only', async () => {
+  const folder = dataRepo([work('0ldb00kw0rk1', 'Old Book'), edition('0ldb00ked001', 'Old Book', '0ldb00kw0rk1', { identifiers: { lccn: '55009893', oclc: null, lcc: null, ddc: null } })]);
+  const asked = [];
+  const nothing = async url => { asked.push(url); return { ok: false, status: 404, text: async () => '' }; };
+  try {
+    await runEnrich(folder, { useGit: false, fetchFn: nothing, now: NOW, reportFile: null });
+    assert.deepEqual(asked.map(url => new URL(url).hostname), ['lx2.loc.gov', 'catalog.hathitrust.org']);
+    assert.ok(asked[0].includes('bath.lccn=55009893') && asked[1].endsWith('/lccn/55009893.json'));
+    const memory = JSON.parse(readFileSync(join(folder, MEMORY), 'utf8'));
+    assert.equal(memory.books['0ldb00ked001'].isbn, 'lccn:55009893');
+  } finally {
+    rmSync(folder, { recursive: true, force: true });
+  }
 });
