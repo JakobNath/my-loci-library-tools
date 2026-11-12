@@ -34,6 +34,15 @@ export const tests = [
     },
   },
   {
+    name: 'value totals by any level of a location: place, room, bookcase or shelf',
+    fn() {
+      same(valueSummary(library.entries, 1).byPlace.map(row => [row.place, row.total]), [['Home', 88.5]]);
+      same(valueSummary(library.entries, 3).byPlace.map(row => [row.place, row.total]), [['Home › Office › Case 1', 60], ['Home › Office › Case 2', 28.5], ['Home › Bedroom', 0]],
+        'a book on no bookcase is totalled with its room');
+      ok(valueCsv(library.entries, { depth: 3 }).includes('Total: Home › Office › Case 2,,,,,,28.5'), 'the CSV totals by the same level');
+    },
+  },
+  {
     name: 'value history: an entry can be deleted, and the rest is kept in order',
     fn() {
       const history = [{ date: '2026-01-02', value: 40 }, { date: '2026-05-01', value: 45 }, { date: '2026-11-10', value: 50 }];

@@ -49,9 +49,10 @@ export function catalogCsv(entries, { dateStyle = 'AD' } = {}) {
 
 /**
  * For an insurance agent: each owned physical copy with its value, then the
- * totals by room and the count with no value. Logos books are left out.
+ * totals by room (or the level of a location given as depth, core/value.js)
+ * and the count with no value. Logos books are left out.
  */
-export function valueCsv(entries, { currency = '$' } = {}) {
+export function valueCsv(entries, { currency = '$', depth = 2 } = {}) {
   const rows = [['Title', 'Authors', 'Publisher', 'Year', 'Binding', 'Location', `Value (${currency})`]];
   for (const entry of entries) {
     if (entry.isDigital) continue;
@@ -61,7 +62,7 @@ export function valueCsv(entries, { currency = '$' } = {}) {
         copy.binding, copy.location.filter(Boolean).join(' › '), copy.value]);
     }
   }
-  const summary = valueSummary(entries);
+  const summary = valueSummary(entries, depth);
   rows.push([], ['Total', '', '', '', '', '', summary.total]);
   for (const place of summary.byPlace) rows.push([`Total: ${place.place}`, '', '', '', '', '', place.total]);
   rows.push([`Books with no value yet: ${summary.missing}`]);
