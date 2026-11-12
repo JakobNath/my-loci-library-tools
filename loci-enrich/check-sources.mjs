@@ -75,7 +75,8 @@ export async function checkSources(books, { fetchFn = fetch, googleBooksKey = ''
 
 /** The recorded answer modules, oldest first. */
 export async function loadRecordedBooks(folder = ANSWERS) {
-  const files = readdirSync(folder).filter(name => name.endsWith('.js')).sort();
+  // One file per book, named by its ISBN; other recorded answers (wikidata.js) are not books.
+  const files = readdirSync(folder).filter(name => /^\d{13}\.js$/.test(name)).sort();
   return Promise.all(files.map(name => import(pathToFileURL(join(folder, name)).href)));
 }
 

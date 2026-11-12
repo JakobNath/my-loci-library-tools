@@ -1,0 +1,44 @@
+/* The admin page's look: a quiet reference book, one column, set in the
+   app's book serif on its ivory paper. Every color, font and size comes from
+   the app's design tokens (styles/tokens.css in the app, served as
+   /tokens.css). The page prints as a plain handbook. */
+
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--fs-base)/1.6 var(--font-display); }
+main { max-width: 46rem; margin: 0 auto; padding: var(--space-6) var(--space-5); }
+header { text-align: center; margin-bottom: var(--space-5); }
+h1 { font: var(--h1-weight) var(--fs-h1-wide)/1.2 var(--font-display); margin: 0; }
+.subtitle { margin: var(--space-1) 0 0; font-style: italic; color: var(--muted); }
+.status { margin: var(--space-3) 0 0; font: var(--fs-small) var(--font-ui); color: var(--muted); }
+nav { border-top: 1px solid var(--pop); border-bottom: 1px solid var(--line); padding: var(--space-3) 0; margin-bottom: var(--space-6); }
+.contents { columns: 2; margin: 0; padding-left: 0; list-style: none; }
+.contents a, a { color: var(--accent-ink); }
+section { margin-bottom: var(--space-6); }
+section > h2 { font: var(--h1-weight) var(--fs-h1)/1.3 var(--font-display); border-bottom: 1px solid var(--line); padding-bottom: var(--space-2); }
+h3 { font: var(--h2-weight) var(--fs-h2)/1.3 var(--font-display); margin: var(--space-5) 0 var(--space-2); }
+h4, h5 { font: var(--h2-weight) var(--fs-base) var(--font-display); margin: var(--space-4) 0 var(--space-1); }
+.opening { font-style: italic; color: var(--ink-2); }
+.source { font: var(--fs-small) var(--font-ui); color: var(--muted); }
+.problem { color: var(--pop-ink); }
+code, pre { font-family: var(--font-mono); font-size: var(--fs-small); }
+pre { background: var(--surface-2); padding: var(--space-3); border-radius: var(--radius); overflow-x: auto; white-space: pre-wrap; }
+table { border-collapse: collapse; width: 100%; font: var(--fs-small)/1.45 var(--font-ui); margin: var(--space-3) 0; }
+th, td { border-bottom: 1px solid var(--line); padding: var(--space-1) var(--space-2); text-align: left; vertical-align: top; }
+.tools { border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); padding: var(--space-3) var(--space-4); font-family: var(--font-ui); }
+.tools p { margin: var(--space-2) 0; }
+.tools label { display: inline-block; margin-right: var(--space-2); font-size: var(--fs-small); }
+.tools input[name="file"] { border: 1px solid var(--line); border-radius: var(--radius); padding: 5px 8px; background: var(--bg); color: var(--ink); max-width: 100%; }
+.tool { border: 1px solid var(--accent-ink); color: var(--accent-ink); background: transparent; border-radius: var(--radius-pill); padding: 6px 14px; font: 500 var(--fs-small) var(--font-ui); cursor: pointer; }
+.tool:hover, .tool:focus-visible { background: var(--accent); color: var(--on-accent); }
+.tool[disabled] { opacity: 0.6; cursor: wait; }
+.pages { font-size: var(--fs-small); color: var(--muted); }
+.output { max-height: 24rem; overflow-y: auto; }
+footer { border-top: 1px solid var(--pop); padding-top: var(--space-3); font: var(--fs-small) var(--font-ui); color: var(--muted); text-align: center; }
+
+@media print {
+  body { background: none; }
+  nav .contents { columns: 1; }
+  .tools, script { display: none; }
+  section { break-inside: auto; }
+  section > h2 { break-after: avoid; }
+  a { color: inherit; text-decoration: none; }
+}

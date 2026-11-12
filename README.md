@@ -8,6 +8,7 @@ Created by Jakob Nath.
 - `loci-enrich/`: fills empty book fields (pages, sizes, edition, series, translators and more) from the Library of Congress, Open Library and Google Books.
 - `logos-to-my-loci-library/`: imports a Logos Library spreadsheet export.
 - `my-loci-library-to-zotero/`: sends books one way into Zotero.
+- `admin/`: the admin page, one page in the browser with the project's handbook and a button for each tool.
 - `shared/`: what every tool needs (the settings file, reading and writing record files, Git).
 - `core/`: a copy of the app's shared core module. Refresh it with `update-core.cmd` (Windows) or `update-core.sh` (Linux), which expect the app repository to sit next to this one.
 
@@ -29,6 +30,10 @@ Google Books refuses most requests without a key. One free key, made once, serve
 2. Open https://console.cloud.google.com/apis/credentials, click **Create credentials**, then **API key**.
 3. In the form that opens (or, if a key appears at once, by clicking its name), choose **Restrict key** under **API restrictions** and tick **Books API**, so the key is good for nothing else. Leave **Application restrictions** at **None**. Click **Create** or **Save**, and copy the key (it starts with `AIza`).
 4. Put it in `config.json` as `"googleBooksKey": "AIza..."`. It stays on this laptop and is never committed.
+
+## The admin page
+
+Run `admin/admin.cmd` (Windows) or `admin/admin.sh` (Linux). It starts a small server on this laptop and opens `http://127.0.0.1:8650/` in the browser; leave its window open while using the page, and close it to stop. The page is the project's handbook (what it is, adding a book, sync, these tools, the data format, the yearly check and fixing things, the sources), read from the project's own documents each time it opens, so it is never out of date and every fact is written in one place: to change the page, change the document named under each part. Its buttons run the tools below exactly as the command line does (back up, fill book data, check the sources, import a Logos export, fetch Logos covers, send to Zotero), one at a time, and show what each printed. It also links to the app's two laptop pages, "Covers from the inbox" and "Contents to enter". Only this laptop can reach the server, and only the page itself can press its buttons. Options: `--port 8650`, `--no-open`.
 
 ## loci-backup
 

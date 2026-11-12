@@ -19,7 +19,7 @@ import * as holmes from '../../core/tests/answers/9780801031083.js';
 import * as anna from '../../core/tests/answers/9781857150582.js';
 import * as wikidata from '../../core/tests/answers/wikidata.js';
 import { askSources, IDENTITY } from '../sources.mjs';
-import { checkSources } from '../check-sources.mjs';
+import { checkSources, loadRecordedBooks } from '../check-sources.mjs';
 
 const NOW = '2026-11-10T12:00:00Z';
 const LATER = '2027-03-01T12:00:00Z'; // more than 90 days on
@@ -252,4 +252,10 @@ test('stored Wikidata IDs are checked every 90 days: a merged item takes its new
   } finally {
     rmSync(folder, { recursive: true, force: true });
   }
+});
+
+test('the source check reads only the recorded books, not the other recorded answers', async () => {
+  const books = await loadRecordedBooks();
+  assert.ok(books.length >= 10);
+  assert.ok(books.every(book => /^\d{13}$/.test(book.isbn)), 'each has its ISBN; wikidata.js is left out');
 });
