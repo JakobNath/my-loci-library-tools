@@ -50,3 +50,7 @@ test('this copy of core matches the app repository\'s core', { skip: !existsSync
 test('the copy check notices a file edited in one place only', () => {
   assert.ok(coreDifferences(copy, join(copy, 'tests')).length > 0);
 });
+
+test('this copy of the known sets\' lists matches the app repository\'s sets/', { skip: !existsSync(join(here, '..', 'my-loci-library', 'sets')) && 'the app repository has no sets/ here' }, () => {
+  assert.deepEqual(coreDifferences(join(here, 'sets'), join(here, '..', 'my-loci-library', 'sets')), [], 'Run update-core (.cmd or .sh) to copy sets/ from the app repository.');
+});

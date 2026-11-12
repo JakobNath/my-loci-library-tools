@@ -145,17 +145,31 @@ export function recordsFromForm(form, existing, context) {
   let contents;
   if (form.contents !== null) {
     contents = [];
+    // The works of a known set's volume (core/known-sets.js), when the contents came from its list.
+    const knownSet = form.knownWorks || { set: '', works: [] };
     for (const line of parseContentsLines(form.contents)) {
+      // A line still as the list gives it takes the list's details; a line a person changed is saved as typed.
+      const listed = knownSet.works.find(item => key(item.title) === key(line.title) && key(item.author) === key(line.author || ''));
+      if (listed && listed.piece) {
+        const piece = { title: line.title, author: line.author || null, originalTitle: listed.originalTitle || null, date: line.date || null };
+        contents.push({ work: null, piece, extent: 'complete', translator: listed.translator || null, pages: listed.pages || null, cite: false });
+        continue;
+      }
       const ids = authorIds(line.author ? line.author.split(/\s+and\s+/) : []);
-      const reading = line.date ? datingsFromRows([{ text: line.date, working: true }]) : { datings: [], problems: [] };
+      const note = listed && line.date === listed.date ? `from the ${knownSet.set} list` : '';
+      const reading = line.date ? datingsFromRows([{ text: line.date, working: true, note }]) : { datings: [], problems: [] };
       problems.push(...reading.problems);
       const match = oldWorks.find(work => key(work.title) === key(line.title));
       const values = { title: line.title, authors: ids, ...(line.date ? { datings: reading.datings } : {}) };
-      // A new work in a collection takes the language, category and tags asked once for the whole book.
-      const shared = { originalLanguage: form.work.originalLanguage || null, category: form.work.category || null, tags: form.work.tags };
+      // A new work in a collection takes the language, category and tags asked once for the whole book,
+      // and from a known set's list its own original title and language.
+      const shared = {
+        originalLanguage: (listed && listed.originalLanguage) || form.work.originalLanguage || null, category: form.work.category || null, tags: form.work.tags,
+        ...(listed && listed.originalTitle ? { originalTitle: listed.originalTitle } : {}),
+      };
       const work = match ? update(match, values, now) : newRecord('work', newId(), now, { ...values, ...shared });
       if (work !== match) records.push(work);
-      contents.push({ work: work.id, piece: null, extent: 'complete', translator: null, pages: null, cite: false });
+      contents.push({ work: work.id, piece: null, extent: 'complete', translator: (listed && listed.translator) || null, pages: (listed && listed.pages) || null, cite: false });
     }
     if (!contents.length) problems.push('List at least one work in the contents, one per line.');
   } else if (form.workId && context.works) {

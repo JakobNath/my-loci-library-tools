@@ -5,7 +5,7 @@ import { countPages } from '../pages.js';
 import { estimateSize } from '../sizes.js';
 import { normalizeForSearch, searchTextOf, matchesSearch } from '../search.js';
 import { parseContentsLines, contentsLine } from '../contents.js';
-import { buildLibrary, viewEntries, searchEntries, searchPieces, authorLineOf, sortEntries, filterChoices, missingDetails, SORTS } from '../library.js';
+import { buildLibrary, viewEntries, searchEntries, searchPieces, originalTextHolders, authorLineOf, sortEntries, filterChoices, missingDetails, SORTS } from '../library.js';
 import { equal, same, ok } from './check.js';
 import { newRecord } from '../records.js';
 import { isBible, isBibleBook } from '../bible.js';
@@ -239,6 +239,17 @@ export const tests = [
       const book = edition('eth1csed0001', 'Nicomachean Ethics', [ethics.id]);
       const library = buildLibrary([ethics, book]);
       for (const query of ['ethica nicomachea', 'eth nic']) same(searchEntries(library, query).map(entry => entry.id), ['eth1csed0001'], query);
+    },
+  },
+  {
+    name: 'the original-text marker finds the books printing a work in its original language ("Greek" for "Ancient Greek"), not translations',
+    fn() {
+      const phaedo = work('phaed0w0rk01', 'Phaedo', [], { originalLanguage: 'Ancient Greek' });
+      const loebPhaedo = edition('l0ebphaed001', 'Plato I', [phaedo.id], { languages: ['Greek', 'English'] });
+      const hackett = edition('hackettph001', 'Complete Works', [phaedo.id], { languages: ['English'] });
+      const library = buildLibrary([phaedo, loebPhaedo, hackett]);
+      same(originalTextHolders(phaedo, library).map(entry => entry.id), ['l0ebphaed001']);
+      same(originalTextHolders({ ...phaedo, originalLanguage: null }, library), [], 'no original language, no marker');
     },
   },
 ];

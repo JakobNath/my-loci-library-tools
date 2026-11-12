@@ -7,13 +7,32 @@
 //
 // A full (unfiltered) export marks resources missing from it "gone from
 // Logos"; a filtered export never removes anything. Original dates are never
-// filled in: only a person sets them.
+// filled in from Logos: only a person sets them, or a known set's list that a
+// person has checked.
+//
+// A new resource that is a volume of a known set ("Luther's Works, Vol. 31",
+// in the series "Luther's Works") takes that volume's works from the list
+// (sets/, core/known-sets.js), as a scanned copy does on the phone.
 
 import { newRecord, withField } from '../core/records.js';
 import { normalizeForSearch } from '../core/search.js';
 import { suggestWorks } from '../core/matching.js';
 import { buildLibrary } from '../core/library.js';
+import { findKnownVolume, recordsForKnownVolume } from '../core/known-sets.js';
 import { readRow } from './columns.mjs';
+
+// "Luther's Works, Vol. 31: Career of the Reformer I" names volume 31; "Volume II/1" names II/1.
+const VOLUME_IN_TITLE = /\bvol(?:ume)?\.?\s*([0-9]+[a-z]?|[ivxlc]+(?:\/\d+)?)\b/i;
+
+/** The known set and volume a Logos resource is, by its ISBN or by its series (or title) and the volume in its title. */
+export function knownVolumeOf(read, sets) {
+  const label = (read.title.match(VOLUME_IN_TITLE) || [])[1] || '';
+  for (const setName of [read.series, read.title.split(/[,:]/)[0]].filter(Boolean)) {
+    const known = findKnownVolume(sets, { isbn: read.isbn || '', set: setName, volume: label });
+    if (known && known.volume) return known;
+  }
+  return null;
+}
 
 // The edition fields the export supplies, as the importer writes them.
 const editionValues = read => ({
@@ -33,11 +52,13 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
  * @param {Record<string, string>[]} rows from parseCsv
  * @param {object[]} records every record in the data repository
  * @param {{ imported: Record<string, object> }} memory integrations/logos-import.json: per resource, the values last written
- * @param {{ now: string, today: string, newId: () => string, full?: boolean }} options full: the export lists every resource
- * @returns {{ changed: object[], added: string[], updated: string[], kept: number, gone: string[], back: string[], suggestions: { editionId: string, workId: string, text: string }[], problems: string[] }}
+ * @param {{ now: string, today: string, newId: () => string, full?: boolean, sets?: object[] }} options full: the export lists every resource;
+ *   sets: the known sets' lists (shared/known-sets.mjs)
+ * @returns {{ changed: object[], added: string[], updated: string[], kept: number, gone: string[], back: string[], fromSets: string[], suggestions: { editionId: string, workId: string, text: string }[], problems: string[] }}
+ *   fromSets: the new books whose works came from a known set's list
  */
-export function importRows(rows, records, memory, { now, today, newId, full = false }) {
-  const result = { changed: [], added: [], updated: [], kept: 0, gone: [], back: [], suggestions: [], problems: [] };
+export function importRows(rows, records, memory, { now, today, newId, full = false, sets = [] }) {
+  const result = { changed: [], added: [], updated: [], kept: 0, gone: [], back: [], fromSets: [], suggestions: [], problems: [] };
   const byLogosId = new Map(records.filter(record => record.type === 'edition' && record.logosId).map(edition => [edition.logosId, edition]));
   const copiesOf = editionId => records.filter(record => record.type === 'copy' && record.edition === editionId);
   // Authors by every form of their name, so "C. S. Lewis" and "Lewis, C. S." are one person.
@@ -57,15 +78,30 @@ export function importRows(rows, records, memory, { now, today, newId, full = fa
     const existing = byLogosId.get(read.logosId);
 
     if (!existing) {
-      const authorIds = read.authors.map(person => {
+      const authorId = person => {
         let author = authors.get(normalizeForSearch(person.name)) || (person.sortName && authors.get(normalizeForSearch(person.sortName)));
         if (!author) {
-          author = newRecord('author', newId(), now, { name: person.name, sortName: person.sortName });
+          author = newRecord('author', newId(), now, { name: person.name, ...(person.sortName !== undefined ? { sortName: person.sortName } : {}) });
           knowAuthor(author);
           result.changed.push(author);
         }
         return author.id;
-      });
+      };
+      // A volume of a known set: its works come from the list, with the set and volume, and no links are suggested.
+      const known = knownVolumeOf(read, sets);
+      if (known) {
+        const made = recordsForKnownVolume(known.set, known.volume, { newId, now, authorIds: names => names.map(name => authorId({ name })) });
+        const edition = newRecord('edition', newId(), now, {
+          ...values, contents: made.contents, set: known.set.set, volume: known.volume.label, medium: 'logos', logosId: read.logosId,
+        });
+        const copy = newRecord('copy', newId(), now, { edition: edition.id, added: today, status: 'owned' });
+        result.changed.push(...made.works, edition, copy);
+        result.added.push(read.title);
+        result.fromSets.push(read.title);
+        memory.imported[read.logosId] = values;
+        continue;
+      }
+      const authorIds = read.authors.map(authorId);
       const work = newRecord('work', newId(), now, { title: read.title, subtitle: read.subtitle, authors: authorIds });
       const edition = newRecord('edition', newId(), now, {
         ...values, contents: [{ work: work.id, extent: 'complete', translator: null, pages: null }], medium: 'logos', logosId: read.logosId,
