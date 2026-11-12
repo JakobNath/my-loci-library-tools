@@ -1,9 +1,13 @@
-// Asking the three sources about one ISBN (PLAN.md, "Book data"): the
+// Asking the sources about one ISBN (PLAN.md, "Book data"; SOURCES.md): the
 // Library of Congress catalog, Open Library's edition record and, with a key,
 // Google Books' volume record. The answers are read by the app's core
 // (core/marc.js, core/book-data.js). The Library of Congress catalog service
 // has no encrypted connection and does not allow calls from web pages, which
 // is why it is asked only here, on the laptop (HOW_IT_WORKS.md, "4.4b").
+//
+// Every request names the app (IDENTITY), as Open Library and Wikimedia ask.
+// A source that refuses a request (429 "too many requests", or 403) is not
+// asked again for the rest of the run: it is "resting", and the report says so.
 
 import { fromLibraryOfCongress } from '../core/marc.js';
 import { fromOpenLibraryEdition, fromGoogleBooksVolume, mergeFound } from '../core/book-data.js';
@@ -11,17 +15,34 @@ import { googleBooksItem } from '../core/lookup.js';
 
 const TIMEOUT = 15000; // milliseconds; the catalog service is sometimes slow
 
+/** How the laptop tools name themselves to the sources: the app, and where to find it. */
+export const IDENTITY = 'MyLociLibraryTools/1 (+https://github.com/JakobNath/my-loci-library-tools)';
+
+/** The addresses asked, in one place, so a source that moves is changed here only (SOURCES.md). */
+export const ADDRESSES = {
+  libraryOfCongress: 'http://lx2.loc.gov:210/lcdb',
+  openLibrary: 'https://openlibrary.org',
+  googleBooks: 'https://www.googleapis.com/books/v1',
+};
+
 /** The Library of Congress catalog's answer for one ISBN (SRU, MARC XML). */
-export const catalogUrl = isbn => `http://lx2.loc.gov:210/lcdb?version=1.1&operation=searchRetrieve&query=bath.isbn=${isbn}&maximumRecords=3&recordSchema=marcxml`;
-const openLibraryUrl = isbn => `https://openlibrary.org/isbn/${isbn}.json`;
-const googleSearchUrl = (isbn, key) => `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}&key=${encodeURIComponent(key)}`;
-const googleVolumeUrl = (id, key) => `https://www.googleapis.com/books/v1/volumes/${encodeURIComponent(id)}?key=${encodeURIComponent(key)}`;
+export const catalogUrl = isbn => `${ADDRESSES.libraryOfCongress}?version=1.1&operation=searchRetrieve&query=bath.isbn=${isbn}&maximumRecords=3&recordSchema=marcxml`;
+const openLibraryUrl = isbn => `${ADDRESSES.openLibrary}/isbn/${isbn}.json`;
+const googleSearchUrl = (isbn, key) => `${ADDRESSES.googleBooks}/volumes?q=isbn:${isbn}&key=${encodeURIComponent(key)}`;
+const googleVolumeUrl = (id, key) => `${ADDRESSES.googleBooks}/volumes/${encodeURIComponent(id)}?key=${encodeURIComponent(key)}`;
+
+/** An answer that means "stop asking for now": too many requests, or refused. */
+export const isRefusal = status => status === 429 || status === 403;
 
 // One answer as text; null when the source does not know the book (404).
 async function getText(url, fetchFn, name) {
-  const response = await fetchFn(url, { signal: AbortSignal.timeout(TIMEOUT) });
+  const response = await fetchFn(url, { signal: AbortSignal.timeout(TIMEOUT), headers: { 'User-Agent': IDENTITY } });
   if (response.status === 404) return null;
-  if (!response.ok) throw new Error(`${name} answered ${response.status}`);
+  if (!response.ok) {
+    const error = new Error(`${name} answered ${response.status}`);
+    error.refused = isRefusal(response.status);
+    throw error;
+  }
   return response.text();
 }
 
@@ -34,15 +55,15 @@ async function askGoogleBooks(isbn, key, fetchFn) {
 }
 
 /**
- * Ask every source about one ISBN, at the same moment (they are three
- * different services), and merge their answers, the Library of Congress first.
- * A source that fails is reported and left out; the others still count.
+ * Each source's own reading of one ISBN, as [name, ask] pairs: ask() gives
+ * the source's answer read into our fields (core/lookup.js, "Found"), or null.
+ * Used by askSources and by the source check (check-sources.mjs).
  * @param {string} isbn 13 digits
- * @param {{ fetchFn: typeof fetch, googleBooksKey?: string }} options without a key, Google Books is not asked
- * @returns {Promise<{ found: object|null, sources: string[], problems: string[] }>}
+ * @param {{ fetchFn: typeof fetch, googleBooksKey?: string }} options without a key, Google Books is left out
+ * @returns {[string, () => Promise<object|null>][]}
  */
-export async function askSources(isbn, { fetchFn, googleBooksKey = '' }) {
-  const asking = [
+export function sourcesFor(isbn, { fetchFn, googleBooksKey = '' }) {
+  return [
     ['Library of Congress', async () => fromLibraryOfCongress(await getText(catalogUrl(isbn), fetchFn, 'The Library of Congress'), isbn)],
     ['Open Library', async () => {
       const text = await getText(openLibraryUrl(isbn), fetchFn, 'Open Library');
@@ -50,9 +71,24 @@ export async function askSources(isbn, { fetchFn, googleBooksKey = '' }) {
     }],
     ...(googleBooksKey ? [['Google Books', () => askGoogleBooks(isbn, googleBooksKey, fetchFn)]] : []),
   ];
+}
+
+/**
+ * Ask every source about one ISBN, at the same moment (they are different
+ * services), and merge their answers, the Library of Congress first. A
+ * source that fails is reported and left out; the others still count. A
+ * source that refuses is added to `resting` and not asked again while it is
+ * there (the caller keeps one `resting` set for a whole run).
+ * @param {string} isbn 13 digits
+ * @param {{ fetchFn: typeof fetch, googleBooksKey?: string, resting?: Set<string> }} options
+ * @returns {Promise<{ found: object|null, sources: string[], problems: string[] }>}
+ */
+export async function askSources(isbn, { fetchFn, googleBooksKey = '', resting = new Set() }) {
+  const asking = sourcesFor(isbn, { fetchFn, googleBooksKey }).filter(([name]) => !resting.has(name));
   const problems = [];
   const answers = await Promise.all(asking.map(([name, ask]) => ask().catch(error => {
-    problems.push(`${name}: ${error.message}`);
+    if (error.refused) resting.add(name);
+    problems.push(`${name}: ${error.message}${error.refused ? ' (not asked again this run)' : ''}`);
     return null;
   })));
   return {

@@ -16,6 +16,8 @@ import { writeRecord, readRecords } from '../../shared/data-repo.mjs';
 import * as plato from '../../core/tests/answers/9780872203495.js';
 import * as holmes from '../../core/tests/answers/9780801031083.js';
 import * as anna from '../../core/tests/answers/9781857150582.js';
+import { askSources, IDENTITY } from '../sources.mjs';
+import { checkSources } from '../check-sources.mjs';
 
 const NOW = '2026-11-10T12:00:00Z';
 const LATER = '2027-03-01T12:00:00Z'; // more than 90 days on
@@ -142,4 +144,39 @@ test('anthology contents are only suggested in the report, and never for a Bible
   } finally {
     rmSync(folder, { recursive: true, force: true });
   }
+});
+
+test('a source that refuses is not asked again in the same run, and the report says so', async () => {
+  const { fetchFn } = recordedServices([plato, holmes]);
+  const asked = [];
+  const refusing = async (url, options) => {
+    asked.push(url);
+    if (url.includes('openlibrary.org')) return { ok: false, status: 429, text: async () => '' };
+    return fetchFn(url, options);
+  };
+  const folder = dataRepo([work('p1at0w0rk001', 'Complete Works'), edition('p1at0ed00001', 'Complete Works', 'p1at0w0rk001', { isbn: plato.isbn }),
+    work('h0lmesw0rk01', 'The Apostolic Fathers'), edition('h0lmesed0001', 'The Apostolic Fathers', 'h0lmesw0rk01', { isbn: holmes.isbn })]);
+  const lines = await runEnrich(folder, { useGit: false, fetchFn: refusing, now: NOW, reportFile: null });
+  assert.equal(asked.filter(url => url.includes('openlibrary.org')).length, 1, 'Open Library asked once only');
+  assert.ok(lines.some(line => line.includes('Refused by Open Library')));
+  rmSync(folder, { recursive: true });
+});
+
+test('every request names the app', async () => {
+  const seen = [];
+  const { fetchFn } = recordedServices([plato]);
+  const watching = async (url, options) => { seen.push(options.headers['User-Agent']); return fetchFn(url, options); };
+  await askSources(plato.isbn, { fetchFn: watching });
+  assert.ok(seen.length >= 2 && seen.every(agent => agent === IDENTITY));
+});
+
+test('the source check reports nothing when every source answers as recorded, and names a source that stopped', async () => {
+  const same = await checkSources([plato, holmes], { fetchFn: recordedServices([plato, holmes]).fetchFn });
+  assert.equal(same.failed, false);
+  assert.deepEqual(same.lines, ['Every source answered, and every field read as recorded.']);
+  const down = async url => ({ ok: false, status: url.includes('loc.gov') ? 503 : 404, text: async () => '' });
+  const broken = await checkSources([holmes], { fetchFn: down });
+  assert.equal(broken.failed, true);
+  assert.ok(broken.lines.some(line => line.includes('Library of Congress: The Library of Congress answered 503')));
+  assert.ok(broken.lines.some(line => line.includes('Open Library: no longer knows the book')));
 });

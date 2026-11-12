@@ -50,8 +50,9 @@ export async function runEnrich(dataRepo, { useGit = true, commit = true, limit 
   const suggestionLines = [];
   const problemLines = [];
   let notFound = 0;
+  const resting = new Set(); // sources that refused a request: not asked again this run (sources.mjs)
   for (const [i, edition] of asking.entries()) {
-    const answer = await askSources(edition.isbn, { fetchFn, googleBooksKey });
+    const answer = await askSources(edition.isbn, { fetchFn, googleBooksKey, resting });
     problemLines.push(...answer.problems.map(problem => `  ${edition.title}: ${problem}`));
     const works = edition.contents.map(entry => byId.get(entry.work)).filter(Boolean);
     const result = fillBook({ edition, works }, answer.found, memory.books[edition.id], now);
@@ -69,6 +70,7 @@ export async function runEnrich(dataRepo, { useGit = true, commit = true, limit 
   const lines = [
     `Book data (${today}): asked about ${asking.length} of ${due.length} books due; ${filledLines.length} filled, ${notFound} not known to any source, ${problemLines.length} problems.`,
     ...(googleBooksKey ? [] : ['  Google Books was not asked: there is no "googleBooksKey" in config.json (tools README, "A Google Books key").']),
+    ...(resting.size ? [`  Refused by ${[...resting].join(' and ')}, so not asked again this run; try again later (SOURCES.md).`] : []),
     ...(due.length > asking.length ? [`  ${due.length - asking.length} books are left for the next run.`] : []),
     ...(filledLines.length ? ['Filled (empty fields only):', ...filledLines] : []),
     ...(suggestionLines.length ? ['Contents listed by a catalog, to enter by hand if they are right (nothing was changed):', ...suggestionLines] : []),

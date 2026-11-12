@@ -73,6 +73,10 @@ It keeps what it wrote for each book in the data repository (`integrations/enric
 
 It runs with every backup, and by hand with `loci-enrich.cmd` or `loci-enrich.sh`. Options: `--limit 200` (ask about at most that many books this time), `--no-git`.
 
+Every request names the tools (`IDENTITY` in `loci-enrich/sources.mjs`), as Open Library and Wikimedia ask, and the sources' addresses are kept together there (`ADDRESSES`), so a source that moves is changed in one place. A source that refuses a request ("too many requests", or refused outright) is not asked again for the rest of that run, and the report says so; its books are asked again next time. The sources, their limits and terms are described in the app's `SOURCES.md`.
+
+**Checking the sources.** `check-sources.cmd` (or `check-sources.sh`, or `node loci-enrich/check-sources.mjs`) asks each source live about the books whose answers are recorded for the tests (`core/tests/answers/`), reads both with the same code, and lists any source that no longer answers or any field that now reads differently. A difference is not always a fault (a catalog record may have been corrected), but it is where to look first when lookups seem wrong. Run it in the yearly check, or whenever a source seems to have changed. It changes nothing.
+
 Adding a book on the phone asks only what a person knows; the details above are left to this tool. Run it by hand right after a scanning session, rather than waiting for the night's backup, and the app's "Needs details" filter (in the Library, with a count in Settings) then shows what it could not find.
 
 The Library of Congress service has no encrypted connection and does not allow calls from web pages, which is why only this laptop tool asks it. If any source ever changes or disappears, nothing else depends on it: those fields simply stay as they are.
