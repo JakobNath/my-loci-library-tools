@@ -12,7 +12,7 @@ publisher: Encyclopaedia Britannica
 place: Chicago
 year: 1990
 edition: 2nd ed.
-isbn: 0852291639
+isbn: 0852295316
 
 volume: 6 | Plato
 Plato — Euthyphro | Εὐθύφρων | Greek — c. 399–395 BC | trans. Benjamin Jowett | pp. 1–8
@@ -29,7 +29,7 @@ export const tests = [
     fn() {
       const set = parseKnownSet(SAMPLE);
       same(set.problems, []);
-      same([set.set, set.publisher, set.place, set.year, set.editionStatement, set.isbns], ['Great Books of the Western World', 'Encyclopaedia Britannica', 'Chicago', '1990', '2nd ed.', ['9780852291634']]);
+      same([set.set, set.publisher, set.place, set.year, set.editionStatement, set.isbns], ['Great Books of the Western World', 'Encyclopaedia Britannica', 'Chicago', '1990', '2nd ed.', ['9780852295311']]);
       same(set.volumes.map(volume => [volume.label, volume.title, volume.works.length]), [['6', 'Plato', 2], ['7', 'Aristotle I', 2]]);
       const euthyphro = set.volumes[0].works[0];
       same([euthyphro.author, euthyphro.title, euthyphro.originalTitle, euthyphro.originalLanguage, euthyphro.date, euthyphro.translator, euthyphro.pages, euthyphro.piece],
@@ -43,7 +43,7 @@ export const tests = [
       const sets = [parseKnownSet(SAMPLE)];
       equal(findKnownVolume(sets, { isbn: '9780852291999' }).volume.title, 'Aristotle I');
       equal(findKnownVolume(sets, { set: 'great books of the western world', volume: 'vol. 6' }).volume.title, 'Plato');
-      const shared = findKnownVolume(sets, { isbn: '9780852291634' });
+      const shared = findKnownVolume(sets, { isbn: '9780852295311' });
       ok(shared && shared.volume === null, 'the set, without a volume');
       equal(findKnownVolume(sets, { isbn: '9780199537822' }), null, 'a book of no known set');
     },
@@ -65,7 +65,7 @@ export const tests = [
     name: 'a list says who checked it; without that line it counts as not checked',
     fn() {
       equal(parseKnownSet(SAMPLE).checked, '');
-      equal(parseKnownSet(SAMPLE.replace('isbn: 0852291639', 'isbn: 0852291639\nchecked: 2026-11-12 Jakob Nath')).checked, '2026-11-12 Jakob Nath');
+      equal(parseKnownSet(SAMPLE.replace('isbn: 0852295316', 'isbn: 0852295316\nchecked: 2026-11-12 Jakob Nath')).checked, '2026-11-12 Jakob Nath');
     },
   },
   {

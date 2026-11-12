@@ -14,10 +14,10 @@
 //   place: Chicago
 //   year: 1990
 //   edition: 2nd ed.
-//   isbn: 9780852291634           an ISBN printed on every volume (any number of lines)
+//   isbn: 9780852295311           an ISBN printed on every volume (any number of lines)
 //   checked: 2026-11-12 Jakob Nath  who checked the list against its sources, and when
 //
-//   volume: 6 | Plato | isbn 9780852291634
+//   volume: 6 | Plato
 //   Plato — Euthyphro | Εὐθύφρων | Greek — c. 399–395 BC | trans. Benjamin Jowett | pp. 1–8
 //   Plato — Apology | Ἀπολογία Σωκράτους | Greek — c. 399–390 BC | trans. Benjamin Jowett
 //   Edgar Allan Poe — The Raven | | English — 1845 | piece

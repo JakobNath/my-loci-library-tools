@@ -3,13 +3,15 @@
 # volume records, Logos, holtz.org, the DAIICT 1990 list and Wikipedia; each line against two
 # sources where they could be found. The disagreements and choices are kept with the project's
 # working notes. The first edition (1952, 54 volumes) numbers its volumes differently and is not
-# this list.
+# this list; its set ISBN, 0-85229-163-9, is listed too, because some volumes of our 1990 set may
+# print it (not yet confirmed). A 1952 volume scanned is then offered these volumes: tap "Not in the list".
 set: Great Books of the Western World
 publisher: Encyclopaedia Britannica
 place: Chicago
 year: 1990
 edition: 2nd ed.
 isbn: 9780852295311
+isbn: 9780852291634
 
 volume: 1 | The Syntopicon I
 # The Syntopicon: An Index to the Great Ideas, volume 1 (Angel to Love). Reference index.
