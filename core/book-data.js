@@ -48,8 +48,8 @@ export function sizesFromDimensions(height, width, thickness, unit) {
 }
 
 // Front and back matter, and the volumes or parts of one book ("V. 1. Part I",
-// "Part 1: Working with Biblical Hebrew Prose"), are not works.
-const NOT_A_WORK = /^(preface|foreword|prologue|introduction|acknowledg|contents|index|bibliograph|notes|abbreviations|appendix|glossary|list of|further reading|chronology)|^(v|vol|volume|pt|part|bk|book|bd|band|teil)\.?\s*[\divxlc]+\b/i;
+// "Part 1: Working with Biblical Hebrew Prose", "Books 1-12"), are not works.
+const NOT_A_WORK = /^(preface|foreword|prologue|introduction|acknowledg|contents|index|bibliograph|notes|abbreviations|appendix|glossary|list of|further reading|chronology)|^(v|vols?|volumes?|pts?|parts?|bks?|books?|bd|band|teil)\.?\s*[\divxlc]+\b/i;
 
 /** Whether a title in a contents list can be a work of an anthology. */
 export const isWorkTitle = title => !NOT_A_WORK.test(tidy(title));
@@ -171,7 +171,7 @@ const isBareCount = pages => /^\d+$/.test(pages);
 
 /**
  * One book's fields from every source that answered, best first: the
- * Library of Congress, then Open Library, then Google Books. Each field
+ * Library of Congress, then HathiTrust, then Open Library, then Google Books. Each field
  * comes from the first source that has it, which gives the order of
  * PLAN.md for bibliographic facts, and for height, thickness and covers
  * "whichever has them". Pages as printed beat a bare page count from any
@@ -184,7 +184,25 @@ export function mergeFound(answers) {
   if (!present.length) return null;
   const merged = present.reduce(combineFound);
   const printed = present.map(found => found.pages).find(pages => pages && !isBareCount(pages));
-  return printed ? { ...merged, pages: printed } : merged;
+  const result = printed ? { ...merged, pages: printed } : { ...merged }; // a copy: answers are never changed
+  // Only a set's record knew the book: it is called by the set and its volume.
+  if (!result.title && result.set) result.title = `${result.set}, vol. ${result.volume}`;
+  return result;
+}
+
+/**
+ * The merged answer, with the works inside taken from a library record
+ * (the Library of Congress or HathiTrust) when one lists several: their
+ * contents notes name works, where Open Library's table of contents often
+ * names chapters. Used on the phone, where Open Library comes first because
+ * a library record found by ISBN may describe an older printing.
+ * @param {import('./lookup.js').Found|null} merged
+ * @param {(import('./lookup.js').Found|null)[]} answers every source's own answer
+ * @returns {import('./lookup.js').Found|null} a new object; nothing given is changed
+ */
+export function withLibraryContents(merged, answers) {
+  const library = answers.find(found => found && ['libraryofcongress', 'hathitrust'].includes(found.source) && found.contents.length > 1);
+  return merged && library ? { ...merged, contents: library.contents } : merged;
 }
 
 // Google's reasons for refusing a key (the "reason" in its error answer), in plain words.

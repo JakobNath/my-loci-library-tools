@@ -2,8 +2,8 @@
 // Books' volume record, and merging them (PLAN.md, "Book data"), against the
 // answers recorded in core/tests/answers/ on 10 November 2026.
 
-import { fromLibraryOfCongress, heightInMm } from '../marc.js';
-import { fromOpenLibraryEdition, fromGoogleBooksVolume, mergeFound, bindingFromFormat, sizesFromDimensions, googleKeyVerdict } from '../book-data.js';
+import { fromLibraryOfCongress, fromHathiTrust, heightInMm } from '../marc.js';
+import { fromOpenLibraryEdition, fromGoogleBooksVolume, mergeFound, withLibraryContents, bindingFromFormat, sizesFromDimensions, googleKeyVerdict } from '../book-data.js';
 import { fromOpenLibrary, fromGoogleBooks, contributorsFrom, cleanPages } from '../lookup.js';
 import { equal, same, ok } from './check.js';
 import * as confessions from './answers/9780199537822.js';
@@ -15,6 +15,11 @@ import * as loeb from './answers/9780674990401.js';
 import * as anna from './answers/9781857150582.js';
 import * as na28 from './answers/9783438051400.js';
 import * as holmes from './answers/9780801031083.js';
+import * as fathers from './answers/9780674996076.js';
+import * as iliad from './answers/9780674995796.js';
+import * as oct from './answers/9780198145288.js';
+import * as greatBooks from './answers/9780852291634.js';
+import * as poe from './answers/9780940450189.js';
 
 const json = text => (text === null ? null : JSON.parse(text));
 
@@ -81,6 +86,8 @@ export const tests = [
       same([lc.series, lc.seriesNumber, lc.height], ["Chemnitz's Works", '7, 8', 240]);
       same([lc.publisher, lc.place, lc.originalTitle], ['Concordia Publishing House', 'St. Louis, MO', ''], 'an original title the same as the title adds nothing');
       equal(cleanPages('v. <1-2> ;'), '');
+      equal(cleanPages('2 v.'), '', 'a count of volumes');
+      equal(cleanPages('xxv, 583 p.'), 'xxv, 583', 'roman numerals ending in v stay');
     },
   },
   {
@@ -192,6 +199,61 @@ export const tests = [
       ok(googleKeyVerdict(403, { error: { code: 403, details: [{ reason: 'API_KEY_SERVICE_BLOCKED' }] } }).message.includes('Books API'), 'restricted to other services');
       ok(googleKeyVerdict(429, null).message.includes('limit'), 'the daily limit');
       equal(googleKeyVerdict(500, null).message, 'Google Books refused the key (500).');
+    },
+  },
+  // HathiTrust and set records (phase 15, step 3), against answers recorded on 11 November 2026.
+  {
+    name: 'HathiTrust gives the five dialogues of Loeb Plato I, each by Plato, from a title that lists them',
+    fn() {
+      const found = fromHathiTrust(loeb.hathiTrust, loeb.isbn);
+      equal(found.source, 'hathitrust');
+      same(found.contents.map(entry => `${entry.author} — ${entry.title}`), ['Plato — Euthyphro', 'Plato — Apology', 'Plato — Crito', 'Plato — Phaedo', 'Plato — Phaedrus']);
+      same([found.series, found.seriesNumber, found.pages], ['Loeb Classical Library', '36', 'xxv, 583']);
+      equal(found.set, '', 'a record for this volume alone, not the set');
+    },
+  },
+  {
+    name: 'a set record gives the set, the ISBN\'s volume and only that volume\'s works, in HathiTrust and the Library of Congress alike',
+    fn() {
+      for (const found of [fromHathiTrust(fathers.hathiTrust, fathers.isbn), fromLibraryOfCongress(fathers.libraryOfCongress, fathers.isbn)]) {
+        same([found.title, found.set, found.volume, found.pages], ['', 'The Apostolic Fathers', '1', ''], `${found.source}: the set, not its title or "2 v."`);
+        same(found.contents.map(entry => entry.title), ['I Clement', 'II Clement', 'Ignatius', 'Polycarp', 'Didache'], `${found.source}: volume 1 only`);
+      }
+    },
+  },
+  {
+    name: 'a volume holding part of one work (the Iliad, books 1-12) offers no contents',
+    fn() {
+      const found = fromHathiTrust(iliad.hathiTrust, iliad.isbn);
+      same([found.set, found.volume, found.contents.length, found.originalLanguage], ['Iliad', '1', 0, 'Ancient Greek']);
+    },
+  },
+  {
+    name: 'records of different books sharing one ISBN (Great Books, 1990) give nothing rather than one of them at random',
+    fn() {
+      equal(fromHathiTrust(greatBooks.hathiTrust, greatBooks.isbn), null);
+      equal(fromHathiTrust(poe.hathiTrust, poe.isbn), null, 'a book HathiTrust does not hold');
+      equal(fromHathiTrust('not an answer', poe.isbn), null, 'an answer that is not JSON');
+    },
+  },
+  {
+    name: 'when only a set\'s record knew the book, it is called by the set and its volume; another source\'s title comes first',
+    fn() {
+      const homer = fromHathiTrust(oct.hathiTrust, oct.isbn);
+      equal(mergeFound([homer]).title, 'Opera, vol. 1');
+      equal(mergeFound([homer, { ...homer, source: 'openlibrary', title: 'Homeri Opera I', set: '', volume: '' }]).title, 'Homeri Opera I');
+      equal(mergeFound([homer]).set, 'Opera');
+    },
+  },
+  {
+    name: 'on the phone Open Library\'s facts come first, but the works inside come from a library record that lists them',
+    fn() {
+      const openLibrary = { ...fromHathiTrust(loeb.hathiTrust, loeb.isbn), source: 'openlibrary', year: '2005', contents: [{ title: 'Introduction', author: '' }, { title: 'Euthyphro', author: '' }] };
+      const hathi = fromHathiTrust(loeb.hathiTrust, loeb.isbn);
+      const found = withLibraryContents(mergeFound([openLibrary, hathi]), [openLibrary, hathi]);
+      equal(found.year, '2005', 'the printing in hand');
+      equal(found.contents.length, 5, 'the five dialogues');
+      equal(withLibraryContents(null, [hathi]), null);
     },
   },
 ];

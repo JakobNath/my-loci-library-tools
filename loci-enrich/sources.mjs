@@ -1,6 +1,6 @@
 // Asking the sources about one ISBN (PLAN.md, "Book data"; SOURCES.md): the
-// Library of Congress catalog, Open Library's edition record and, with a key,
-// Google Books' volume record. The answers are read by the app's core
+// Library of Congress catalog, HathiTrust's records, Open Library's edition
+// record and, with a key, Google Books' volume record. The answers are read by the app's core
 // (core/marc.js, core/book-data.js). The Library of Congress catalog service
 // has no encrypted connection and does not allow calls from web pages, which
 // is why it is asked only here, on the laptop (HOW_IT_WORKS.md, "4.4b").
@@ -9,7 +9,7 @@
 // A source that refuses a request (429 "too many requests", or 403) is not
 // asked again for the rest of the run: it is "resting", and the report says so.
 
-import { fromLibraryOfCongress } from '../core/marc.js';
+import { fromLibraryOfCongress, fromHathiTrust } from '../core/marc.js';
 import { fromOpenLibraryEdition, fromGoogleBooksVolume, mergeFound } from '../core/book-data.js';
 import { googleBooksItem } from '../core/lookup.js';
 
@@ -21,12 +21,14 @@ export const IDENTITY = 'MyLociLibraryTools/1 (+https://github.com/JakobNath/my-
 /** The addresses asked, in one place, so a source that moves is changed here only (SOURCES.md). */
 export const ADDRESSES = {
   libraryOfCongress: 'http://lx2.loc.gov:210/lcdb',
+  hathiTrust: 'https://catalog.hathitrust.org/api/volumes/full',
   openLibrary: 'https://openlibrary.org',
   googleBooks: 'https://www.googleapis.com/books/v1',
 };
 
 /** The Library of Congress catalog's answer for one ISBN (SRU, MARC XML). */
 export const catalogUrl = isbn => `${ADDRESSES.libraryOfCongress}?version=1.1&operation=searchRetrieve&query=bath.isbn=${isbn}&maximumRecords=3&recordSchema=marcxml`;
+const hathiTrustUrl = isbn => `${ADDRESSES.hathiTrust}/isbn/${isbn}.json`;
 const openLibraryUrl = isbn => `${ADDRESSES.openLibrary}/isbn/${isbn}.json`;
 const googleSearchUrl = (isbn, key) => `${ADDRESSES.googleBooks}/volumes?q=isbn:${isbn}&key=${encodeURIComponent(key)}`;
 const googleVolumeUrl = (id, key) => `${ADDRESSES.googleBooks}/volumes/${encodeURIComponent(id)}?key=${encodeURIComponent(key)}`;
@@ -65,6 +67,10 @@ async function askGoogleBooks(isbn, key, fetchFn) {
 export function sourcesFor(isbn, { fetchFn, googleBooksKey = '' }) {
   return [
     ['Library of Congress', async () => fromLibraryOfCongress(await getText(catalogUrl(isbn), fetchFn, 'The Library of Congress'), isbn)],
+    ['HathiTrust', async () => {
+      const text = await getText(hathiTrustUrl(isbn), fetchFn, 'HathiTrust');
+      return text && fromHathiTrust(text, isbn);
+    }],
     ['Open Library', async () => {
       const text = await getText(openLibraryUrl(isbn), fetchFn, 'Open Library');
       return text && fromOpenLibraryEdition(JSON.parse(text), isbn);

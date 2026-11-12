@@ -9,19 +9,20 @@
  * The shape every lookup is turned into. Empty values are '', null or [].
  * height and thickness are in millimeters. contents lists an anthology's
  * works as a record gives them ({ title, author }). identifiers are the
- * catalogue numbers of DATA_FORMAT.md (lccn, oclc, lcc, ddc).
+ * catalogue numbers of DATA_FORMAT.md (lccn, oclc, lcc, ddc). set and volume
+ * are given when a library record describes the book as one volume of a set.
  * @typedef {{ title: string, subtitle: string, authors: string[], contributors: { name: string, role: string }[],
  *   publisher: string, place: string, year: string, pages: string, languages: string[], isbn: string,
  *   editionStatement: string, series: string, seriesNumber: string, height: number|null, thickness: number|null,
  *   binding: string, originalTitle: string, originalLanguage: string, contents: { title: string, author: string }[],
  *   subjects: string[], identifiers: { lccn: string, oclc: string, lcc: string, ddc: string },
- *   cover: { url: string, source: string, waiting: boolean } | null, source: string }} Found
+ *   cover: { url: string, source: string, waiting: boolean } | null, set: string, volume: string, source: string }} Found
  */
 export function emptyFound(source) {
   return {
     title: '', subtitle: '', authors: [], contributors: [], publisher: '', place: '', year: '', pages: '', languages: [], isbn: '',
     editionStatement: '', series: '', seriesNumber: '', height: null, thickness: null, binding: '', originalTitle: '', originalLanguage: '',
-    contents: [], subjects: [], identifiers: { lccn: '', oclc: '', lcc: '', ddc: '' }, cover: null, source,
+    contents: [], subjects: [], identifiers: { lccn: '', oclc: '', lcc: '', ddc: '' }, cover: null, set: '', volume: '', source,
   };
 }
 
@@ -34,10 +35,11 @@ export const yearOf = text => (String(text || '').match(/(?<!\d)(1[4-9]\d\d|20\d
 /**
  * Pages as printed: "xxviii, 311 p. ;" is "xxviii, 311". Library records made
  * before printing say "pages cm" (no count yet), and a set is described by its
- * volumes ("v. <1-3>"); both give nothing.
+ * volumes ("v. <1-3>", "2 v."); both give nothing.
  */
 export function cleanPages(text) {
   const pages = String(text || '').replace(/\s*\bp(?:p|ages)?\.?/gi, '').replace(/\bcm\b/gi, '').replace(/[\s;:,.]+$/, '').trim();
+  if (/^\d+\s+v$/i.test(pages)) return ''; // "2 v." is two volumes, not pages
   return /\d|^[ivxlc]+$/i.test(pages) && /^[\divxlcdm[\]\s,–-]+$/i.test(pages) ? pages : '';
 }
 

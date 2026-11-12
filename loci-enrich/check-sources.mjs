@@ -10,7 +10,7 @@
 import { readdirSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { fromLibraryOfCongress } from '../core/marc.js';
+import { fromLibraryOfCongress, fromHathiTrust } from '../core/marc.js';
 import { fromOpenLibraryEdition, fromGoogleBooksVolume } from '../core/book-data.js';
 import { sourcesFor } from './sources.mjs';
 import { readConfig } from '../shared/data-repo.mjs';
@@ -27,6 +27,7 @@ export function recordedReadings(book) {
   const read = (text, reader) => (text ? reader(text) : null);
   return {
     'Library of Congress': read(book.libraryOfCongress, text => fromLibraryOfCongress(text, book.isbn)),
+    HathiTrust: read(book.hathiTrust, text => fromHathiTrust(text, book.isbn)),
     'Open Library': read(book.openLibraryEdition, text => fromOpenLibraryEdition(JSON.parse(text), book.isbn)),
     'Google Books': read(book.googleBooksVolume, text => fromGoogleBooksVolume(JSON.parse(text), book.isbn)),
   };

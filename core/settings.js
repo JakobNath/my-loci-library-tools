@@ -9,14 +9,16 @@ export const SHARED_DEFAULTS = {
   anthologiesInShelfLists: 'once',
   batchAddPrompts: ['title', 'subtitle', 'authors', 'datings', 'binding', 'publisher', 'year'],
   defaultSort: { library: 'title', wishlist: 'added' },
-  lookups: { openLibrary: true, googleBooks: true },
+  lookups: { openLibrary: true, hathiTrust: true, googleBooks: true },
   bindings: ['Hardcover', 'Hardcover with dust jacket', 'Paperback', 'Mass-market paperback', 'Leather', 'Bonded leather', 'Cloth', 'Library binding', 'Journal issue'],
   views: [],
 };
 
 /** Settings read from a file or storage, with a default for anything missing. */
 export function withDefaults(settings) {
-  return { ...SHARED_DEFAULTS, ...(settings || {}) };
+  const merged = { ...SHARED_DEFAULTS, ...(settings || {}) };
+  // A lookup added later (HathiTrust, 2026-11-11) is on until someone turns it off.
+  return { ...merged, lookups: { ...SHARED_DEFAULTS.lookups, ...merged.lookups } };
 }
 
 /** settings.json as text: keys in the order above, pretty-printed, newline at the end. */

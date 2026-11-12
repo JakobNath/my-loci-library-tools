@@ -57,7 +57,7 @@ export const tests = [
       equal(volume.binding, 'Hardcover');
       same(volume.contributors.map(person => person.name), ['Helmut T. Lehmann', 'Jaroslav Pelikan'], 'each editor once');
       equal(withSetFacts({ ...found, year: null }, set, '32').year, '1955', 'the set\'s year when none was found');
-      equal(found.set, undefined, 'the input is unchanged');
+      equal(found.set, '', 'the input is unchanged (an empty set, as emptyFound gives)');
     },
   },
   {

@@ -105,6 +105,95 @@ function contentsOf(record) {
   return contents.filter(entry => isWorkTitle(entry.title));
 }
 
+// A volume number or Roman numeral as a number, for comparing "2", "II" and "ii".
+const ROMAN = { i: 1, v: 5, x: 10, l: 50, c: 100 };
+function labelValue(label) {
+  const text = String(label).toLowerCase();
+  if (/^\d+$/.test(text)) return Number(text);
+  if (!/^[ivxlc]+$/.test(text)) return null;
+  let total = 0;
+  for (let i = 0; i < text.length; i++) {
+    const value = ROMAN[text[i]];
+    total += value < (ROMAN[text[i + 1]] || 0) ? -value : value;
+  }
+  return total;
+}
+
+// The volume an ISBN's note names: "(v. 1)", "v.2", "vol. III"; empty when it names none ("(hardcover)").
+const volumeInNote = note => (String(note).match(/\bv(?:ol)?\.?\s*(\d+|[ivxlc]+)\b/i) || ['', ''])[1];
+
+// The records listing the ISBN, each with the volume its ISBN note names.
+function recordsListing(records, isbn) {
+  const listing = [];
+  for (const fields of records) {
+    for (const field of fieldsOf(fields, '020')) {
+      const [number, ...rest] = subfield(field, 'a').split(' ');
+      if (isbn13(number) !== isbn) continue;
+      listing.push({ fields, volume: volumeInNote([...rest, ...allSubfields(field, 'q')].join(' ')) });
+      break;
+    }
+  }
+  return listing;
+}
+
+/**
+ * The record to read for an ISBN: one for that book alone if there is one,
+ * else a record for a whole set naming the ISBN's volume ("Plato in twelve
+ * volumes", ISBN "(v. 1)"). Null when no record lists the ISBN, or when
+ * records of different books share it (Great Books of the Western World
+ * prints one ISBN on every volume): then nothing can be told about the book.
+ */
+function chooseRecord(records, isbn) {
+  const listing = recordsListing(records, isbn);
+  const own = listing.filter(item => !item.volume);
+  // Titles compared by their letters only: "Euthyphro, Apology…" and "Euthyphro ; Apology…" are one book.
+  const titleOf = item => subfield(fieldsOf(item.fields, '245')[0], 'a').toLowerCase().replace(/[^a-z]/g, '');
+  if (new Set(own.map(titleOf)).size > 2) return null;
+  return own[0] || listing[0] || null;
+}
+
+// A record describing a set: "12 v.", "2 volumes", or "v." for an open set.
+const describesSet = record => /^\s*(?:\d+\s*)?v\.|\bvolumes\b/i.test(subfield(fieldsOf(record, '300')[0], 'a'));
+
+// A 505 section's leading volume label: "1. ", "[v. 1] ", "I. ", "V-VI. ", "v. 2. ", "[v.] 1. ".
+const SECTION_VOLUME = /^\s*(?:\[?v(?:ol)?s?\.?\]?\s*)?\[?(\d+|[IVXLC]+)(?:\s*-\s*(\d+|[IVXLC]+))?\s*[.\]]\s+/i;
+
+// One section of a set's contents, read as works: "I Clement. II Clement. Ignatius."
+// is three works when every piece is a short title; otherwise the section is one work.
+function sectionWorks(section) {
+  const text = section.replace(/\[[^\]]*\]/g, '').trim();
+  const pieces = text.split(/\.\s+(?=\S)/).map(piece => withoutStop(piece)).filter(Boolean);
+  const titles = pieces.length > 1 && pieces.every(piece => /^[A-Z0-9]/.test(piece) && piece.split(' ').length <= 8) ? pieces : [withoutStop(text)];
+  return titles.map(title => {
+    const [name, author = ''] = title.split(' / ');
+    return { title: sentenceToTitleCase(withoutStop(name)), author: withoutStop(author) };
+  });
+}
+
+// The works of one volume, from a set record's contents note. Sections are
+// split by " -- "; a section starting with a volume label begins that
+// volume, and those after it belong to it until the next label.
+function volumeContents(record, volume) {
+  const wanted = labelValue(volume);
+  const contents = [];
+  let current = null;
+  for (const field of fieldsOf(record, '505')) {
+    for (const section of subfield(field, 'a').split(/\s*--\s*/)) {
+      const label = section.match(SECTION_VOLUME);
+      if (label) current = [labelValue(label[1]), labelValue(label[2] || label[1])];
+      if (current && wanted !== null && wanted >= current[0] && wanted <= current[1]) contents.push(...sectionWorks(label ? section.slice(label[0].length) : section));
+    }
+  }
+  return contents.filter(entry => entry.title && isWorkTitle(entry.title));
+}
+
+// A book whose title is a list of short titles ("Euthyphro, Apology, Crito, Phaedo, Phaedrus") holds those works.
+function contentsInTitle(title) {
+  const parts = title.split(/\s*[,;]\s*/).filter(Boolean);
+  return parts.length >= 3 && parts.every(part => /^[A-Z]/.test(part) && part.split(' ').length <= 4 && !/\band\b/.test(part))
+    ? parts.map(part => ({ title: part, author: '' })) : [];
+}
+
 /**
  * Read a Library of Congress answer (SRU, MARC XML) for one ISBN. Only a
  * record that lists the book's own ISBN is read: the catalog sometimes
@@ -114,9 +203,37 @@ function contentsOf(record) {
  * @returns {import('./lookup.js').Found|null} null when no record lists the ISBN
  */
 export function fromLibraryOfCongress(xml, isbn) {
-  const record = marcRecords(xml).find(fields => fieldsOf(fields, '020').some(field => isbn13(subfield(field, 'a').split(' ')[0]) === isbn));
-  if (!record) return null;
-  const found = emptyFound('libraryofcongress');
+  return fromMarc(xml, isbn, 'libraryofcongress');
+}
+
+/**
+ * Read HathiTrust's answer (its Bibliographic API, "full", as JSON holding
+ * each record's MARC XML) for one ISBN, as for the Library of Congress. Its
+ * records come from university libraries, many copied from the Library of
+ * Congress; it holds only books those libraries have scanned (SOURCES.md).
+ * @param {string} text the whole answer
+ * @param {string} isbn 13 digits
+ * @returns {import('./lookup.js').Found|null}
+ */
+export function fromHathiTrust(text, isbn) {
+  let answer;
+  try { answer = JSON.parse(text); } catch { return null; }
+  const xml = Object.values((answer && answer.records) || {}).map(record => record['marc-xml'] || '').join('');
+  return fromMarc(xml, isbn, 'hathitrust');
+}
+
+/**
+ * One book's fields from MARC records. A record for a whole set gives the
+ * set's title as `set`, the ISBN's volume as `volume`, and that volume's
+ * works only; its title and pages describe the set, so they are left empty
+ * for another source (or mergeFound) to give.
+ */
+function fromMarc(xml, isbn, source) {
+  const chosen = chooseRecord(marcRecords(xml), isbn);
+  if (!chosen) return null;
+  const record = chosen.fields;
+  const isSet = Boolean(chosen.volume) && describesSet(record);
+  const found = emptyFound(source);
   const field = tag => fieldsOf(record, tag)[0];
   const titleField = field('245');
   found.isbn = isbn;
@@ -134,7 +251,8 @@ export function fromLibraryOfCongress(xml, isbn) {
   found.series = sentenceToTitleCase(withoutStop(subfield(seriesField, 'a')));
   found.seriesNumber = plain(subfield(seriesField, 'v')).replace(/^(?:v|vol|no|nr|bd|t)\.?\s*/i, '');
   const description = field('300');
-  found.pages = cleanPages(subfield(description, 'a'));
+  // A record for a whole set gives its number of volumes ("2 v."), not pages.
+  found.pages = describesSet(record) ? '' : cleanPages(subfield(description, 'a'));
   found.height = heightInMm(subfield(description, 'c'));
   const uniform = withoutStop(subfield(field('240'), 'a'));
   const isCollective = COLLECTIVE_TITLES.has(uniform.toLowerCase());
@@ -142,7 +260,17 @@ export function fromLibraryOfCongress(xml, isbn) {
   const languages = field('041');
   const original = languages && languages.ind1 === '1' ? subfield(languages, 'h') : '';
   found.originalLanguage = original ? LANGUAGE_NAMES[original] || original : '';
-  found.contents = contentsOf(record);
+  found.contents = isSet ? volumeContents(record, chosen.volume) : contentsOf(record);
+  if (!isSet && !found.contents.length) found.contents = contentsInTitle(found.title);
+  // A work listed without its author is by the book's author, when it has one (Plato's dialogues).
+  if (found.authors.length === 1) found.contents = found.contents.map(entry => ({ ...entry, author: entry.author || found.authors[0] }));
+  if (isSet) {
+    found.set = found.title;
+    found.volume = chosen.volume;
+    found.title = '';
+    found.subtitle = '';
+    if (/[,–-]/.test(found.seriesNumber)) found.seriesNumber = ''; // the set's numbers, "36, 123, 164-167"
+  }
   found.subjects = [...new Set(record.filter(item => /^6(00|10|11|30|50|51)$/.test(item.tag) && item.ind2 === '0').map(subjectHeading))];
   found.identifiers = {
     lccn: tidy(subfield(field('010'), 'a')),
