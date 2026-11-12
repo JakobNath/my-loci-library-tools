@@ -1,7 +1,7 @@
 // The entry form's records: sample books entered from scratch, editing
 // that stamps only what changed, and ISBNs.
 
-import { recordsFromForm, isbn13, anotherCopy, isBookBarcode, wishFromForm, formFromWish, isbnInText, volumesFromLines, nextVolumeLabel, withSetFacts } from '../entry.js';
+import { recordsFromForm, isbn13, anotherCopy, isBookBarcode, wishFromForm, formFromWish, isbnInText, volumesFromLines, nextVolumeLabel, withSetFacts, worksFromRows } from '../entry.js';
 import { emptyFound } from '../lookup.js';
 import { validateRecord } from '../records.js';
 import { equal, same, ok } from './check.js';
@@ -175,6 +175,68 @@ export const tests = [
       equal(isbnInText('https://www.amazon.com/dp/B07XYZ1234'), null, 'a Kindle link has no ISBN');
       equal(isbnInText('https://a.co/d/abc123'), null, 'a short link has no ISBN');
       equal(isbnInText('The Birth of Tragedy 1872'), null, 'a title with a year is a title');
+    },
+  },
+  // Collections made easy (phase 15, step 5).
+  {
+    name: 'a book turned into a collection sends its first work to the trash, unless another book holds it',
+    fn() {
+      const first = recordsFromForm(blankForm({ title: 'The Complete Works', authors: ['Michel de Montaigne'] }), null, context());
+      const existing = { edition: first.records.find(r => r.type === 'edition'), copy: first.records.find(r => r.type === 'copy'), works: first.records.filter(r => r.type === 'work') };
+      const authors = first.records.filter(r => r.type === 'author');
+      const contents = 'Michel de Montaigne — Essays\nMichel de Montaigne — Travel Journal\nMichel de Montaigne — Letters';
+      const alone = recordsFromForm(blankForm({ title: 'The Complete Works', contents }), existing, { ...context(authors), usedElsewhere: () => false });
+      same(alone.records.filter(r => r.trashed).map(r => r.id), [existing.works[0].id], 'the old single work');
+      const shared = recordsFromForm(blankForm({ title: 'The Complete Works', contents }), existing, { ...context(authors), usedElsewhere: () => true });
+      equal(shared.records.filter(r => r.trashed).length, 0, 'held by another book: kept');
+      const unknown = recordsFromForm(blankForm({ title: 'The Complete Works', contents }), existing, context(authors));
+      equal(unknown.records.filter(r => r.trashed).length, 0, 'without knowing, nothing is trashed');
+    },
+  },
+  {
+    name: 'a line taken out of a collection\'s contents sends that work to the trash; the others are kept as they were',
+    fn() {
+      const first = recordsFromForm(blankForm({ title: 'Plato I', contents: 'Plato — Euthyphro\nPlato — Apology\nPlato — Crito' }), null, context());
+      const works = first.records.filter(r => r.type === 'work');
+      const existing = { edition: first.records.find(r => r.type === 'edition'), copy: first.records.find(r => r.type === 'copy'), works };
+      const again = recordsFromForm(blankForm({ title: 'Plato I', contents: 'Plato — Euthyphro\nPlato — Apology' }), existing, { ...context(first.records.filter(r => r.type === 'author')), usedElsewhere: () => false });
+      same(again.records.filter(r => r.trashed).map(r => r.title), ['Crito']);
+      equal(again.records.find(r => r.type === 'edition').contents.length, 2);
+    },
+  },
+  {
+    name: 'the new works of a collection take the language, category and tags asked once for the whole book',
+    fn() {
+      const work = { ...blankForm({}).work, originalLanguage: 'Greek', category: 'Patristics', tags: ['Church order'] };
+      const result = recordsFromForm(blankForm({ title: 'The Apostolic Fathers I', contents: 'I Clement\nDidache', work }), null, context());
+      const works = result.records.filter(r => r.type === 'work');
+      same(works.map(w => [w.title, w.originalLanguage, w.category, w.tags.join()]), [['I Clement', 'Greek', 'Patristics', 'Church order'], ['Didache', 'Greek', 'Patristics', 'Church order']]);
+      same(works.map(w => w.originalTitle), [null, null], 'no shared original title');
+    },
+  },
+  {
+    name: '"Works in this book" saves each work\'s fields, fills empty ones from "same for all", and keeps a disputed work\'s datings',
+    fn() {
+      const made = recordsFromForm(blankForm({ title: 'The Apostolic Fathers I', contents: 'I Clement — c. 96\nDidache\nPolycarp' }), null, context());
+      const works = new Map(made.records.filter(r => r.type === 'work').map(w => [w.id, w]));
+      const [clement, didache, polycarp] = [...works.values()];
+      const disputed = { ...didache, datings: [{ text: 'c. 50–70', earliest: 50, latest: 70, certainty: 'circa', kind: null, note: 'early dating', working: false }, { text: 'c. 100–120', earliest: 100, latest: 120, certainty: 'circa', kind: null, note: 'majority view', working: true }] };
+      works.set(didache.id, disputed);
+      const row = (work, values) => ({ id: work.id, title: work.title, originalTitle: '', originalLanguage: '', dating: work.datings[0] ? work.datings[0].text : '', category: '', tags: [], ...values });
+      const result = worksFromRows([
+        row(clement, { originalTitle: 'Πρὸς Κορινθίους', category: 'Patristics' }),
+        row(disputed, { dating: 'c. 50–70' }),
+        row(polycarp, { dating: 'c. 110–140' }),
+      ], { originalLanguage: 'Greek', category: 'Apostolic Fathers', tags: ['Early church'] }, works, '2026-11-12T00:00:00Z');
+      same(result.problems, []);
+      const after = new Map(result.records.map(w => [w.id, w]));
+      same([after.get(clement.id).originalTitle, after.get(clement.id).category, after.get(clement.id).originalLanguage], ['Πρὸς Κορινθίους', 'Patristics', 'Greek'], 'its own category wins; the language comes from same for all');
+      equal(after.get(clement.id).datings[0].text, 'c. 96', 'an unchanged date stays');
+      equal(after.get(didache.id).datings.length, 2, 'a disputed work keeps both datings');
+      same([after.get(polycarp.id).datings[0].earliest, after.get(polycarp.id).category], [110, 'Apostolic Fathers']);
+      same(Object.keys(after.get(clement.id).changed).sort(), ['category', 'originalLanguage', 'originalTitle', 'tags'], 'only what changed is stamped');
+      equal(worksFromRows([row(clement, { title: ' ' })], { originalLanguage: '', category: '', tags: [] }, works, 'x').problems.length, 1, 'a work needs a title');
+      equal(worksFromRows([row(polycarp, { dating: 'sometime' })], { originalLanguage: '', category: '', tags: [] }, works, 'x').records.length, 0, 'an unreadable date saves nothing');
     },
   },
 ];

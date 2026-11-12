@@ -6,6 +6,7 @@ import { newRecord, withField } from './records.js';
 import { parseDating } from './dating.js';
 import { parseContentsLines } from './contents.js';
 import { normalizeForSearch } from './search.js';
+import { trashRecord } from './trash.js';
 
 /**
  * An ISBN as 13 digits, from what was typed or scanned (ISBN-10 is converted).
@@ -113,8 +114,10 @@ export function formFromWish(wish) {
  * Build the records for one book from the form.
  * @param {object} form the values typed (see ui/edit.js for its shape)
  * @param {{ edition: object, copy: object|null, works: object[] }|null} existing the book being edited, or null for a new one
- * @param {{ newId: () => string, now: string, today: string, authors: object[], works?: Map<string, object> }} context
- *   works: every work by ID, needed when form.workId links the book to an existing work
+ * @param {{ newId: () => string, now: string, today: string, authors: object[], works?: Map<string, object>, usedElsewhere?: (workId: string) => boolean }} context
+ *   works: every work by ID, needed when form.workId links the book to an existing work;
+ *   usedElsewhere: whether another book holds a work, so a work this book no longer lists is
+ *   trashed only when nothing else holds it (without it, nothing is trashed)
  * @returns {{ records: object[], editionId: string|null, problems: string[] }}
  */
 export function recordsFromForm(form, existing, context) {
@@ -148,7 +151,9 @@ export function recordsFromForm(form, existing, context) {
       problems.push(...reading.problems);
       const match = oldWorks.find(work => key(work.title) === key(line.title));
       const values = { title: line.title, authors: ids, ...(line.date ? { datings: reading.datings } : {}) };
-      const work = match ? update(match, values, now) : newRecord('work', newId(), now, values);
+      // A new work in a collection takes the language, category and tags asked once for the whole book.
+      const shared = { originalLanguage: form.work.originalLanguage || null, category: form.work.category || null, tags: form.work.tags };
+      const work = match ? update(match, values, now) : newRecord('work', newId(), now, { ...values, ...shared });
       if (work !== match) records.push(work);
       contents.push({ work: work.id, extent: 'complete', translator: null, pages: null });
     }
@@ -178,6 +183,13 @@ export function recordsFromForm(form, existing, context) {
     contents = [{ work: work.id, extent: 'complete', translator: null, pages: null }];
   }
   if (problems.length) return { records: [], editionId: null, problems };
+  // A work this book no longer lists goes to the trash, unless another book holds it too
+  // (turning a book into a collection used to leave its first work behind, unused).
+  const usedElsewhere = context.usedElsewhere || (() => true);
+  const listed = new Set(contents.map(entry => entry.work));
+  for (const work of oldWorks) {
+    if (!listed.has(work.id) && !work.trashed && !usedElsewhere(work.id)) records.push(trashRecord(work, today, now));
+  }
 
   const editionValues = {
     title: form.title.trim(), subtitle: form.subtitle || null, contents, contributors: form.contributors.filter(person => person.name.trim()),
@@ -284,4 +296,48 @@ export function isBookBarcode(code) {
   let sum = 0;
   for (let i = 0; i < 12; i++) sum += Number(code[i]) * (i % 2 ? 3 : 1);
   return (10 - (sum % 10)) % 10 === Number(code[12]);
+}
+
+/**
+ * The works of a collection, from the rows of "Works in this book" (PLAN.md,
+ * "Book detail page"): each work's title, original title and language, date,
+ * category and tags. A box in "same for all" fills that field for every work
+ * whose own box was left empty. Only fields that changed are stamped. A work
+ * with several datings (a disputed work) keeps them: its date is changed on its
+ * own, in the entry form of a book holding only it.
+ * @param {{ id: string, title: string, originalTitle: string, originalLanguage: string, dating: string, category: string, tags: string[] }[]} rows
+ * @param {{ originalLanguage: string, category: string, tags: string[] }} same the "same for all" boxes
+ * @param {Map<string, object>} works the works, by ID
+ * @param {string} now timestamp for the changed fields
+ * @returns {{ records: object[], problems: string[] }} the changed works, or what to correct
+ */
+export function worksFromRows(rows, same, works, now) {
+  const records = [];
+  const problems = [];
+  for (const row of rows) {
+    const work = works.get(row.id);
+    if (!work) continue;
+    const title = row.title.trim();
+    if (!title) { problems.push(`A work needs a title (it was "${work.title}").`); continue; }
+    const values = {
+      title,
+      originalTitle: row.originalTitle.trim() || null,
+      originalLanguage: row.originalLanguage.trim() || same.originalLanguage.trim() || null,
+      category: row.category.trim() || same.category.trim() || null,
+      tags: row.tags.length ? row.tags : same.tags,
+    };
+    if (work.datings.length <= 1) {
+      const current = work.datings[0];
+      const text = row.dating.trim();
+      if (!text) values.datings = [];
+      else if (!current || current.text !== text) {
+        const reading = datingsFromRows([{ text, note: current ? current.note : '', working: true }]);
+        if (reading.problems.length) { problems.push(`${title}: ${reading.problems[0]}`); continue; }
+        values.datings = reading.datings;
+      }
+    }
+    const changed = update(work, values, now);
+    if (changed !== work) records.push(changed);
+  }
+  return { records: problems.length ? [] : records, problems };
 }
