@@ -1,7 +1,7 @@
 // Turning an edition into a CSL-JSON item, the citation format Zotero and
 // the CSL-JSON export both read. The Zotero tool (phase 12) sends these.
 
-import { sortYearOf } from './dating.js';
+import { workingDating } from './dating.js';
 
 const ROLE_TO_CSL = { translator: 'translator', editor: 'editor', illustrator: 'illustrator' };
 
@@ -130,7 +130,21 @@ export function editionToCsl(edition, worksById, authorsById) {
   // The original date shows in Chicago citations: "(1991; orig. 397)". Only a
   // book holding one work has one: a collection has no single original date
   // (the Concordia Triglotta is not "orig. 301"), so its works carry their own.
-  const year = works.length === 1 ? sortYearOf(works[0]) : null;
-  if (year !== null) item['original-date'] = { 'date-parts': [[year]] };
+  const original = works.length === 1 ? originalDateOf(works[0]) : null;
+  if (original) item['original-date'] = original;
   return item;
+}
+
+/**
+ * A work's original date as a CSL date, saying no more than the dating does:
+ * "1689" is one year, "397–400" two, and "c. 397–400" the same marked circa.
+ * Centuries ("early 2nd c.") and open datings ("after 1517") give none, since
+ * a citation would print them as a single year (docs/decisions/zotero-and-citations.md).
+ * @returns {{ 'date-parts': number[][], circa?: true } | null}
+ */
+export function originalDateOf(work) {
+  const dating = workingDating(work);
+  if (!dating || !['exact', 'range', 'circa'].includes(dating.certainty) || dating.earliest === null || dating.latest === null) return null;
+  const parts = dating.earliest === dating.latest ? [[dating.earliest]] : [[dating.earliest], [dating.latest]];
+  return dating.certainty === 'circa' ? { 'date-parts': parts, circa: true } : { 'date-parts': parts };
 }

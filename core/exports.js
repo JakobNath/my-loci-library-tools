@@ -88,6 +88,8 @@ const bibName = name => (name.literal ? `{${bibText(name.literal)}}` : `${bibTex
 // biblatex dates are four digits, and years before Christ are counted astronomically:
 // 1 BC is 0000, so 399 BC (stored as -399) is -0398.
 const bibYear = year => (year > 0 ? String(year).padStart(4, '0') : `-${String(-(year + 1)).padStart(4, '0')}`);
+// biblatex marks an approximate year with "~" and a span with "/": c. 397–400 is 0397~/0400~.
+const bibDate = date => date['date-parts'].map(([year]) => bibYear(year) + (date.circa ? '~' : '')).join('/');
 
 /**
  * BibTeX (biblatex fields): @book entries keyed as in Zotero, author + year
@@ -110,7 +112,7 @@ export function bibtex(entries, worksById, authorsById) {
       ['publisher', item.publisher],
       ['location', item['publisher-place']],
       ['year', entry.edition.year],
-      ['origdate', item['original-date'] && bibYear(item['original-date']['date-parts'][0][0])],
+      ['origdate', item['original-date'] && bibDate(item['original-date'])],
       ['edition', item.edition],
       ['series', item['collection-title']],
       ['number', item['collection-number']],

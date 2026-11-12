@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { newRecord, withField } from '../../core/records.js';
 import { connectToZotero } from '../zotero-api.mjs';
 import { sendToZotero } from '../zotero-sync.mjs';
+import { originalDateText } from '../zotero-items.mjs';
 import { fakeZotero } from './fake-zotero.mjs';
 import { plato, augustine, confessions, chadwick, loebWorks, loeb36, na28, na28Works, triglotta, triglottaWorks } from '../../core/tests/samples.js';
 import { isBible } from '../../core/bible.js';
@@ -42,7 +43,7 @@ test('physical books, cited Logos books and anthology sections are sent with onl
   assert.match(report[0], /Zotero: 6 new/, 'Chadwick, the Loeb and its 3 sections, the cited Logos book');
   assert.equal(fake.byTitle('Not cited').length + fake.byTitle('A wish').length, 0, 'uncited Logos books and wishes never go');
   const [book] = fake.byTitle('Confessions');
-  assert.equal(book.data.originalDate, '397', "in Zotero's own Original Date field");
+  assert.equal(book.data.originalDate, undefined, 'c. 397–400 is not sent: Chicago would print it as "orig. 397"');
   assert.equal(book.data.citationKey, 'Augustine1991', "in Zotero's own Citation Key field");
   assert.ok(!book.data.url && !book.data.archiveLocation && !book.data.extra, 'nothing that Chicago would print, or Better BibTeX export, beyond the book itself');
   assert.equal(fake.byTitle('Phaedo')[0].data.creators[0].name, 'Plato');
@@ -56,7 +57,7 @@ test('physical books, cited Logos books and anthology sections are sent with onl
   const [section] = fake.byTitle('Phaedo');
   assert.equal(section.data.itemType, 'bookSection');
   assert.equal(section.data.bookTitle, 'Euthyphro. Apology. Crito. Phaedo. Phaedrus.');
-  assert.equal(section.data.originalDate, '385 BC');
+  assert.equal(section.data.originalDate, undefined, 'nor c. 385 BC');
   assert.ok(section.data.relations['dc:relation'].endsWith(links.items[loeb36.id].key), 'a section is related to its anthology');
   const keys = Object.values(links.items).map(link => link.citationKey);
   assert.equal(new Set(keys).size, keys.length, 'every key is different');
@@ -208,4 +209,18 @@ test("Loci's Library of Congress call number goes to Zotero's Call Number; witho
   const numbered = withField(chadwick, 'identifiers', { lccn: '2008491261', oclc: null, lcc: 'BR65.A6 E5 2008', ddc: null }, '2026-11-12T09:00:00Z');
   await sendToZotero(sampleRecords().map(record => (record.id === chadwick.id ? numbered : record)), links, zotero);
   assert.equal(fake.items.get(key).data.callNumber, 'BR65.A6 E5 2008');
+});
+
+test("only an exact original year goes to Zotero's Original Date field, and a date typed there by hand stays", async () => {
+  const exact = withField(confessions, 'datings', [{ text: '397', earliest: 397, latest: 397, certainty: 'exact', kind: null, note: '', working: true }], '2026-11-12T09:00:00Z');
+  const records = sampleRecords().map(record => (record.id === confessions.id ? exact : record));
+  const first = setup();
+  await sendToZotero(records, first.links, first.zotero);
+  assert.equal(first.fake.byTitle('Confessions')[0].data.originalDate, '397');
+  assert.equal(originalDateText({ 'date-parts': [[-385]] }), '385 BC');
+  assert.equal(originalDateText({ 'date-parts': [[1530], [1559]] }), '', 'a span is not sent');
+  const { fake, zotero, links } = setup();
+  const key = fake.add({ itemType: 'book', title: 'Confessions', ISBN: '9780199537822', date: '1991', originalDate: 'ca. 397', collections: [] });
+  await sendToZotero(sampleRecords(), links, zotero);
+  assert.equal(fake.items.get(key).data.originalDate, 'ca. 397', 'not emptied when Loci has no exact year');
 });

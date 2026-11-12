@@ -64,15 +64,15 @@ export const tests = [
       equal(json.editions.length, 4);
       const csl = JSON.parse(cslJson(library.entries, library.worksById, library.authorsById));
       const item = csl.find(entry => entry.id === chadwick.id);
-      same(item['original-date'], { 'date-parts': [[397]] });
+      same(item['original-date'], { 'date-parts': [[397], [400]], circa: true }, 'c. 397–400');
       const bib = bibtex(library.entries, library.worksById, library.authorsById);
       ok(bib.includes('@book{Augustine1991,'), 'keys are author and year, as Better BibTeX makes them in Zotero');
       ok(bib.includes('@book{Novum2012,'), 'or the first word of the title when there is no author');
-      ok(bib.includes('origdate = {0397}'));
+      ok(bib.includes('origdate = {0397~/0400~}'), 'c. 397–400, as biblatex writes it');
       ok(!bib.split('@book{Plato1914,')[1].split('@book')[0].includes('origdate'), 'a collection has no original date of its own');
       const phaedo = edition('ph2d0s1ngle0', 'Phaedo', [loebWorks[0].id], { year: 1914 });
       const single = buildLibrary([...loebWorks, phaedo, plato]);
-      ok(bibtex(single.entries, single.worksById, single.authorsById).includes('origdate = {-0398}'), '399 BC, counted as biblatex does');
+      ok(bibtex(single.entries, single.worksById, single.authorsById).includes('origdate = {-0398~}'), 'c. 399 BC, counted as biblatex does');
       ok(bib.includes('title = {Confessions}'));
       equal((bib.match(/@book\{/g) || []).length, library.entries.length, 'one entry per edition');
       equal(new Set(bib.match(/@book\{[^,]+/g)).size, library.entries.length, 'keys are unique');

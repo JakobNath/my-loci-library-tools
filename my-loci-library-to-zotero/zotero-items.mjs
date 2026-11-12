@@ -7,8 +7,7 @@
 // only bibliographic data. The book's permanent Loci link, with its shelf in
 // the title, is a link attached under the book (HOW_IT_WORKS.md, "Zotero fields").
 
-import { editionToCsl, cslName, volumeOfSet, editionForCitation } from '../core/zotero.js';
-import { sortYearOf } from '../core/dating.js';
+import { editionToCsl, cslName, volumeOfSet, editionForCitation, originalDateOf } from '../core/zotero.js';
 import { isBible } from '../core/bible.js';
 
 export const APP_URL = 'https://jakobnath.github.io/my-loci-library/';
@@ -57,7 +56,6 @@ export function itemsFor(entry, library, { appUrl = APP_URL } = {}) {
     ISBN: edition.isbn || '',
     language: edition.languages.join(', '),
   };
-  const originalDate = csl['original-date'] ? csl['original-date']['date-parts'][0][0] : null;
   const book = {
     linkId: edition.id,
     csl,
@@ -65,7 +63,6 @@ export function itemsFor(entry, library, { appUrl = APP_URL } = {}) {
     // The link attached under the book: to it in Loci, titled with its shelf.
     attachment: { title: location ? `My Loci Library · ${location}` : 'My Loci Library', url: lociLink(edition.id, appUrl) },
     data: {
-      originalDate: originalDateText(originalDate),
       itemType: 'book',
       title: csl.title,
       creators: people,
@@ -77,6 +74,8 @@ export function itemsFor(entry, library, { appUrl = APP_URL } = {}) {
       // The Library of Congress call number, which Chicago does not print. Sent only when
       // Loci has one, so call numbers already in Zotero are never emptied.
       ...(edition.identifiers.lcc ? { callNumber: edition.identifiers.lcc } : {}),
+      // Left out when there is no exact year, so a date a person typed in Zotero stays.
+      ...originalDateField(csl['original-date'] || null),
       ...shared,
     },
   };
@@ -90,13 +89,12 @@ export function itemsFor(entry, library, { appUrl = APP_URL } = {}) {
       const work = library.worksById.get(piece.work);
       if (!work) continue;
       const authors = work.authors.map(id => library.authorsById.get(id)).filter(Boolean).map(author => cslName(author.name, author.sortName));
-      const year = sortYearOf(work);
       items.push({
         linkId: `${edition.id}/${work.id}`,
         csl: { author: authors, editor: [], title: work.title },
         year: edition.year,
         data: {
-          originalDate: originalDateText(year),
+          ...originalDateField(originalDateOf(work)),
           itemType: 'bookSection',
           title: work.subtitle ? `${work.title}: ${work.subtitle}` : work.title,
           bookTitle: csl.title,
@@ -117,10 +115,15 @@ export function itemsFor(entry, library, { appUrl = APP_URL } = {}) {
 /**
  * An original date as Zotero's Original Date field takes it: a year ("397"),
  * or a year before Christ written out ("385 BC"), which Zotero keeps and
- * Chicago prints as it is written.
+ * Chicago prints as it is written. Only an exact year is sent: Chicago would
+ * print "c. 397–400" as "orig. 397", and a century as its first year, so an
+ * uncertain date is left for a person to write in the text
+ * (docs/decisions/zotero-and-citations.md, "Uncertain original dates").
+ * @param {{ 'date-parts': number[][], circa?: true } | null} date a CSL date (core/zotero.js, originalDateOf)
  */
-export function originalDateText(year) {
-  if (year === null || year === undefined) return '';
+export function originalDateText(date) {
+  if (!date || date.circa || date['date-parts'].length !== 1) return '';
+  const year = date['date-parts'][0][0];
   return year < 0 ? `${-year} BC` : String(year);
 }
 
@@ -144,4 +147,10 @@ export function pinnedKey(data) {
 export function lociTags(entry, removed) {
   if (removed) return [TAG_REMOVED];
   return entry.owned ? [] : [TAG_GONE];
+}
+
+/** Zotero's Original Date field, only when there is an exact year to put in it. */
+function originalDateField(date) {
+  const text = originalDateText(date);
+  return text ? { originalDate: text } : {};
 }

@@ -6,7 +6,8 @@ import { validateRecord } from '../validate.js';
 import { mergeRecords } from '../merge.js';
 import { keyBetween, keysForShelf, keysAfterMove } from '../shelf-order.js';
 import { escapeHtml } from '../html.js';
-import { editionToCsl, cslName, volumeOfSet, editionForCitation } from '../zotero.js';
+import { editionToCsl, cslName, volumeOfSet, editionForCitation, originalDateOf } from '../zotero.js';
+import { parseDating } from '../dating.js';
 import { equal, same, ok, throws } from './check.js';
 import { SHARED_DEFAULTS, settingsToFileText, isAnotherCatalog, setupLink, readSetupLink, guessDataRepo } from '../settings.js';
 import { trashBook, restoreBook, trashedItems } from '../trash.js';
@@ -150,8 +151,21 @@ export const tests = [
       same(item.author, [{ literal: 'Augustine' }]);
       same(item.translator, [{ family: 'Chadwick', given: 'Henry' }]);
       same(item.issued, { 'date-parts': [[1991]] });
-      same(item['original-date'], { 'date-parts': [[397]] });
+      same(item['original-date'], { 'date-parts': [[397], [400]], circa: true }, 'c. 397–400, not "397"');
       equal(item['collection-title'], "Oxford World's Classics");
+    },
+  },
+  {
+    name: 'an original date says no more than its dating: a year, a span, circa, or nothing for a century',
+    fn() {
+      const original = text => originalDateOf({ datings: [{ ...parseDating(text).dating, working: true }] });
+      same(original('1689'), { 'date-parts': [[1689]] });
+      same(original('385 BC'), { 'date-parts': [[-385]] });
+      same(original('1530–59'), { 'date-parts': [[1530], [1559]] });
+      same(original('c. 397'), { 'date-parts': [[397]], circa: true });
+      equal(original('early 2nd c.'), null, 'not "orig. 101"');
+      equal(original('after 1517'), null);
+      equal(originalDateOf({ datings: [] }), null);
     },
   },
   {
