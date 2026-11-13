@@ -11,6 +11,9 @@ import { isBible } from '../core/bible.js';
 import { normalizeForSearch } from '../core/search.js';
 
 export const RECHECK_DAYS = 90; // each book is asked again after this long, so new catalog records are found
+// A book that a source did not answer (it failed, or was resting) is asked again after this long:
+// soon enough to fill what that source knows, rare enough not to ask every book daily while a source is down.
+export const RETRY_DAYS = 7;
 
 // The edition fields filled, as [field, its name in the report].
 const EDITION_FIELDS = [['pages', 'pages'], ['editionStatement', 'edition'], ['series', 'series'], ['seriesNumber', 'number'], ['place', 'place']];
@@ -38,17 +41,20 @@ export function askKey(edition) {
 /**
  * The editions to ask about this time: every edition with an ISBN (or, without
  * one, an LCCN or OCLC number), not in the trash, never asked, asked under
- * another number, or asked more than RECHECK_DAYS ago. Those never asked come
- * first, so a long first run carries on where it stopped.
+ * another number, asked more than RECHECK_DAYS ago, or missed by a source
+ * more than RETRY_DAYS ago. Those never asked come first, so a long first run
+ * carries on where it stopped.
  * @param {object[]} editions
- * @param {{ books: Record<string, { isbn: string, asked: string }> }} memory integrations/enrich.json
+ * @param {{ books: Record<string, { isbn: string, asked: string, missed?: string[] }> }} memory integrations/enrich.json
  * @param {string} today YYYY-MM-DD
  */
 export function editionsToAsk(editions, memory, today) {
   const due = editions.filter(edition => {
     if (edition.trashed || !askKey(edition)) return false;
     const known = memory.books[edition.id];
-    return !known || known.isbn !== askKey(edition) || daysBetween(known.asked, today) >= RECHECK_DAYS;
+    if (!known || known.isbn !== askKey(edition)) return true;
+    const days = daysBetween(known.asked, today);
+    return days >= RECHECK_DAYS || (Boolean(known.missed) && days >= RETRY_DAYS);
   });
   return due.sort((a, b) => Number(Boolean(memory.books[a.id])) - Number(Boolean(memory.books[b.id])));
 }
@@ -127,6 +133,54 @@ export function fillBook({ edition, works }, found, previous = {}, now) {
     if (work !== works[0]) result.changed.push(work);
   }
   return result;
+}
+
+/**
+ * Whether a book's number was corrected since the tool last asked about it,
+ * so what it filled came from another book. A book first asked by its LCCN or
+ * OCLC number that has since been given an ISBN is the same book, not a correction.
+ * @param {string} before the number asked last time (askKey)
+ * @param {string} now the number asked now
+ */
+export function isCorrectedNumber(before, now) {
+  if (!before || before === now) return false;
+  return !(before.includes(':') && !now.includes(':'));
+}
+
+/**
+ * After a corrected number: clear every value the tool filled that a person
+ * has not changed since, so the right book's answer can fill it. A value a
+ * person changed or cleared stays as they left it, and stays the person's.
+ * @param {{ edition: object, works: object[] }} book the edition and its works
+ * @param {Record<string, unknown>} wrote what the tool wrote for the book
+ * @param {string} now timestamp for the changed fields
+ * @returns {{ edition: object, works: object[], wrote: Record<string, unknown>, cleared: string[] }}
+ *   the book with those values emptied, what the tool still counts as written, and the fields cleared
+ */
+export function clearWritten({ edition, works }, wrote, now) {
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const left = { ...wrote };
+  const cleared = [];
+  let next = edition;
+  let work = works.length === 1 ? works[0] : null;
+  for (const [key, value] of Object.entries(wrote)) {
+    if (key.startsWith('identifiers.')) {
+      const name = key.slice(12);
+      if (!same(next.identifiers[name], value)) continue;
+      next = withField(next, 'identifiers', { ...next.identifiers, [name]: null }, now);
+    } else if (key.startsWith('work.')) {
+      if (!work || !same(work[key.slice(5)], value)) continue;
+      work = withField(work, key.slice(5), null, now);
+    } else {
+      if (!same(next[key], value)) continue;
+      next = withField(next, key, Array.isArray(value) ? [] : null, now);
+      // The height's "catalog" mark goes with the height the catalog gave.
+      if (key === 'height' || key === 'thickness') next = withField(next, `${key}Source`, null, now);
+    }
+    delete left[key];
+    cleared.push(key);
+  }
+  return { edition: next, works: work && work !== works[0] ? [work] : works, wrote: left, cleared };
 }
 
 // A written value's field in a source's reading: "identifiers.lccn", "work.originalTitle", "pages".

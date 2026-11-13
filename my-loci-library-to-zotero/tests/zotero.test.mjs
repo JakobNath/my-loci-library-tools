@@ -70,7 +70,7 @@ test('a second run sends nothing; a changed shelf renames the link quickly, and 
   await sendToZotero(records, links, zotero);
   const before = fake.calls.length;
   assert.match((await sendToZotero(records, links, zotero))[0], /0 new, 0 updated, 6 unchanged/);
-  assert.deepEqual(fake.calls.slice(before), ['GET /collections?limit=100', 'GET /items?format=versions&includeTrashed=0'], 'only two small checks: the collection, and which items still exist');
+  assert.deepEqual(fake.calls.slice(before), ['GET /collections?limit=100&start=0', 'GET /items?format=versions&includeTrashed=0'], 'only two small checks: the collection, and which items still exist');
   const moved = records.map(record => (record.id === 'c0py0000000p' ? withField(record, 'location', ['Home', 'Study'], NOW) : record));
   const started = Date.now();
   const versionBefore = fake.byTitle('Confessions')[0].version;
@@ -228,4 +228,38 @@ test("only an exact original year goes to Zotero's Original Date field, and a da
   const key = fake.add({ itemType: 'book', title: 'Confessions', ISBN: '9780199537822', date: '1991', originalDate: 'ca. 397', collections: [] });
   await sendToZotero(sampleRecords(), links, zotero);
   assert.equal(fake.items.get(key).data.originalDate, 'ca. 397', 'not emptied when Loci has no exact year');
+});
+
+test('an item merged into another in Zotero is not made again: the item kept is linked, and only its empty fields are filled', async () => {
+  const { fake, zotero, links } = setup();
+  const records = sampleRecords();
+  await sendToZotero(records, links, zotero);
+  const made = links.items[chadwick.id].key;
+  // A person merges the companion's Confessions into their own older item: Zotero keeps theirs and trashes ours.
+  const theirs = fake.add({ itemType: 'book', title: 'Confessions', publisher: 'Their own publisher', citationKey: 'augustineConfessions', relations: { 'dc:replaces': [zotero.uri(made)] }, collections: [], tags: [] });
+  fake.remove(made);
+  const report = await sendToZotero(records, links, zotero);
+  assert.match(report.join(' '), /1 items had been merged into another in Zotero/);
+  assert.doesNotMatch(report.join(' '), /missing in Zotero/);
+  assert.match(report[0], /0 new/);
+  assert.equal(links.items[chadwick.id].key, theirs);
+  assert.equal(links.items[chadwick.id].citationKey, 'augustineConfessions', "the kept item's key is the one cited");
+  assert.equal(fake.items.get(theirs).data.publisher, 'Their own publisher', 'nothing they entered is replaced');
+  assert.ok(fake.items.get(theirs).data.collections.includes(links.collection));
+});
+
+test('more than 100 collections are all looked through', async () => {
+  const { fake, zotero } = setup();
+  const pages = [];
+  const many = Array.from({ length: 150 }, (_, i) => ({ key: `C${i}`, data: { name: i === 120 ? 'My Loci Library' : `Collection ${i}`, parentCollection: false } }));
+  const paging = async (url, options) => {
+    const match = url.match(/\/collections\?limit=100&start=(\d+)/);
+    if (!match) return fake.fetchFn(url, options);
+    pages.push(Number(match[1]));
+    return { ok: true, status: 200, headers: { get: () => null }, json: async () => many.slice(Number(match[1]), Number(match[1]) + 100) };
+  };
+  const paged = connectToZotero({ userId: '12345', key: 'test-key', fetchFn: paging });
+  assert.equal(await paged.collection('My Loci Library'), 'C120');
+  assert.deepEqual(pages, [0, 100]);
+  assert.ok(zotero);
 });

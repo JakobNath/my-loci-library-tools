@@ -63,10 +63,25 @@ export async function sendToZotero(records, links, zotero, { collectionName = MA
   if (!firstRun) {
     const present = await zotero.presentKeys();
     const missing = Object.entries(links.items).filter(([, link]) => link.key && !present.has(link.key));
-    for (const [linkId, link] of missing) links.items[linkId] = { citationKey: link.citationKey };
+    // An item a person merged into another in Zotero is in its trash, and the item kept
+    // names it in its "dc:replaces" relation: the link moves to the item kept, which is
+    // then the person's own, so only its empty fields are filled (as for "adopted").
+    const keptFor = new Map();
+    if (missing.length) {
+      for (const item of await zotero.allBooks()) for (const uri of [].concat(item.data.relations?.['dc:replaces'] || [])) keptFor.set(uri, item);
+    }
+    let merged = 0;
+    for (const [linkId, link] of missing) {
+      const kept = keptFor.get(zotero.uri(link.key));
+      if (kept) merged++;
+      links.items[linkId] = kept
+        ? { ...link, key: kept.key, citationKey: pinnedKey(kept.data) || link.citationKey, sent: null, adopted: true }
+        : { citationKey: link.citationKey };
+    }
+    if (merged) report.push(`${merged} items had been merged into another in Zotero; the item kept is linked now, and only its empty fields are filled.`);
     // A link under a book that was deleted by hand is made again too.
     for (const link of Object.values(links.items)) if (link.attachment && !present.has(link.attachment)) { delete link.attachment; delete link.attachmentTitle; }
-    if (missing.length) report.push(`${missing.length} items were missing in Zotero (deleted, or in its trash) and are sent again.`);
+    if (missing.length > merged) report.push(`${missing.length - merged} items were missing in Zotero (deleted, or in its trash) and are sent again.`);
   }
   const library = buildLibrary(records);
   const trashed = records.filter(record => record.type === 'edition' && record.trashed);

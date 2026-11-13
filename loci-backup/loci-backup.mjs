@@ -14,7 +14,7 @@
 
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readConfig, isGitRepo, git, pullLatest, commitAndPush } from '../shared/data-repo.mjs';
+import { readConfig, isGitRepo, git, pullLatest, commitAndPush, holdLock } from '../shared/data-repo.mjs';
 import { rebuildCatalog, mirrorFolder, monthlySnapshot, fullArchive, writeStatus, STATUS_FILE } from './backup.mjs';
 import { runEnrich, MEMORY as ENRICH_MEMORY, ANSWERS as ENRICH_ANSWERS } from '../loci-enrich/loci-enrich.mjs';
 
@@ -52,9 +52,11 @@ export async function dailyBackup({ dataRepo, backupFolder, googleBooksKey = '' 
 // Run from the command line (not when loaded by the tests).
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
   const args = process.argv.slice(2);
+  let release = () => {};
   try {
     const config = readConfig();
     const useGit = !args.includes('--no-git') && isGitRepo(config.dataRepo);
+    if (useGit) release = holdLock(config.dataRepo, 'loci-backup');
     const archiveAt = args.indexOf('--archive');
     if (archiveAt >= 0) {
       if (!args[archiveAt + 1]) throw new Error('Name the folder for the archive: node loci-backup.mjs --archive "E:\\Loci archive"');
@@ -70,5 +72,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
   } catch (error) {
     console.error(`loci-backup stopped: ${error.message}`);
     process.exitCode = 1;
+  } finally {
+    release();
   }
 }

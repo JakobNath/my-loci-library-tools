@@ -15,7 +15,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, rmSync
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomBytes } from 'node:crypto';
-import { readConfig, readRecords, writeRecord, isGitRepo, git, pullLatest, commitAndPush } from '../shared/data-repo.mjs';
+import { readConfig, readRecords, writeRecord, isGitRepo, git, pullLatest, commitAndPush, holdLock } from '../shared/data-repo.mjs';
 import { readKnownSets } from '../shared/known-sets.mjs';
 import { makeId } from '../core/ids.js';
 import { parseCsv, decodeExport } from './columns.mjs';
@@ -142,10 +142,11 @@ export async function fetchCovers(dataRepo, { limit = 200, fetchFn = fetch } = {
 // Run from the command line (not when loaded by the tests).
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
   const args = process.argv.slice(2);
+  let release = () => {};
   try {
     const { dataRepo } = readConfig();
     const useGit = !args.includes('--no-git') && isGitRepo(dataRepo);
-    if (useGit) pullLatest(dataRepo);
+    if (useGit) { release = holdLock(dataRepo, 'logos-import'); pullLatest(dataRepo); }
     let lines;
     let message;
     if (args.includes('--confirm-links')) {
@@ -165,5 +166,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
   } catch (error) {
     console.error(`logos-import stopped: ${error.message}`);
     process.exitCode = 1;
+  } finally {
+    release();
   }
 }

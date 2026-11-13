@@ -12,8 +12,8 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { gzipSync, gunzipSync } from 'node:zlib';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readConfig, readRecords, writeRecord, isGitRepo, git, pullLatest, commitAndPush, FOLDERS } from '../shared/data-repo.mjs';
-import { editionsToAsk, fillBook, askKey, sourcesOfWritten, RECHECK_DAYS } from './enrich.mjs';
+import { readConfig, readRecords, writeRecord, isGitRepo, git, pullLatest, commitAndPush, holdLock, FOLDERS } from '../shared/data-repo.mjs';
+import { editionsToAsk, fillBook, askKey, sourcesOfWritten, isCorrectedNumber, clearWritten, RECHECK_DAYS, RETRY_DAYS } from './enrich.mjs';
 import { checkWikidataIds } from './wikidata-ids.mjs';
 import { askSources } from './sources.mjs';
 
@@ -76,7 +76,9 @@ export async function runEnrich(dataRepo, { useGit = true, commit = true, limit 
   const filledLines = [];
   const suggestionLines = [];
   const problemLines = [];
+  const clearedLines = [];
   let notFound = 0;
+  let missedCount = 0;
   const resting = new Set(); // sources that refused a request: not asked again this run (sources.mjs)
   for (const [i, edition] of asking.entries()) {
     const key = askKey(edition);
@@ -84,18 +86,32 @@ export async function runEnrich(dataRepo, { useGit = true, commit = true, limit 
     keepAnswers(dataRepo, edition.id, key, today, answer.raw);
     problemLines.push(...answer.problems.map(problem => `  ${edition.title}: ${problem}`));
     const works = edition.contents.map(entry => byId.get(entry.work)).filter(Boolean);
-    const result = fillBook({ edition, works }, answer.found, memory.books[edition.id], now);
-    for (const record of result.changed) { writeRecord(dataRepo, record); byId.set(record.id, record); }
+    let book = { edition, works };
+    let previous = memory.books[edition.id] || {};
+    const toWrite = new Map();
+    // A corrected ISBN: what was filled from the old number came from another book.
+    if (isCorrectedNumber(previous.isbn, key)) {
+      const reset = clearWritten(book, previous.wrote || {}, now);
+      for (const record of [reset.edition, ...reset.works]) if (record !== byId.get(record.id)) toWrite.set(record.id, record);
+      const from = Object.fromEntries(Object.entries(previous.from || {}).filter(([field]) => !reset.cleared.includes(field)));
+      previous = { ...previous, wrote: reset.wrote, from };
+      book = { edition: reset.edition, works: works.map(record => toWrite.get(record.id) || record) };
+      if (reset.cleared.length) clearedLines.push(`  ${edition.title} (was ${memory.books[edition.id].isbn}, now ${key}): ${reset.cleared.join(', ')}`);
+    }
+    const result = fillBook(book, answer.found, previous, now);
+    for (const record of result.changed) toWrite.set(record.id, record);
+    for (const record of toWrite.values()) { writeRecord(dataRepo, record); byId.set(record.id, record); }
     if (result.filled.length) filledLines.push(`  ${edition.title} (${answer.sources.join(', ')}): ${result.filled.join('; ')}`);
     if (result.contents.length) suggestionLines.push(`  ${edition.title} (${key}), ${result.contents.length} works:`, ...result.contents.map(line => `      ${line}`));
     if (!answer.found) notFound++;
-    // A book no source could answer, because of a failure, is asked again next time.
-    if (!answer.problems.length || answer.found) {
-      const before = (memory.books[edition.id] || {}).wrote || {};
-      const from = { ...((memory.books[edition.id] || {}).from || {}), ...sourcesOfWritten(result.wrote, before, answer.answers) };
-      memory.books[edition.id] = { isbn: key, asked: today, found: Boolean(answer.found), wrote: result.wrote, from };
-      writeMemory(dataRepo, memory);
-    }
+    // A source that failed or was resting is remembered, and the book asked again in RETRY_DAYS.
+    if (answer.missed.length) missedCount++;
+    const from = { ...(previous.from || {}), ...sourcesOfWritten(result.wrote, previous.wrote || {}, answer.answers) };
+    memory.books[edition.id] = {
+      isbn: key, asked: today, found: Boolean(answer.found), wrote: result.wrote, from,
+      ...(answer.missed.length ? { missed: answer.missed } : {}),
+    };
+    writeMemory(dataRepo, memory);
     if (pauseMs && i < asking.length - 1) await new Promise(done => setTimeout(done, pauseMs));
   }
   // Every 90 days the stored Wikidata IDs are checked again: a merged item's new ID is stored (wikidata-ids.mjs).
@@ -117,11 +133,13 @@ export async function runEnrich(dataRepo, { useGit = true, commit = true, limit 
     `Book data (${today}): asked about ${asking.length} of ${due.length} books due; ${filledLines.length} filled, ${notFound} not known to any source, ${problemLines.length} problems.`,
     ...(googleBooksKey ? [] : ['  Google Books was not asked: there is no "googleBooksKey" in config.json (tools README, "A Google Books key").']),
     ...(resting.size ? [`  Refused by ${[...resting].join(' and ')}, so not asked again this run; try again later (SOURCES.md).`] : []),
+    ...(missedCount ? [`  ${missedCount} books were not answered by every source; they are asked again in ${RETRY_DAYS} days.`] : []),
     ...(due.length > asking.length ? [`  ${due.length - asking.length} books are left for the next run.`] : []),
+    ...(clearedLines.length ? ['ISBN corrected: cleared what the old number had filled, unless a person had changed it:', ...clearedLines] : []),
     ...(filledLines.length ? ['Filled (empty fields only):', ...filledLines] : []),
     ...(suggestionLines.length ? ['Works a catalog lists inside books entered as one work (offered on the Edit page of each in the app, to use or decline):', ...suggestionLines] : []),
     ...wikidataLines,
-    ...(problemLines.length ? ['Problems (these books are asked again next time):', ...problemLines] : []),
+    ...(problemLines.length ? [`Problems (these books are asked again in ${RETRY_DAYS} days):`, ...problemLines] : []),
   ];
   if (useGit && commit && (asking.length || wikidataLines.length)) {
     if (commitAndPush(dataRepo, [FOLDERS.edition, FOLDERS.work, MEMORY, ANSWERS], `Fill book data for ${filledLines.length} books`)) lines.push('Committed and pushed.');
@@ -134,14 +152,17 @@ export async function runEnrich(dataRepo, { useGit = true, commit = true, limit 
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
   const args = process.argv.slice(2);
   const limitAt = args.indexOf('--limit');
+  let release = () => {};
   try {
     const { dataRepo, googleBooksKey } = readConfig();
     const useGit = !args.includes('--no-git') && isGitRepo(dataRepo);
-    if (useGit) pullLatest(dataRepo);
+    if (useGit) { release = holdLock(dataRepo, 'loci-enrich'); pullLatest(dataRepo); }
     const lines = await runEnrich(dataRepo, { useGit, googleBooksKey, limit: limitAt >= 0 ? Number(args[limitAt + 1]) : Infinity });
     console.log(lines.join('\n'));
   } catch (error) {
     console.error(`loci-enrich stopped: ${error.message}`);
     process.exitCode = 1;
+  } finally {
+    release();
   }
 }

@@ -1,7 +1,7 @@
 // What every tool needs: the settings in config.json, the record files of a
 // data repository, and Git. Node's built-in modules only, on Windows and Linux.
 
-import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync, existsSync, rmSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
@@ -107,6 +107,43 @@ function joinWithRemote(folder) {
     try { git(folder, 'rebase', '--abort'); } catch { /* no rebase was under way: the pull failed before starting one */ }
     throw new Error(`${STUCK} Git said: ${String(error.stderr || error.message).trim().split('\n').pop()}`);
   }
+}
+
+// How long a lock counts at most, even if its process seems alive: the longest run
+// (a first enrich of a large catalog) takes a few hours, and a process number can be reused.
+const LOCK_HOURS = 12;
+
+// Whether a process is still running (signal 0 only asks; it works on Windows too).
+function isRunning(pid) {
+  try { process.kill(pid, 0); return true; } catch (error) { return error.code === 'EPERM'; }
+}
+
+/**
+ * Take the catalog's lock, so two tools never pull, change and push at the
+ * same time (the scheduled backup and a button on the admin page). The lock is
+ * a file inside .git, so it is never committed. A lock left by a tool that
+ * stopped without letting go is taken over.
+ * @param {string} folder the data repository (a Git working copy)
+ * @param {string} tool the tool's name, for the message another tool shows
+ * @returns {() => void} lets go of the lock
+ */
+export function holdLock(folder, tool, { now = Date.now() } = {}) {
+  const path = join(folder, '.git', 'loci-tools.lock');
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      writeFileSync(path, `${JSON.stringify({ tool, pid: process.pid, started: new Date(now).toISOString() })}\n`, { flag: 'wx' });
+      return () => rmSync(path, { force: true });
+    } catch (error) {
+      if (error.code !== 'EEXIST') throw error;
+    }
+    const held = JSON.parse(readFileSync(path, 'utf8'));
+    const hours = (now - Date.parse(held.started)) / 3600000;
+    if (isRunning(held.pid) && hours < LOCK_HOURS) {
+      throw new Error(`${held.tool} is working on the catalog (since ${held.started.slice(0, 16).replace('T', ' at ')} UTC). Try again when it has finished.`);
+    }
+    rmSync(path, { force: true });
+  }
+  throw new Error('Could not take the catalog\'s lock (.git/loci-tools.lock); another tool took it at the same moment. Try again.');
 }
 
 /**

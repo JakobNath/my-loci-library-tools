@@ -40,8 +40,10 @@ export const TOOLS = {
   logos: {
     label: 'Import a Logos export', script: 'logos-to-my-loci-library/logos-import.mjs',
     args: ({ file, full }) => {
-      if (!file || !String(file).trim()) throw new Error('Give the full path of the Logos export (a .csv file).');
-      return [String(file).trim(), ...(full ? ['--full'] : [])];
+      // Windows' "Copy as path" puts the path in double quotes.
+      const path = String(file || '').trim().replace(/^"(.*)"$/, '$1').trim();
+      if (!path) throw new Error('Give the full path of the Logos export (a .csv file).');
+      return [path, ...(full ? ['--full'] : [])];
     },
   },
   covers: { label: 'Fetch Logos covers', script: 'logos-to-my-loci-library/logos-import.mjs', args: () => ['--covers', '200'] },
@@ -209,9 +211,10 @@ const TYPES = { '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; char
  * The server. It answers only requests addressed to this laptop, and runs a
  * tool only when asked from its own page, so no web site open in the browser
  * can press a button.
- * @param {{ port?: number, appRepo?: string, toolsFolder?: string, dataRepo?: string|null, fetchFn?: typeof fetch, run?: typeof runTool }} options
+ * @param {{ port?: number, appRepo?: string, toolsFolder?: string, dataRepo?: string|null, fetchFn?: typeof fetch, run?: typeof runTool, isTrial?: boolean }} options
+ *   isTrial: started with --data, so the tool buttons, which always act on config.json's catalog, are off
  */
-export function createAdminServer({ port = PORT, appRepo = APP_REPO, toolsFolder = TOOLS_FOLDER, dataRepo = null, fetchFn = fetch, run = runTool } = {}) {
+export function createAdminServer({ port = PORT, appRepo = APP_REPO, toolsFolder = TOOLS_FOLDER, dataRepo = null, fetchFn = fetch, run = runTool, isTrial = false } = {}) {
   let busy = false;
   const server = createServer(async (request, response) => {
     const own = `127.0.0.1:${server.address().port}`;
@@ -240,6 +243,7 @@ export function createAdminServer({ port = PORT, appRepo = APP_REPO, toolsFolder
         const asked = JSON.parse(body || '{}');
         const json = (status, answer) => send(status, 'application/json', JSON.stringify(answer));
         if (url.pathname === '/run' && !TOOLS[asked.tool]) return json(404, { ok: false, output: `No tool named "${asked.tool}".` });
+        if (url.pathname === '/run' && isTrial) return json(409, { ok: false, output: `The page was started with --data for a trial, but the tools always work on the catalog in config.json, so these buttons are off. Start the page without --data to use them.` });
         if (url.pathname === '/planner' && !PLANNER_ACTIONS.includes(asked.action)) return json(404, { ok: false, output: `No planner action "${asked.action}".` });
         if (url.pathname === '/planner' && !dataRepo) return json(400, { ok: false, output: 'No catalog: config.json names none (the tools README, "Setting up on a laptop").' });
         if (busy) return json(409, { ok: false, output: 'Another tool is still running; wait for it to finish.' });
@@ -256,7 +260,10 @@ export function createAdminServer({ port = PORT, appRepo = APP_REPO, toolsFolder
       return send(500, 'application/json', JSON.stringify({ ok: false, output: error.message }));
     }
   });
-  return new Promise(ready => server.listen(port, '127.0.0.1', () => ready(server)));
+  return new Promise((ready, fail) => {
+    server.once('error', fail);
+    server.listen(port, '127.0.0.1', () => ready(server));
+  });
 }
 
 // Open the page in the laptop's own browser.
@@ -273,8 +280,18 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
   try { ({ dataRepo } = readConfig()); } catch (error) { console.log(error.message); }
   const dataAt = args.indexOf('--data');
   if (dataAt >= 0) dataRepo = resolve(args[dataAt + 1]);
-  const server = await createAdminServer({ port: portAt >= 0 ? Number(args[portAt + 1]) : PORT, dataRepo });
-  const address = `http://127.0.0.1:${server.address().port}/`;
-  console.log(`The admin page is at ${address}\nLeave this window open while using it; close it (or press Ctrl+C) to stop.`);
-  if (!args.includes('--no-open')) openBrowser(address);
+  const port = portAt >= 0 ? Number(args[portAt + 1]) : PORT;
+  try {
+    const server = await createAdminServer({ port, dataRepo, isTrial: dataAt >= 0 });
+    const address = `http://127.0.0.1:${server.address().port}/`;
+    console.log(`The admin page is at ${address}\nLeave this window open while using it; close it (or press Ctrl+C) to stop.`);
+    if (dataAt >= 0) console.log(`Trial on ${dataRepo}: only the shelf planner works on it; the tool buttons are off.`);
+    if (!args.includes('--no-open')) openBrowser(address);
+  } catch (error) {
+    if (error.code !== 'EADDRINUSE') throw error;
+    // Started a second time: the first is still serving the page, so open that one.
+    const address = `http://127.0.0.1:${port}/`;
+    console.log(`The admin page is already running (in another window) at ${address}; opening it.`);
+    if (!args.includes('--no-open')) openBrowser(address);
+  }
 }

@@ -61,7 +61,7 @@ async function askGoogleBooks(isbn, key, fetchFn) {
 // The Library of Congress and HathiTrust, asked by catalogue number for a book without an ISBN.
 const catalogUrlByLccn = lccn => `${ADDRESSES.libraryOfCongress}?version=1.1&operation=searchRetrieve&query=bath.lccn=${lccn}&maximumRecords=3&recordSchema=marcxml`;
 const hathiTrustUrlByNumber = ({ lccn, oclc }) => (lccn ? `${ADDRESSES.hathiTrust}/lccn/${lccn}.json` : `${ADDRESSES.hathiTrust}/oclc/${oclc}.json`);
-const digits = text => String(text || '').replace(/D/g, '');
+const digits = text => String(text || '').replace(/\D/g, '');
 
 /**
  * Each source's own reading of one book, as [name, ask] pairs: ask() gives
@@ -110,14 +110,18 @@ export function sourcesFor(isbn, { fetchFn, googleBooksKey = '', raw = {} }) {
  * there (the caller keeps one `resting` set for a whole run).
  * @param {string|{ lccn?: string, oclc?: string }} isbn 13 digits, or catalogue numbers for a book without an ISBN
  * @param {{ fetchFn: typeof fetch, googleBooksKey?: string, resting?: Set<string> }} options
- * @returns {Promise<{ found: object|null, sources: string[], problems: string[], answers: { name: string, found: object|null }[], raw: Record<string, string> }>}
- *   answers: each source's own reading, best first; raw: the answers as the sources sent them (not Google's)
+ * @returns {Promise<{ found: object|null, sources: string[], problems: string[], answers: { name: string, found: object|null }[], raw: Record<string, string>, missed: string[] }>}
+ *   answers: each source's own reading, best first; raw: the answers as the sources sent them (not Google's);
+ *   missed: the sources that failed or were resting, so gave no answer this time
  */
 export async function askSources(isbn, { fetchFn, googleBooksKey = '', resting = new Set() }) {
   const raw = {};
-  const asking = sourcesFor(isbn, { fetchFn, googleBooksKey, raw }).filter(([name]) => !resting.has(name));
+  const all = sourcesFor(isbn, { fetchFn, googleBooksKey, raw });
+  const asking = all.filter(([name]) => !resting.has(name));
   const problems = [];
+  const failed = new Set();
   const readings = await Promise.all(asking.map(([name, ask]) => ask().catch(error => {
+    failed.add(name);
     if (error.refused) resting.add(name);
     problems.push(`${name}: ${error.message}${error.refused ? ' (not asked again this run)' : ''}`);
     return null;
@@ -128,5 +132,6 @@ export async function askSources(isbn, { fetchFn, googleBooksKey = '', resting =
     problems,
     answers: asking.map(([name], i) => ({ name, found: readings[i] })),
     raw,
+    missed: all.map(([name]) => name).filter(name => failed.has(name) || !asking.some(([asked]) => asked === name)),
   };
 }

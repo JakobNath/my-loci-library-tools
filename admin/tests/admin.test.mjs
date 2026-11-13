@@ -104,3 +104,23 @@ test('the Logos button needs the export\'s path', () => {
   assert.throws(() => TOOLS.logos.args({ file: '  ' }), /full path/);
   assert.deepEqual(TOOLS.logos.args({ file: 'C:/x/export.csv', full: true }), ['C:/x/export.csv', '--full']);
 });
+
+test('a path pasted with quotes is read without them', () => {
+  assert.deepEqual(TOOLS.logos.args({ file: ' "C:\Users\me\Logos export.csv" ' }), ['C:\Users\me\Logos export.csv']);
+  assert.throws(() => TOOLS.logos.args({ file: '""' }), /full path/);
+});
+
+test('a second start says the port is taken, and a trial page runs no tool', async () => {
+  const ran = [];
+  const server = await createAdminServer({ port: 0, appRepo, toolsFolder, fetchFn: noNetwork, isTrial: true, run: async tool => { ran.push(tool); return { ok: true, output: '' }; } });
+  const { port } = server.address();
+  try {
+    await assert.rejects(createAdminServer({ port, appRepo, toolsFolder, fetchFn: noNetwork }), { code: 'EADDRINUSE' });
+    const answer = await ask(port, { method: 'POST', path: '/run', headers: { origin: `http://127.0.0.1:${port}`, 'content-type': 'application/json' }, body: JSON.stringify({ tool: 'backup' }) });
+    assert.equal(answer.status, 409);
+    assert.match(JSON.parse(answer.text).output, /--data/);
+    assert.deepEqual(ran, []);
+  } finally {
+    server.close();
+  }
+});

@@ -34,9 +34,13 @@ export function connectToZotero({ userId, key, fetchFn = fetch }) {
   return {
     /** The collection with this name, made if missing. Returns its key. */
     async collection(name) {
-      const all = await call('GET', '/collections?limit=100');
-      const found = all.find(item => item.data.name === name && !item.data.parentCollection);
-      if (found) return found.key;
+      // Zotero gives at most 100 collections per request, so a large library is read page by page.
+      for (let start = 0; ; start += 100) {
+        const page = await call('GET', `/collections?limit=100&start=${start}`);
+        const found = page.find(item => item.data.name === name && !item.data.parentCollection);
+        if (found) return found.key;
+        if (page.length < 100) break;
+      }
       const made = await call('POST', '/collections', { body: [{ name, parentCollection: false }] });
       return made.successful['0'].key;
     },

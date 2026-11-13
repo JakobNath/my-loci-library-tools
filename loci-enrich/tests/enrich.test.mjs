@@ -259,3 +259,53 @@ test('the source check reads only the recorded books, not the other recorded ans
   assert.ok(books.length >= 10);
   assert.ok(books.every(book => /^\d{13}$/.test(book.isbn)), 'each has its ISBN; wikidata.js is left out');
 });
+
+test('a book a source did not answer is asked again after 7 days, not 90', async () => {
+  const folder = dataRepo([work('p1at0w0rk001', 'Complete Works'), edition('p1at0ed00001', 'Complete Works', 'p1at0w0rk001', { isbn: plato.isbn })]);
+  const { fetchFn } = recordedServices([plato]);
+  const failing = async (url, options) => (url.includes('openlibrary.org') ? { ok: false, status: 503, text: async () => '' } : fetchFn(url, options));
+  try {
+    const first = await runEnrich(folder, { useGit: false, fetchFn: failing, now: NOW, reportFile: null });
+    assert.match(first.join('\n'), /1 books were not answered by every source; they are asked again in 7 days/);
+    const memory = JSON.parse(readFileSync(join(folder, MEMORY), 'utf8'));
+    assert.deepEqual(memory.books.p1at0ed00001.missed, ['Open Library']);
+    assert.match((await runEnrich(folder, { useGit: false, fetchFn, now: '2026-11-12T12:00:00Z', reportFile: null }))[0], /0 of 0 books due/);
+    await runEnrich(folder, { useGit: false, fetchFn, now: '2026-11-17T12:00:00Z', reportFile: null });
+    const book = readRecords(folder).find(record => record.id === 'p1at0ed00001');
+    assert.equal(book.identifiers.openLibrary, 'OL49233743M', 'filled once Open Library answered');
+    assert.ok(!('missed' in JSON.parse(readFileSync(join(folder, MEMORY), 'utf8')).books.p1at0ed00001));
+  } finally {
+    rmSync(folder, { recursive: true, force: true });
+  }
+});
+
+test('a corrected ISBN clears what the old number filled, but not what a person changed', async () => {
+  const platoWork = work('p1at0w0rk001', 'Complete Works');
+  const folder = dataRepo([platoWork, edition('p1at0ed00001', 'Complete Works', platoWork.id, { isbn: plato.isbn })]);
+  try {
+    await runEnrich(folder, { useGit: false, fetchFn: recordedServices([plato]).fetchFn, now: NOW, reportFile: null });
+    const filled = readRecords(folder).find(record => record.id === 'p1at0ed00001');
+    assert.equal(filled.pages, 'xxx, 1808');
+    // A person sees the wrong book's data, fixes the height and the ISBN: it was Anna Karenina all along.
+    writeRecord(folder, { ...filled, isbn: anna.isbn, height: 200, heightSource: 'measured' });
+    const report = await runEnrich(folder, { useGit: false, fetchFn: recordedServices([anna]).fetchFn, now: '2026-11-11T12:00:00Z', reportFile: null });
+    assert.match(report.join('\n'), /ISBN corrected/);
+    const after = new Map(readRecords(folder).map(record => [record.id, record]));
+    const book = after.get('p1at0ed00001');
+    assert.notEqual(book.pages, 'xxx, 1808', "Plato's pages are gone");
+    assert.equal(book.identifiers.lccn, null, "Plato's LCCN is gone");
+    assert.deepEqual([book.height, book.heightSource], [200, 'measured'], 'the height a person measured stays');
+    assert.equal(after.get(platoWork.id).originalLanguage, null, 'the work is no longer called Greek');
+    assert.equal(book.thickness, 46, "filled from Anna Karenina's answer");
+  } finally {
+    rmSync(folder, { recursive: true, force: true });
+  }
+});
+
+test('a book asked by its LCCN that is given an ISBN keeps what was filled', async () => {
+  const { isCorrectedNumber } = await import('../enrich.mjs');
+  assert.equal(isCorrectedNumber('lccn:55009893', '9780872203495'), false);
+  assert.equal(isCorrectedNumber('9780872203495', '9781857150582'), true);
+  assert.equal(isCorrectedNumber('9780872203495', 'lccn:55009893'), true);
+  assert.equal(isCorrectedNumber(undefined, '9780872203495'), false);
+});

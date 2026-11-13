@@ -85,3 +85,22 @@ test('when laptop and phone changed the same record, the tool stops with a plain
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('two tools never hold the catalog at once, and a lock left by a stopped tool is taken over', async () => {
+  const { holdLock } = await import('../data-repo.mjs');
+  const { spawnSync } = await import('node:child_process');
+  const folder = mkdtempSync(join(tmpdir(), 'loci-lock-'));
+  mkdirSync(join(folder, '.git'));
+  try {
+    const release = holdLock(folder, 'loci-backup');
+    assert.throws(() => holdLock(folder, 'loci-zotero'), /loci-backup is working on the catalog/);
+    release();
+    holdLock(folder, 'loci-zotero')();
+    // A tool that stopped without letting go: its process is gone.
+    const gone = spawnSync(process.execPath, ['--version']).pid;
+    writeFileSync(join(folder, '.git', 'loci-tools.lock'), JSON.stringify({ tool: 'loci-enrich', pid: gone, started: new Date().toISOString() }));
+    holdLock(folder, 'loci-backup')();
+  } finally {
+    rmSync(folder, { recursive: true, force: true });
+  }
+});

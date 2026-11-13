@@ -5,7 +5,7 @@
 
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { readRecords, writeRecord, isGitRepo, git, pullLatest, commitAndPush, FOLDERS } from '../shared/data-repo.mjs';
+import { readRecords, writeRecord, isGitRepo, git, pullLatest, commitAndPush, holdLock, FOLDERS } from '../shared/data-repo.mjs';
 import { isInside } from '../core/library.js';
 import { readShelves, shelvesText, planShelves, recordsForPlan, planText } from './plan.mjs';
 
@@ -52,9 +52,18 @@ export function record(dataRepo, { place, shelves, order }, { now, useGit = isGi
   const suggestion = suggest(dataRepo, { place, shelves, order });
   if (!suggestion.ok) return suggestion;
   if (suggestion.plan.left.length) return { ok: false, output: `${suggestion.plan.left.length} books do not fit on these shelves, so nothing was recorded. Add a shelf or choose a smaller place.` };
+  const release = useGit ? holdLock(dataRepo, 'the shelf planner') : () => {};
+  try {
+    return recordPlan(dataRepo, suggestion.plan, { place, shelves, now, useGit });
+  } finally {
+    release();
+  }
+}
+
+function recordPlan(dataRepo, plan, { place, shelves, now, useGit }) {
   if (useGit) pullLatest(dataRepo);
   const records = readRecords(dataRepo);
-  const changed = recordsForPlan(records, suggestion.plan, now);
+  const changed = recordsForPlan(records, plan, now);
   for (const copy of changed) writeRecord(dataRepo, copy);
   // The widths are kept for next time, merged with the shelves of other places.
   const path = join(dataRepo, SHELVES_FILE);
