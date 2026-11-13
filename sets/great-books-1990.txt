@@ -217,7 +217,7 @@ volume: 20 | Calvin
 John Calvin — Institutes of the Christian Religion | Institutio Christianae religionis | Latin — 1536 | trans. Henry Beveridge
 
 volume: 21 | Machiavelli, Hobbes
-Niccolò Machiavelli — The Prince | Il Principe | Italian — c. 1513 | trans. W. K. Marriott
+Niccolò Machiavelli — The Prince | Il Principe | Italian — c. 1513–1532 | trans. W. K. Marriott
 Thomas Hobbes — Leviathan, or Matter, Form, and Power of a Commonwealth Ecclesiastical and Civil | | English — 1651
 
 volume: 22 | Rabelais
@@ -328,7 +328,7 @@ David Hume — An Enquiry Concerning Human Understanding | | English — 1748
 volume: 34 | Swift, Voltaire, Diderot
 Jonathan Swift — Gulliver's Travels | | English — 1726
 Voltaire — Candide | Candide, ou l'Optimisme | French — 1759 | trans. Peter Gay
-Denis Diderot — Rameau's Nephew | Le Neveu de Rameau | French — c. 1761–1774 | trans. Jacques Barzun
+Denis Diderot — Rameau's Nephew | Le Neveu de Rameau | French — c. 1761–1805 | trans. Jacques Barzun
 
 volume: 35 | Montesquieu, Rousseau
 Montesquieu — The Spirit of Laws | De l'esprit des lois | French — 1748 | trans. Thomas Nugent, revised by J. V. Prichard
