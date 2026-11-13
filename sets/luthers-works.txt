@@ -83,7 +83,8 @@ Martin Luther — Four Psalms of Comfort | Vier tröstliche Psalmen an die Köni
 Martin Luther — Psalms 1 and 2 | Operationes in Psalmos | Latin — 1519
 
 volume: 15 | Ecclesiastes, Song of Solomon, Last Words of David | isbn 9780570064152
-Martin Luther — Notes on Ecclesiastes | Annotationes in Ecclesiasten | Latin — 1526
+# note: lectured 1526, printed 1532; dated from the lectures to the print
+Martin Luther — Notes on Ecclesiastes | Annotationes in Ecclesiasten | Latin — 1526–1532
 Martin Luther — Lectures on the Song of Solomon | Vorlesung über das Hohelied | Latin — 1530–1531
 Martin Luther — Treatise on the Last Words of David | Von den letzten Worten Davids | German — 1543
 
@@ -121,7 +122,7 @@ Martin Luther — Sermons on the Gospel of St. John, Chapters 6–8 | Auslegung 
 
 volume: 24 | Sermons on the Gospel of St. John: Chapters 14–16 | isbn 9780570064244
 # note: preached 1533-1534, printed 1538 (WA 45-46)
-Martin Luther — Sermons on the Gospel of St. John, Chapters 14–16 | | German — 1533–1534
+Martin Luther — Sermons on the Gospel of St. John, Chapters 14–16 | | German — 1533–1538
 
 volume: 25 | Lectures on Romans: Glosses and Scholia | isbn 9780570064251
 Martin Luther — Lectures on Romans | | Latin — 1515–1516
@@ -203,7 +204,7 @@ Martin Luther — A Treatise on the New Testament, That Is, the Holy Mass | Ein 
 Martin Luther — A Brief Instruction on What to Look for and Expect in the Gospels | Ein klein Unterricht, was man in den Evangeliis suchen und gewarten soll | German — 1521
 Martin Luther — Avoiding the Doctrines of Men and A Reply to the Texts Cited in Defense of the Doctrines of Men | Von Menschenlehre zu meiden | German — 1522
 # note: Fortress Press says 1525 (preached); WA 16 dates the printed text 1526
-Martin Luther — How Christians Should Regard Moses | Ein Unterrichtung, wie sich die Christen in Mosen sollen schicken | German — 1525
+Martin Luther — How Christians Should Regard Moses | Ein Unterrichtung, wie sich die Christen in Mosen sollen schicken | German — 1525–1526
 Martin Luther — On Translating: An Open Letter | Ein Sendbrief vom Dolmetschen | German — 1530
 # note: Fortress Press says 1531; WA 38 says 1531-33
 Martin Luther — Defense of the Translation of the Psalms | Summarien über die Psalmen und Ursachen des Dolmetschens | German — 1531–1533

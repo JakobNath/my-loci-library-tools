@@ -1,0 +1,71 @@
+# The Complete Greek Tragedies, Centennial Edition (University of Chicago Press, 1992; edited by David
+# Grene and Richmond Lattimore): four cloth volumes in a slipcase, every volume and the plays it holds.
+# Researched 12 November 2026. The four volumes keep the plays and order of the four-volume printing of
+# 1959. Volume 3's contents and translators are from the press's own page for the 1992 volume; volumes
+# 1, 2 and 4 are from a bookseller's volume-by-volume listing of the 1959 set, checked against the
+# press's guide to the nine paperbacks (whose plays these volumes gather) and the Library of Congress
+# contents note for volume 4. For this edition David Grene replaced the translations of Antigone and
+# Oedipus at Colonus with his own (the press's description, given by BiblioVault and Blackwell's).
+# Each volume's ISBN is from BiblioVault, which lists the four as cloth; Open Library agrees for
+# volume 4. The slipcase's ISBN (0-226-30763-8) is the set's line: scanning it asks which volume.
+# Original titles and dates follow the Great Books (1990) list where Wikipedia's articles agree. A play
+# first staged after its author's death is dated from its writing to its staging.
+# The third edition (2013, nine paperbacks) groups the plays differently and is not this list.
+# Not yet checked by a person: its dates are offered, not filled in.
+set: The Complete Greek Tragedies
+publisher: University of Chicago Press
+place: Chicago
+year: 1992
+edition: Centennial ed.
+isbn: 9780226307633
+
+volume: 1 | Aeschylus | isbn 9780226307640
+Aeschylus — Agamemnon | Ἀγαμέμνων | Ancient Greek — 458 BC | trans. Richmond Lattimore
+Aeschylus — The Libation Bearers | Χοηφόροι | Ancient Greek — 458 BC | trans. Richmond Lattimore
+Aeschylus — The Eumenides | Εὐμενίδες | Ancient Greek — 458 BC | trans. Richmond Lattimore
+Aeschylus — The Suppliant Maidens | Ἱκέτιδες | Ancient Greek — c. 463 BC | trans. Seth G. Benardete
+Aeschylus — The Persians | Πέρσαι | Ancient Greek — 472 BC | trans. Seth G. Benardete
+Aeschylus — Seven Against Thebes | Ἑπτὰ ἐπὶ Θήβας | Ancient Greek — 467 BC | trans. David Grene
+# note: Grene revised his translation for this edition. Ascribed to Aeschylus since antiquity, doubted by
+# many scholars; its date is disputed (480s to 410s BC)
+Aeschylus — Prometheus Bound | Προμηθεὺς Δεσμώτης | Ancient Greek — 5th c. BC | trans. David Grene
+
+volume: 2 | Sophocles | isbn 9780226307657
+Sophocles — Oedipus the King | Οἰδίπους Τύραννος | Ancient Greek — c. 429 BC | trans. David Grene
+# note: written shortly before Sophocles died (406 BC), first staged in 401 BC. Grene's translation,
+# new in this edition, replaced Robert Fitzgerald's
+Sophocles — Oedipus at Colonus | Οἰδίπους ἐπὶ Κολωνῷ | Ancient Greek — c. 406–401 BC | trans. David Grene
+# note: Grene's translation, new in this edition, replaced Elizabeth Wyckoff's
+Sophocles — Antigone | Ἀντιγόνη | Ancient Greek — c. 441 BC | trans. David Grene
+Sophocles — Ajax | Αἴας | Ancient Greek — c. 442 BC | trans. John Moore
+Sophocles — The Women of Trachis | Τραχίνιαι | Ancient Greek — c. 450–425 BC | trans. Michael Jameson
+Sophocles — Electra | Ἠλέκτρα | Ancient Greek — c. 420–414 BC | trans. David Grene
+Sophocles — Philoctetes | Φιλοκτήτης | Ancient Greek — 409 BC | trans. David Grene
+
+volume: 3 | Euripides | isbn 9780226307664
+Euripides — Alcestis | Ἄλκηστις | Ancient Greek — 438 BC | trans. Richmond Lattimore
+Euripides — The Medea | Μήδεια | Ancient Greek — 431 BC | trans. Rex Warner
+Euripides — The Heracleidae | Ἡρακλεῖδαι | Ancient Greek — c. 430 BC | trans. Ralph Gladstone
+Euripides — Hippolytus | Ἱππόλυτος | Ancient Greek — 428 BC | trans. David Grene
+Euripides — Cyclops | Κύκλωψ | Ancient Greek — c. 408 BC | trans. William Arrowsmith
+Euripides — Heracles | Ἡρακλῆς | Ancient Greek — c. 416 BC | trans. William Arrowsmith
+Euripides — Iphigenia in Tauris | Ἰφιγένεια ἐν Ταύροις | Ancient Greek — c. 414–412 BC | trans. Witter Bynner
+Euripides — Helen | Ἑλένη | Ancient Greek — 412 BC | trans. Richmond Lattimore
+Euripides — Hecuba | Ἑκάβη | Ancient Greek — c. 424 BC | trans. William Arrowsmith
+Euripides — Andromache | Ἀνδρομάχη | Ancient Greek — c. 428–425 BC | trans. John Frederick Nims
+Euripides — The Trojan Women | Τρῳάδες | Ancient Greek — 415 BC | trans. Richmond Lattimore
+
+volume: 4 | Euripides | isbn 9780226307671
+# note: the Great Books list says 5th c. BC; the dates most often proposed are 418/7, 414/3 and 412 BC
+Euripides — Ion | Ἴων | Ancient Greek — c. 418–412 BC | trans. Ronald Frederick Willetts
+# note: its authorship has been disputed since antiquity
+Euripides — Rhesus | Ῥῆσος | Ancient Greek — 5th c. BC | trans. Richmond Lattimore
+# note: the Great Books list says 423 BC; Wikipedia says c. 423
+Euripides — The Suppliant Women | Ἱκέτιδες | Ancient Greek — c. 423 BC | trans. Frank William Jones
+Euripides — Orestes | Ὀρέστης | Ancient Greek — 408 BC | trans. William Arrowsmith
+# note: written in Macedonia between 408 BC and Euripides' death in 406, first staged in 405 BC
+Euripides — Iphigenia in Aulis | Ἰφιγένεια ἐν Αὐλίδι | Ancient Greek — c. 408–405 BC | trans. Charles R. Walker
+Euripides — Electra | Ἠλέκτρα | Ancient Greek — c. 420–413 BC | trans. Emily Townsend Vermeule
+Euripides — The Phoenician Women | Φοίνισσαι | Ancient Greek — c. 410 BC | trans. Elizabeth Wyckoff
+# note: written in Macedonia in Euripides' last years, first staged in 405 BC after his death
+Euripides — The Bacchae | Βάκχαι | Ancient Greek — c. 408–405 BC | trans. William Arrowsmith

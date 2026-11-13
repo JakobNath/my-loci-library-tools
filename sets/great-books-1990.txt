@@ -34,7 +34,7 @@ Aeschylus — Agamemnon | Ἀγαμέμνων | Ancient Greek — 458 BC | trans
 Aeschylus — The Libation Bearers | Χοηφόροι | Ancient Greek — 458 BC | trans. Richmond Lattimore
 Aeschylus — The Eumenides | Εὐμενίδες | Ancient Greek — 458 BC | trans. Richmond Lattimore
 Sophocles — Oedipus the King | Οἰδίπους Τύραννος | Ancient Greek — c. 429 BC | trans. David Grene
-Sophocles — Oedipus at Colonus | Οἰδίπους ἐπὶ Κολωνῷ | Ancient Greek — c. 406 BC | trans. Robert Fitzgerald
+Sophocles — Oedipus at Colonus | Οἰδίπους ἐπὶ Κολωνῷ | Ancient Greek — c. 406–401 BC | trans. Robert Fitzgerald
 Sophocles — Antigone | Ἀντιγόνη | Ancient Greek — c. 441 BC | trans. Elizabeth Wyckoff
 Sophocles — Ajax | Αἴας | Ancient Greek — c. 442 BC | trans. John Moore
 Sophocles — Electra | Ἠλέκτρα | Ancient Greek — c. 420–414 BC | trans. David Grene
@@ -51,13 +51,13 @@ Euripides — Ion | Ἴων | Ancient Greek — 5th c. BC | trans. Ronald Freder
 Euripides — Helen | Ἑλένη | Ancient Greek — 412 BC | trans. Richmond Lattimore
 Euripides — Andromache | Ἀνδρομάχη | Ancient Greek — c. 428–425 BC | trans. John Frederick Nims
 Euripides — Electra | Ἠλέκτρα | Ancient Greek — c. 420–413 BC | trans. Emily Townsend Vermeule
-Euripides — The Bacchae | Βάκχαι | Ancient Greek — 405 BC | trans. William Arrowsmith
+Euripides — The Bacchae | Βάκχαι | Ancient Greek — c. 408–405 BC | trans. William Arrowsmith
 Euripides — Hecuba | Ἑκάβη | Ancient Greek — c. 424 BC | trans. William Arrowsmith
 Euripides — Heracles | Ἡρακλῆς | Ancient Greek — c. 416 BC | trans. William Arrowsmith
 Euripides — The Phoenician Women | Φοίνισσαι | Ancient Greek — c. 410 BC | trans. Elizabeth Wyckoff
 Euripides — Orestes | Ὀρέστης | Ancient Greek — 408 BC | trans. William Arrowsmith
 Euripides — Iphigenia in Tauris | Ἰφιγένεια ἐν Ταύροις | Ancient Greek — c. 414–412 BC | trans. Witter Bynner
-Euripides — Iphigenia in Aulis | Ἰφιγένεια ἐν Αὐλίδι | Ancient Greek — 405 BC | trans. Charles R. Walker
+Euripides — Iphigenia in Aulis | Ἰφιγένεια ἐν Αὐλίδι | Ancient Greek — c. 408–405 BC | trans. Charles R. Walker
 Euripides — The Cyclops | Κύκλωψ | Ancient Greek — c. 408 BC | trans. William Arrowsmith
 Aristophanes — The Acharnians | Ἀχαρνῆς | Ancient Greek — 425 BC | trans. Alan H. Sommerstein
 Aristophanes — The Knights | Ἱππῆς | Ancient Greek — 424 BC | trans. Alan H. Sommerstein
