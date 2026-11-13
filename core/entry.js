@@ -180,9 +180,12 @@ export function recordsFromForm(form, existing, context) {
       const match = oldWorks.find(work => key(work.title) === key(line.title));
       const values = { title: line.title, authors: ids, ...(line.date ? { datings: reading.datings } : {}) };
       // A new work in a collection takes the language, category and tags asked once for the whole book,
-      // and from a known set's list its own original title and language.
+      // and from a known set's list its own original title and language. A language chosen for this
+      // work alone ("Not all the same", form.workLanguages) comes first.
+      const chosen = (form.workLanguages || []).find(row => key(row.title) === key(line.title) && row.language);
       const shared = {
-        originalLanguage: (listed && listed.originalLanguage) || form.work.originalLanguage || null, category: form.work.category || null, tags: form.work.tags,
+        originalLanguage: (chosen && chosen.language) || (listed && listed.originalLanguage) || form.work.originalLanguage || null,
+        category: form.work.category || null, tags: form.work.tags,
         ...(listed && listed.originalTitle ? { originalTitle: listed.originalTitle } : {}),
       };
       const work = match ? update(match, values, now) : newRecord('work', newId(), now, { ...values, ...shared });

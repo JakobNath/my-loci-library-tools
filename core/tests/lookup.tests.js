@@ -163,6 +163,32 @@ export const tests = [
     },
   },
   {
+    name: 'dates written year first, or with A.D. or "B. C.", give the right year',
+    fn() {
+      equal(yearFromText('1802-07-24'), 1802);
+      equal(yearFromText('1870-12-05'), 1870);
+      equal(yearFromText('24 July 1802'), 1802);
+      equal(yearFromText('43 B. C.'), -43);
+      equal(yearFromText('17 A.D.'), 17);
+      equal(yearFromText('13 November 354'), 354);
+      equal(yearFromText(''), null);
+    },
+  },
+  {
+    name: 'Dumas: his dates written year first give his lifetime, not "24–5" (The Count of Monte Cristo)',
+    fn() {
+      const work = workFromOpenLibrary({ docs: [{ title: 'Le Comte de Monte-Cristo', first_publish_year: 1830 }] }, { name: 'Alexandre Dumas', birth_date: '1802-07-24', death_date: '1870-12-05' });
+      same(suggestOriginalDates(work, 2003).map(s => s.text), ['1830', '1802–1870']);
+    },
+  },
+  {
+    name: 'Ovid: a first printing by 1500 is never offered as when the work was written (Metamorphoses, 1479)',
+    fn() {
+      const work = workFromOpenLibrary({ docs: [{ title: 'Metamorphoses', first_publish_year: 1479 }] }, { name: 'Ovid' });
+      same(suggestOriginalDates(work, 1977), []);
+    },
+  },
+  {
     name: 'titles in lower case get title case; titles with chosen capitals are left alone',
     fn() {
       equal(titleCase('The cost of discipleship'), 'The Cost of Discipleship');

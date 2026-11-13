@@ -62,6 +62,29 @@ export function newRecord(type, id, now, values = {}) {
 }
 
 /**
+ * An edition's entry for one image whose files have been made (DATA_FORMAT.md, "Images").
+ * @param {string} id the image's own ID
+ * @param {'cover'|'spine'|'contents'} kind
+ * @param {string} source "photo" for ours, or the lookup it came from
+ * @param {{ color?: string, ratio: number }} files from edges/photo.js
+ * @param {boolean} hasMaster whether a master file was kept (our photos)
+ */
+export function imageEntry(id, kind, source, files, hasMaster) {
+  return { id, kind, source, color: kind === 'cover' ? files.color : null, ratio: files.ratio, master: hasMaster, waiting: null };
+}
+
+/**
+ * An edition's images with a new photo in place of every image of its kind,
+ * as when a cover is taken again: a book shows one cover and one spine. A
+ * cover goes first, since the first cover is the one shown. The old images'
+ * files stay in the data repository.
+ */
+export function withNewImage(images, image) {
+  const others = images.filter(other => other.kind !== image.kind);
+  return image.kind === 'cover' ? [image, ...others] : [...others, image];
+}
+
+/**
  * The record with one field changed, stamped with the moment of the change
  * for merging. The original record is not modified.
  */

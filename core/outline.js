@@ -1,76 +1,123 @@
-// The outline in the photo editor: where it starts, how a spine's edge
-// moves when dragged, and where the magnifiers sit. Pure geometry on
-// [x, y] points in the photo's own pixels; the editor (ui/photo-editor.js)
+// The outline in the photo editor: where it starts, how a spine is placed by
+// its two end dots and its sides, and where the magnifiers sit. Pure geometry
+// on [x, y] points in the photo's own pixels; the editor (ui/photo-editor.js)
 // draws it and handles the finger.
 
-/** Edges by their two corners, in order: top, right, bottom, left. */
-export const EDGES = [[0, 1], [1, 2], [2, 3], [3, 0]];
-
 /**
- * The outline a photo starts with: inset for a cover, a tall narrow band
- * for a spine. Corners run top left, top right, bottom right, bottom left.
+ * The outline a cover starts with, inset from the photo's edges. Corners run
+ * top left, top right, bottom right, bottom left.
  * @param {number} width
  * @param {number} height
- * @param {'cover'|'spine'} kind
  * @returns {number[][]}
  */
-export function startingOutline(width, height, kind) {
-  if (kind === 'spine') {
-    const half = width * 0.09;
-    return [[width / 2 - half, height * 0.05], [width / 2 + half, height * 0.05], [width / 2 + half, height * 0.95], [width / 2 - half, height * 0.95]];
-  }
+export function startingOutline(width, height) {
   return [[width * 0.1, height * 0.08], [width * 0.9, height * 0.08], [width * 0.9, height * 0.92], [width * 0.1, height * 0.92]];
 }
 
-const lengthOf = (outline, [i, j]) => Math.hypot(outline[j][0] - outline[i][0], outline[j][1] - outline[i][1]);
+/**
+ * A spine as a person places it: a dot at the middle of its top, a dot at the
+ * middle of its foot, and its width at each end. Two dots that move freely
+ * follow a spine photographed at any slant (his wife could not turn the old
+ * outline, 2026-11-12); two widths allow for a phone held a little tilted.
+ * @typedef {{ top: number[], foot: number[], topWidth: number, footWidth: number }} Spine
+ */
 
 /**
- * Which part of a spine's outline a press at `point` takes hold of: the
- * nearest edge, and which of its corners move. The middle of an edge moves
- * both its corners; the outer quarter of one of the two long edges moves only
- * that end, which is how a spine photographed at a slant is lined up.
- * @param {number[][]} outline
- * @param {number[]} point
- * @returns {{ edge: number, corners: number[], distance: number }}
+ * The spine a photo starts with: a tall narrow band down the middle.
+ * @param {number} width
+ * @param {number} height
+ * @returns {Spine}
  */
-export function spineGrip(outline, point) {
-  const longest = Math.max(...EDGES.map(edge => lengthOf(outline, edge)));
-  let best = null;
-  EDGES.forEach(([i, j], edge) => {
-    const [ax, ay] = outline[i];
-    const ex = outline[j][0] - ax;
-    const ey = outline[j][1] - ay;
-    const along = Math.min(1, Math.max(0, ((point[0] - ax) * ex + (point[1] - ay) * ey) / (ex * ex + ey * ey || 1)));
-    const distance = Math.hypot(ax + ex * along - point[0], ay + ey * along - point[1]);
-    if (best && best.distance <= distance) return;
-    // "Long" edges are the sides of the spine; at least half the longest, so a square outline still tilts.
-    const isLong = lengthOf(outline, [i, j]) >= longest / 2;
-    const corners = !isLong || (along > 0.25 && along < 0.75) ? [i, j] : along <= 0.25 ? [i] : [j];
-    best = { edge, corners, distance };
-  });
-  return best;
+export function startingSpine(width, height) {
+  const bandWidth = width * 0.18; // a spine photographed to fill the frame's height is about this narrow
+  return { top: [width / 2, height * 0.05], foot: [width / 2, height * 0.95], topWidth: bandWidth, footWidth: bandWidth };
+}
+
+// A unit step across the spine, towards its right side when the top is above the foot.
+function across({ top, foot }) {
+  const dx = foot[0] - top[0];
+  const dy = foot[1] - top[1];
+  const length = Math.hypot(dx, dy) || 1;
+  return [dy / length, -dx / length];
 }
 
 /**
- * Move a spine's edge by a drag of (dx, dy), only across the edge, never
- * along it. A finger that slips along the edge would otherwise lift one
- * corner above its neighbour, and the straightened spine would come out
- * sheared (Jakob's crooked Tale of Two Cities, 2026-11-11).
- * @param {number[][]} outline
- * @param {{ edge: number, corners: number[] }} grip from spineGrip
+ * The spine's four corners, top left, top right, bottom right, bottom left.
+ * Each end is square to the line between the dots, so the straightened
+ * spine is never sheared.
+ * @param {Spine} spine
+ * @returns {number[][]}
+ */
+export function spineOutline(spine) {
+  const [rx, ry] = across(spine);
+  const side = (point, width, sign) => [point[0] + sign * rx * width / 2, point[1] + sign * ry * width / 2];
+  return [side(spine.top, spine.topWidth, -1), side(spine.top, spine.topWidth, 1), side(spine.foot, spine.footWidth, 1), side(spine.foot, spine.footWidth, -1)];
+}
+
+/**
+ * What a press at `point` takes hold of: the top or foot dot, or a side.
+ * The middle of a side changes the width at both ends; its outer quarter
+ * changes only that end's width.
+ * @param {Spine} spine
+ * @param {number[]} point
+ * @returns {{ part: 'top'|'foot'|'left'|'right', ends: string[], distance: number }}
+ */
+export function spineHandle(spine, point) {
+  const [tl, tr, br, bl] = spineOutline(spine);
+  const dot = (part, at) => ({ part, ends: [part], distance: Math.hypot(at[0] - point[0], at[1] - point[1]) });
+  const side = (part, from, to) => {
+    const ex = to[0] - from[0];
+    const ey = to[1] - from[1];
+    const along = Math.min(1, Math.max(0, ((point[0] - from[0]) * ex + (point[1] - from[1]) * ey) / (ex * ex + ey * ey || 1)));
+    const ends = along < 0.25 ? ['top'] : along > 0.75 ? ['foot'] : ['top', 'foot'];
+    return { part, ends, distance: Math.hypot(from[0] + ex * along - point[0], from[1] + ey * along - point[1]) };
+  };
+  // Dots first, so on a narrow spine a press between a dot and a corner takes the dot.
+  const handles = [dot('top', spine.top), dot('foot', spine.foot), side('left', tl, bl), side('right', tr, br)];
+  return handles.reduce((best, handle) => (handle.distance < best.distance ? handle : best));
+}
+
+/**
+ * The spine after a drag of (dx, dy) on a handle. A dot follows the finger.
+ * A side moves only across the spine, and the other side stays where it is,
+ * so the end's middle shifts by half the change in width.
+ * @param {Spine} spine
+ * @param {{ part: string, ends: string[] }} handle from spineHandle
  * @param {number} dx
  * @param {number} dy
- * @returns {number[][]} a new outline
+ * @returns {Spine} a new spine
  */
-export function moveSpineEdge(outline, grip, dx, dy) {
-  const [i, j] = EDGES[grip.edge];
-  const ex = outline[j][0] - outline[i][0];
-  const ey = outline[j][1] - outline[i][1];
-  const length = Math.hypot(ex, ey) || 1;
-  const nx = -ey / length;
-  const ny = ex / length;
-  const across = dx * nx + dy * ny;
-  return outline.map((point, k) => (grip.corners.includes(k) ? [point[0] + nx * across, point[1] + ny * across] : point));
+export function moveSpine(spine, handle, dx, dy) {
+  if (handle.part === 'top') return { ...spine, top: [spine.top[0] + dx, spine.top[1] + dy] };
+  if (handle.part === 'foot') return { ...spine, foot: [spine.foot[0] + dx, spine.foot[1] + dy] };
+  const [rx, ry] = across(spine);
+  const sign = handle.part === 'right' ? 1 : -1;
+  const MIN_WIDTH = 2; // pixels: a side dragged past the other stops here instead of turning inside out
+  // One end's middle and width after the side moves across by the drag.
+  const widen = (point, width) => {
+    const change = Math.max(MIN_WIDTH, width + sign * (dx * rx + dy * ry)) - width;
+    return [[point[0] + sign * rx * change / 2, point[1] + sign * ry * change / 2], width + change];
+  };
+  const moved = { ...spine };
+  if (handle.ends.includes('top')) [moved.top, moved.topWidth] = widen(spine.top, spine.topWidth);
+  if (handle.ends.includes('foot')) [moved.foot, moved.footWidth] = widen(spine.foot, spine.footWidth);
+  return moved;
+}
+
+/**
+ * The point a handle places, for the magnifiers: the dot itself, or the part
+ * of the side being moved.
+ * @param {Spine} spine
+ * @param {{ part: string, ends: string[] }} handle
+ * @returns {number[]}
+ */
+export function spineHandlePoint(spine, handle) {
+  if (handle.part === 'top') return spine.top;
+  if (handle.part === 'foot') return spine.foot;
+  const [tl, tr, br, bl] = spineOutline(spine);
+  const [top, foot] = handle.part === 'left' ? [tl, bl] : [tr, br];
+  if (handle.ends.length === 1) return handle.ends[0] === 'top' ? top : foot;
+  return [(top[0] + foot[0]) / 2, (top[1] + foot[1]) / 2];
 }
 
 /**

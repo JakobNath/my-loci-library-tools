@@ -187,6 +187,19 @@ export const tests = [
     },
   },
   {
+    name: '"Not all the same": each work of a collection takes the language chosen for it, the rest the one answer',
+    fn() {
+      const lines = 'Lucretius — On the Nature of Things\nEpictetus — Discourses\nMarcus Aurelius — Meditations';
+      const form = blankForm({
+        title: 'Hellenistic Philosophy', contents: lines,
+        work: { title: '', originalTitle: '', originalLanguage: 'Greek', category: '', tags: [], datings: [] },
+        workLanguages: [{ title: 'On the nature of things', language: 'Latin' }, { title: 'Discourses', language: 'Greek' }],
+      });
+      const works = recordsFromForm(form, null, context()).records.filter(record => record.type === 'work');
+      same(works.map(work => [work.title, work.originalLanguage]), [['On the Nature of Things', 'Latin'], ['Discourses', 'Greek'], ['Meditations', 'Greek']]);
+    },
+  },
+  {
     name: 'another copy of an edition is one new copy record (#16)',
     fn() {
       const copy = anotherCopy('n2a8ed7v1kcx', { binding: 'Leather-like', location: ['Home', 'Bedroom', '', ''], shelfOrder: 'g', notes: '' }, context());

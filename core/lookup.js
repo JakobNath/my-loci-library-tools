@@ -260,13 +260,22 @@ export function candidatesFromSearch(answers, text = '') {
 
 /**
  * A year from a date as Open Library writes it: "13 November 354" is 354,
- * "1522" is 1522, "c. 350 BC" is -350.
+ * "1522" is 1522, "c. 350 BC" and "43 B. C." are negative, "1802-07-24" is
+ * 1802, "17 A.D." is 17.
  * @returns {number|null}
  */
 export function yearFromText(text) {
-  const match = String(text || '').match(/(\d{1,4})\s*(BC|B\.C\.|BCE)?\s*$/i) || String(text || '').match(/(\d{3,4})/);
-  if (!match) return null;
-  return match[2] ? -Number(match[1]) : Number(match[1]);
+  const plain = String(text || '').trim();
+  // A full date written year first (1802-07-24): the year is the first number, not the last.
+  const iso = plain.match(/^(-?)(\d{1,4})-\d{1,2}(-\d{1,2})?$/);
+  if (iso) return iso[1] ? -Number(iso[2]) : Number(iso[2]);
+  const numbers = plain.match(/\d{1,4}/g);
+  if (!numbers) return null;
+  // A day comes before its year ("24 July 1802"), so the last year-sized number wins; "17 or 18 A.D." keeps 18.
+  const long = numbers.filter(number => number.length >= 3);
+  const year = Number(long.length ? long[long.length - 1] : numbers[numbers.length - 1]);
+  const isBC = /\bB\.?\s?C\.?/i.test(plain);
+  return isBC ? -year : year;
 }
 
 /**
@@ -314,7 +323,9 @@ export function suggestOriginalDates(work, editionYear) {
     suggestions.push({ ...lifetime, label: `${lifetime.label}; Open Library's earliest edition (${firstPublished}) is a later printing` });
     return suggestions;
   }
-  if (firstPublished !== null) {
+  // A work printed by 1500 is older than printing in Europe (from the 1450s), so
+  // that year is an early printing, never when the work was written (Ovid's Metamorphoses, 1479).
+  if (firstPublished !== null && firstPublished > LAST_EARLY_PRINTING_YEAR) {
     const same = editionYear && Number(editionYear) === firstPublished;
     suggestions.push({ text: String(firstPublished), label: same ? 'first published, the same year as this printing (Open Library): check it is not an older work' : 'first published (Open Library)' });
   }
@@ -322,7 +333,8 @@ export function suggestOriginalDates(work, editionYear) {
   return suggestions;
 }
 
-const yearText = year => (year < 0 ? `${-year} BC` : String(year));
+const LAST_EARLY_PRINTING_YEAR = 1500; // the end of the incunable period, the first age of printing
+const yearText = year =>(year < 0 ? `${-year} BC` : String(year));
 const lifeText = (born, died) => (born < 0 && died < 0 ? `${-born}–${-died} BC` : born < 0 ? `${-born} BC – ${died}` : `${born}–${died}`);
 
 // Small words stay lower case inside a title (Chicago style).

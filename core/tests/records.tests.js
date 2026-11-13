@@ -1,7 +1,7 @@
 // Records, IDs, merging, shelf order, HTML escaping and the CSL mapping.
 
 import { makeId, isId, ID_ALPHABET } from '../ids.js';
-import { newRecord, withField, recordToFileText, FIELDS, migrate, FORMAT_VERSION } from '../records.js';
+import { newRecord, withField, recordToFileText, FIELDS, migrate, FORMAT_VERSION, imageEntry, withNewImage } from '../records.js';
 import { validateRecord } from '../validate.js';
 import { mergeRecords } from '../merge.js';
 import { keyBetween, keysForShelf, keysAfterMove } from '../shelf-order.js';
@@ -16,11 +16,25 @@ import { buildLibrary, viewEntries } from '../library.js';
 import { na28, na28Works, loeb36, loebWorks, plato, chadwick, confessions, augustine, byId } from './samples.js';
 
 const NOW_TEST = '2026-11-10T12:00:00Z';
+const FIELDS_IMAGE = ['id', 'kind', 'source', 'color', 'ratio', 'master', 'waiting'];
 
 const T1 = '2026-11-09T10:00:00Z';
 const T2 = '2026-11-09T11:00:00Z';
 
 export const tests = [
+  {
+    name: 'a new cover photo replaces the old covers and goes first; a new spine photo replaces the old spine',
+    fn() {
+      const cover = imageEntry('c0verphoto01', 'cover', 'photo', { color: '#223344', ratio: 0.66 }, true);
+      same(Object.keys(cover), FIELDS_IMAGE, 'the fields of an image, in order');
+      equal(cover.color, '#223344');
+      const spine = imageEntry('sp1nephoto01', 'spine', 'photo', { color: '#000000', ratio: 0.1 }, true);
+      equal(spine.color, null, 'only a cover keeps its color');
+      const old = [{ id: 'oldcover0001', kind: 'cover' }, { id: 'oldspine0001', kind: 'spine' }, { id: 'contents0001', kind: 'contents' }];
+      same(withNewImage(old, cover).map(image => image.id), ['c0verphoto01', 'oldspine0001', 'contents0001']);
+      same(withNewImage(old, spine).map(image => image.id), ['oldcover0001', 'contents0001', 'sp1nephoto01']);
+    },
+  },
   {
     name: 'an ID is 12 letters from the alphabet without i, l, o and u',
     fn() {
