@@ -81,7 +81,9 @@ export async function sendToZotero(records, links, zotero, { collectionName = MA
     if (merged) report.push(`${merged} items had been merged into another in Zotero; the item kept is linked now, and only its empty fields are filled.`);
     // A link under a book that was deleted by hand is made again too.
     for (const link of Object.values(links.items)) if (link.attachment && !present.has(link.attachment)) { delete link.attachment; delete link.attachmentTitle; }
-    if (missing.length > merged) report.push(`${missing.length - merged} items were missing in Zotero (deleted, or in its trash) and are sent again.`);
+    // A section sent by an earlier version and since deleted in Zotero is not sent again.
+    const resent = missing.filter(([linkId, link]) => !linkId.includes('/') && !keptFor.get(zotero.uri(link.key))).length;
+    if (resent) report.push(`${resent} items were missing in Zotero (deleted, or in its trash) and are sent again.`);
   }
   const library = buildLibrary(records);
   const trashed = records.filter(record => record.type === 'edition' && record.trashed);
@@ -90,12 +92,14 @@ export async function sendToZotero(records, links, zotero, { collectionName = MA
   const wanted = [];
   for (const entry of library.entries) {
     if (isSent(entry.edition)) for (const item of itemsFor(entry, library, { appUrl })) wanted.push({ ...item, tags: lociTags(entry, false) });
-    // A Logos book whose "cite" was turned off stays in Zotero (with its sections), tagged as removed.
-    else for (const linkId of Object.keys(links.items).filter(id => id === entry.id || id.startsWith(`${entry.id}/`))) wanted.push({ linkId, tagOnly: true, tags: [TAG_REMOVED] });
+    // A Logos book whose "cite" was turned off stays in Zotero, tagged as removed.
+    else if (links.items[entry.id]) wanted.push({ linkId: entry.id, tagOnly: true, tags: [TAG_REMOVED] });
   }
-  for (const edition of trashed) {
-    for (const linkId of Object.keys(links.items).filter(id => id === edition.id || id.startsWith(`${edition.id}/`))) wanted.push({ linkId, tagOnly: true, tags: [TAG_REMOVED] });
-  }
+  for (const edition of trashed) if (links.items[edition.id]) wanted.push({ linkId: edition.id, tagOnly: true, tags: [TAG_REMOVED] });
+  // Book sections ("<edition id>/<work id>") were sent by versions before 13 November 2026.
+  // Only books are sent now, so every section once sent is tagged as removed, never deleted:
+  // the sections of books still held, of books gone, and of works since taken out of a book.
+  for (const linkId of Object.keys(links.items)) if (linkId.includes('/')) wanted.push({ linkId, tagOnly: true, tags: [TAG_REMOVED] });
 
   // On the first run, books already in Zotero are linked rather than made again.
   // Keys already pinned in the library are never handed out again.
@@ -160,16 +164,6 @@ export async function sendToZotero(records, links, zotero, { collectionName = MA
     save();
   }
   const failed = made.filter(key => !key).length;
-
-  // Each section of an anthology is marked as related to the anthology's own item.
-  for (const [linkId, link] of Object.entries(links.items)) {
-    const book = links.items[linkId.split('/')[0]];
-    if (!linkId.includes('/') || link.related || !link.key || !book || !book.key) continue;
-    const current = await zotero.item(link.key);
-    await zotero.update(link.key, current.version, { relations: { ...(current.data.relations || {}), 'dc:relation': zotero.uri(book.key) } });
-    link.related = true;
-    save();
-  }
 
   // The link under each book, back to it in Loci and titled with its shelf: made once, renamed when the shelf changes.
   let attached = 0;

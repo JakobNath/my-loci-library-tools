@@ -1,14 +1,14 @@
 // What Loci sends to Zotero (PLAN.md, "my-loci-library-to-zotero"): one book
-// item per edition, and one book section per work inside an anthology that is
-// sent. The original date and the pinned citation key go in Zotero's own
-// Original Date and Citation Key fields. Nothing goes in URL, Loc. in Archive
+// item per edition, and nothing for the works inside it: no book sections
+// (docs/decisions/zotero-and-citations.md, "Books only, no sections"). The
+// original date and the pinned citation key go in Zotero's own Original Date
+// and Citation Key fields. Nothing goes in URL, Loc. in Archive
 // or Extra, because Chicago prints URL and Loc. in Archive in citations, and
 // Better BibTeX may export stray Extra lines as a note: citations must hold
 // only bibliographic data. The book's permanent Loci link, with its shelf in
 // the title, is a link attached under the book (HOW_IT_WORKS.md, "Zotero fields").
 
-import { editionToCsl, cslName, volumeOfSet, editionForCitation, originalDateOf } from '../core/zotero.js';
-import { isBible } from '../core/bible.js';
+import { editionToCsl, cslName, volumeOfSet, editionForCitation } from '../core/zotero.js';
 
 export const APP_URL = 'https://jakobnath.github.io/my-loci-library/';
 export const TAG_GONE = 'Loci: no longer owned';
@@ -33,11 +33,12 @@ export const lociLink = (editionId, appUrl = APP_URL) => `${appUrl}#/book/${edit
 export const isSent = edition => !edition.trashed && (edition.medium === 'physical' || edition.cite === true);
 
 /**
- * The Zotero items for one library entry: the book, and a section for each
- * work when it is an anthology, except a Bible (decided with Jakob, 2026-11-10).
- * Keys: the edition ID, and "<edition id>/<work id>".
- * Citation keys are filled in by the caller (they must stay pinned).
- * @returns {{ linkId: string, base: string, data: object }[]} base: the key's author-and-year part
+ * The Zotero item for one library entry: the book alone, whether it holds one
+ * work or many. Its link ID is the edition ID. (Earlier versions also sent a
+ * section for each work of an anthology, linked as "<edition id>/<work id>";
+ * zotero-sync.mjs tags those "Loci: removed".)
+ * The citation key is filled in by the caller (it must stay pinned).
+ * @returns {{ linkId: string, csl: object, year: number|null, attachment: object, data: object }[]} one item
  */
 export function itemsFor(entry, library, { appUrl = APP_URL } = {}) {
   const { edition } = entry;
@@ -48,15 +49,7 @@ export function itemsFor(entry, library, { appUrl = APP_URL } = {}) {
     ...edition.contributors.map(person => creator(cslName(person.name), CREATOR_TYPES[person.role] || 'contributor')),
   ];
   const set = volumeOfSet(edition);
-  const shared = {
-    extra: set && set.volumeTitle ? `volume-title: ${set.volumeTitle}` : '',
-    publisher: edition.publisher || '',
-    place: edition.place || '',
-    date: edition.year ? String(edition.year) : '',
-    ISBN: edition.isbn || '',
-    language: edition.languages.join(', '),
-  };
-  const book = {
+  return [{
     linkId: edition.id,
     csl,
     year: edition.year,
@@ -76,40 +69,14 @@ export function itemsFor(entry, library, { appUrl = APP_URL } = {}) {
       ...(edition.identifiers.lcc ? { callNumber: edition.identifiers.lcc } : {}),
       // Left out when there is no exact year, so a date a person typed in Zotero stays.
       ...originalDateField(csl['original-date'] || null),
-      ...shared,
+      extra: set && set.volumeTitle ? `volume-title: ${set.volumeTitle}` : '',
+      publisher: edition.publisher || '',
+      place: edition.place || '',
+      date: edition.year ? String(edition.year) : '',
+      ISBN: edition.isbn || '',
+      language: edition.languages.join(', '),
     },
-  };
-  const items = [book];
-  if (entry.works.length > 1 && !isBible(entry)) {
-    // A section is cited with the volume's editors and, unless the work has its own
-    // translator, the volume's translators ("ed. and trans. Michael W. Holmes").
-    const editors = edition.contributors.filter(person => person.role === 'editor').map(person => creator(cslName(person.name), 'editor'));
-    const translators = edition.contributors.filter(person => person.role === 'translator').map(person => creator(cslName(person.name), 'translator'));
-    for (const piece of edition.contents) {
-      const work = library.worksById.get(piece.work);
-      if (!work) continue;
-      const authors = work.authors.map(id => library.authorsById.get(id)).filter(Boolean).map(author => cslName(author.name, author.sortName));
-      items.push({
-        linkId: `${edition.id}/${work.id}`,
-        csl: { author: authors, editor: [], title: work.title },
-        year: edition.year,
-        data: {
-          ...originalDateField(originalDateOf(work)),
-          itemType: 'bookSection',
-          title: work.subtitle ? `${work.title}: ${work.subtitle}` : work.title,
-          bookTitle: csl.title,
-          volume: edition.volume || '',
-          creators: [...authors.map(name => creator(name, 'author')), ...editors, ...(piece.translator ? [creator(cslName(piece.translator), 'translator')] : translators)],
-          edition: editionForCitation(edition.editionStatement),
-          pages: piece.pages || '',
-          series: edition.series || '',
-          seriesNumber: edition.seriesNumber || '',
-          ...shared,
-        },
-      });
-    }
-  }
-  return items;
+  }];
 }
 
 /**
