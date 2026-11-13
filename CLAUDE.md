@@ -14,7 +14,7 @@ This file is kept identical in the app (`my-loci-library`) and the laptop tools 
 - `HOW_IT_WORKS.md` (in the app): the parts and how to fix each one.
 - The tools' `README.md`: each laptop tool and how to run it.
 
-The real catalog lives in a private repository, `my-loci-library-data`; sample data for building and testing lives in `my-loci-library-test-data`. Never write to the real catalog while building or testing.
+The catalog lives in a private repository, `my-loci-library-data`. Automated tests never touch it: they use temporary folders and the sample books in `core/tests/samples.js`. While the app is still being tried out, trials may run against the catalog, after checking that its daily backup is recent.
 
 ## How to work
 

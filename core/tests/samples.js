@@ -1,6 +1,5 @@
 // Small records for the core tests, taken from the sample books in
 // docs/plan/SAMPLE_BOOKS.md (the number after each name is the sample book).
-// The full sample catalog is in the my-loci-library-test-data repository.
 
 import { newRecord } from '../records.js';
 
