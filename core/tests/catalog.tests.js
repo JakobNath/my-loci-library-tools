@@ -254,4 +254,41 @@ export const tests = [
       same(originalTextHolders({ ...phaedo, originalLanguage: null }, library), [], 'no original language, no marker');
     },
   },
+  {
+    name: 'a search puts every match in order before cutting the list, and finds a book by publisher, year or shelf',
+    fn() {
+      const records = [];
+      for (let n = 60; n >= 1; n--) {
+        const id = String(n).padStart(2, '0');
+        records.push(newRecord('work', `t000000010${id}`, 'x', { title: `Sermon ${id}` }));
+        records.push(newRecord('edition', `t000000020${id}`, 'x', { title: `Sermon ${id}`, contents: [{ work: `t000000010${id}`, piece: null, extent: 'complete', translator: null, pages: null, cite: false }], publisher: n === 7 ? 'Hackett' : 'Concordia', year: 1900 + n }));
+        records.push(newRecord('copy', `t000000030${id}`, 'x', { edition: `t000000020${id}`, added: '2026-11-13', location: n === 9 ? ['Home', 'Study'] : [] }));
+      }
+      const library = buildLibrary(records);
+      same(searchEntries(library, 'sermon').slice(0, 2).map(entry => entry.edition.title), ['Sermon 01', 'Sermon 02'], 'the first in order, though read last');
+      equal(searchEntries(library, 'sermon').length, 50);
+      same(searchEntries(library, 'sermon hackett').map(entry => entry.edition.title), ['Sermon 07']);
+      same(searchEntries(library, 'sermon 1903').map(entry => entry.edition.title), ['Sermon 03']);
+      same(searchEntries(library, 'study').map(entry => entry.edition.title), ['Sermon 09']);
+    },
+  },
+  {
+    name: 'pages sort by their count, and of two books added the same day the later is first',
+    fn() {
+      const book = (n, pages, created) => [
+        newRecord('edition', `t0000000400${n}`, 'x', { title: `Book ${n}`, pages }),
+        newRecord('copy', `t0000000500${n}`, created, { edition: `t0000000400${n}`, added: '2026-11-13' }),
+      ];
+      const library = buildLibrary([...book(1, '311', '2026-11-13T09:00:00Z'), ...book(2, '99', '2026-11-13T10:00:00Z'), ...book(3, 'xxviii, 311', '2026-11-13T08:00:00Z')]);
+      same(sortEntries(library.entries, 'pages').map(entry => entry.edition.pages), ['99', '311', 'xxviii, 311']);
+      same(sortEntries(library.entries, 'added').map(entry => entry.edition.title), ['Book 2', 'Book 1', 'Book 3']);
+    },
+  },
+  {
+    name: 'a pasted contents line keeps a subtitle after the title; only a last part that reads as a date is the date',
+    fn() {
+      same(parseContentsLines('Augustine — Confessions — A New Translation'), [{ author: 'Augustine', title: 'Confessions — A New Translation', date: null }]);
+      same(parseContentsLines('Augustine — Confessions — c. 397'), [{ author: 'Augustine', title: 'Confessions', date: 'c. 397' }]);
+    },
+  },
 ];

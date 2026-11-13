@@ -36,7 +36,8 @@ export function normalizeForSearch(text) {
  * @param {object|null} [set] the set's own record, for its short form: "LW 31" finds Luther's Works volume 31
  */
 export function searchTextOf(edition, worksById, authorsById, copies = [], set = null) {
-  const parts = [edition.title, edition.subtitle, edition.series, edition.seriesNumber, edition.set, edition.isbn];
+  // Publisher, year and volume too: "plato hackett" and "gibbon 3" are how a person narrows a search.
+  const parts = [edition.title, edition.subtitle, edition.series, edition.seriesNumber, edition.set, edition.volume, edition.isbn, edition.publisher, edition.year];
   if (set) parts.push(set.title, set.shortTitle, set.shortTitle && edition.volume && `${set.shortTitle} ${edition.volume}`);
   for (const contributor of edition.contributors) parts.push(contributor.name);
   for (const entry of edition.contents) {
@@ -48,7 +49,7 @@ export function searchTextOf(edition, worksById, authorsById, copies = [], set =
       if (author) parts.push(author.name, ...author.otherNames);
     }
   }
-  for (const copy of copies) parts.push(copy.notes);
+  for (const copy of copies) parts.push(copy.notes, ...copy.location);
   return normalizeForSearch(parts.filter(Boolean).join(' '));
 }
 

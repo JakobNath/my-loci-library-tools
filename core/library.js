@@ -2,6 +2,7 @@
 // authors, copies and everything needed to sort, filter and search it,
 // worked out once when the records are loaded.
 
+import { countPages } from './pages.js';
 import { sortYearOf } from './dating.js';
 import { anthologyRange } from './anthology.js';
 import { searchTextOf, piecesTextOf, normalizeForSearch } from './search.js';
@@ -118,13 +119,15 @@ export const SORTS = {
   author: { label: 'Author', key: entry => textKey(entry.authorSort) },
   originalDate: { label: 'Original date', key: entry => entry.sortYear },
   year: { label: 'Edition year', key: entry => entry.edition.year },
-  added: { label: 'Date added', key: entry => entry.added || null, descending: true },
+  // The day, then the moment the copy was made, so of two books added today the later is on top.
+  added: { label: 'Date added', key: entry => (entry.added ? `${entry.added} ${(entry.copies.find(copy => copy.added === entry.added) || {}).created || ''}` : null), descending: true },
   value: { label: 'Value', key: entry => entry.value || null, descending: true },
   location: { label: 'Location', key: entry => textKey(entry.location.join(' ')) },
   binding: { label: 'Binding', key: entry => textKey(entry.binding) },
   category: { label: 'Category', key: entry => textKey(entry.categories[0]) },
   publisher: { label: 'Publisher', key: entry => textKey(entry.edition.publisher) },
-  pages: { label: 'Pages', key: entry => entry.edition.pages },
+  // By the count ("xxviii, 311" is 339), not the text, where "99" would follow "311".
+  pages: { label: 'Pages', key: entry => countPages(entry.edition.pages) },
   series: { label: 'Series', key: entry => textKey([entry.edition.series || entry.edition.set, entry.edition.seriesNumber || entry.edition.volume].filter(Boolean).join(' ')) },
 };
 
@@ -232,16 +235,15 @@ export function searchEntries(library, query, limit = 50) {
   const found = [];
   for (const entry of library.entries) {
     const text = entry.searchText ?? searchTextOf(entry.edition, library.worksById, library.authorsById, entry.copies, entry.set);
-    if (words.every(word => text.includes(word))) {
-      found.push(entry);
-      if (found.length >= limit) break;
-    }
+    if (words.every(word => text.includes(word))) found.push(entry);
   }
+  // Every match is put in order before the list is cut, so the ones shown are
+  // the first in order, not whichever happened to be read first.
   // Editions of one work sit together: order by the first work's title, then its ID.
   const firstWork = entry => (entry.works[0] ? `${textKey(entry.works[0].title)} ${entry.works[0].id}` : textKey(entry.edition.title));
   const keyed = found.map(entry => ({ entry, key: firstWork(entry), title: SORTS.title.key(entry) }));
   keyed.sort((a, b) => compareKeys(a.key, b.key, false) || compareKeys(a.title, b.title, false));
-  return keyed.map(item => item.entry);
+  return keyed.slice(0, limit).map(item => item.entry);
 }
 
 /**

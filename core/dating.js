@@ -44,7 +44,7 @@ export function parseDating(text) {
     rest = rest.replace(/\s*-$/, '');
   }
 
-  const read = readCenturies(rest, isBc) || readYears(rest, isBc);
+  const read = readAcrossEras(rest) || readCenturies(rest, isBc) || readYears(rest, isBc);
   if (!read) return failure(original);
   let { earliest, latest } = read;
   let kind = read.isCentury ? 'century' : earliest === latest ? 'exact' : 'range';
@@ -94,6 +94,15 @@ export function centurySpan(century, third, isBc) {
   if (third === 'mid') return { earliest: start + 33, latest: start + 65 };
   if (third === 'late') return { earliest: start + 66, latest: end };
   return { earliest: start, latest: end };
+}
+
+// A span from BC into AD, each year with its own era: "43 bc - 17", "27 bc - ad 9"
+// (Ovid's and Livy's lifetimes). The text is already lower case with plain hyphens,
+// and an "AD" written at the very end has been taken off.
+function readAcrossEras(text) {
+  const match = text.match(/^(\d{1,4})\s*b\.?\s?c\.?\s?e?\.?\s*-\s*(?:a\.?\s?d\.?\s*|c\.?\s?e\.?\s*)?(\d{1,4})$/);
+  if (!match || Number(match[1]) === 0 || Number(match[2]) === 0) return null;
+  return { earliest: -Number(match[1]), latest: Number(match[2]) };
 }
 
 // "1689", "397-400", "1530-59", "397/398", "500-450" (BC)

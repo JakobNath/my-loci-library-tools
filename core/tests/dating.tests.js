@@ -108,4 +108,12 @@ export const tests = [
       equal(sortYearOf({ sortYear: null, datings: [] }), null);
     },
   },
+  {
+    name: 'a span from BC into AD reads with an era on each side: "43 BC – 17", "27 BC – AD 9"',
+    fn() {
+      same(parseDating('43 BC – 17').dating, { text: '43 BC – 17', earliest: -43, latest: 17, certainty: 'range' });
+      same([parseDating('27 BC – AD 9').dating.earliest, parseDating('27 BC – AD 9').dating.latest], [-27, 9]);
+      same([parseDating('c. 4 BC - 65').dating.earliest, parseDating('c. 4 BC - 65').dating.certainty], [-4, 'circa']);
+    },
+  },
 ];

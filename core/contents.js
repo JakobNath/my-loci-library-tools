@@ -20,7 +20,13 @@ export function parseContentsLines(text) {
     if (parts.length === 1) pieces.push({ author: null, title: parts[0], date: null });
     else if (parts.length === 2 && parseDating(parts[1]).ok) pieces.push({ author: null, title: parts[0], date: parts[1] });
     else if (parts.length === 2) pieces.push({ author: parts[0], title: parts[1], date: null });
-    else pieces.push({ author: parts[0], title: parts.slice(1, -1).join(' — '), date: parseDating(parts[parts.length - 1]).ok ? parts[parts.length - 1] : null });
+    else {
+      // Three parts or more: the last is the date only if it reads as one;
+      // otherwise it belongs to the title ("Author — Title — Subtitle").
+      const last = parts[parts.length - 1];
+      const hasDate = parseDating(last).ok;
+      pieces.push({ author: parts[0], title: parts.slice(1, hasDate ? -1 : undefined).join(' — '), date: hasDate ? last : null });
+    }
   }
   return pieces;
 }

@@ -269,6 +269,8 @@ export function yearFromText(text) {
   // A full date written year first (1802-07-24): the year is the first number, not the last.
   const iso = plain.match(/^(-?)(\d{1,4})-\d{1,2}(-\d{1,2})?$/);
   if (iso) return iso[1] ? -Number(iso[2]) : Number(iso[2]);
+  // "6th century" names no year: its number is not one.
+  if (/\d\s*(?:st|nd|rd|th)\b|\bcentur/i.test(plain)) return null;
   const numbers = plain.match(/\d{1,4}/g);
   if (!numbers) return null;
   // A day comes before its year ("24 July 1802"), so the last year-sized number wins; "17 or 18 A.D." keeps 18.
