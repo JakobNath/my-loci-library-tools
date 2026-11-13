@@ -2,6 +2,7 @@
 // forms named in PLAN.md, and the historical century convention.
 
 import { parseDating, centurySpan, formatYear, formatYearRange, sortYearOf, workingDating } from '../dating.js';
+import { workDateQuestion, translationDateQuestion, webSearchUrl } from '../date-search.js';
 import { equal, same, ok } from './check.js';
 
 function reads(text, earliest, latest, certainty) {
@@ -115,5 +116,33 @@ export const tests = [
       same([parseDating('27 BC – AD 9').dating.earliest, parseDating('27 BC – AD 9').dating.latest], [-27, 9]);
       same([parseDating('c. 4 BC - 65').dating.earliest, parseDating('c. 4 BC - 65').dating.certainty], [-4, 'circa']);
     },
+  },
+  // "Search the web" beside a date box (PLAN.md, "Original dates")
+  {
+    name: 'a work with an author is asked about by title and author',
+    fn() { equal(workDateQuestion('Pride and Prejudice', ['Jane Austen']), 'When was Pride and Prejudice by Jane Austen written and first published?'); },
+  },
+  {
+    name: 'a work with no author is asked about as "the" work',
+    fn() {
+      equal(workDateQuestion('Didache', []), 'When was the Didache written and first published?');
+      equal(workDateQuestion('The Epic of Gilgamesh', []), 'When was The Epic of Gilgamesh written and first published?');
+    },
+  },
+  {
+    name: 'several authors are joined with "and"',
+    fn() { equal(workDateQuestion('Good Omens', ['Terry Pratchett', 'Neil Gaiman']), 'When was Good Omens by Terry Pratchett and Neil Gaiman written and first published?'); },
+  },
+  {
+    name: 'a translation is asked about by its translator',
+    fn() {
+      equal(translationDateQuestion('The Odyssey', ['Robert Fagles']), "When was Robert Fagles' translation of The Odyssey first published?");
+      equal(translationDateQuestion('Confessions', ['Henry Chadwick']), "When was Henry Chadwick's translation of Confessions first published?");
+      equal(translationDateQuestion('The Iliad', []), 'When was the English translation of The Iliad first published?');
+    },
+  },
+  {
+    name: 'the search address carries the question, encoded',
+    fn() { equal(webSearchUrl("When was Fagles' Iliad & Odyssey?"), "https://www.google.com/search?q=When%20was%20Fagles'%20Iliad%20%26%20Odyssey%3F"); },
   },
 ];
