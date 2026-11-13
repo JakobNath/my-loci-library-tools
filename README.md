@@ -136,7 +136,7 @@ Setting up, once:
 
 Then run `my-loci-library-to-zotero\loci-zotero.cmd` (Windows) or `my-loci-library-to-zotero/loci-zotero.sh` (Linux) whenever you mark a book to cite; it finishes in a few seconds, and Zotero on the laptop shows the book after its next sync (usually within seconds; Edit › Settings › Sync › "Sync automatically" must be on). To run it on a schedule too, make a Task Scheduler task as for loci-backup, repeating every hour.
 
-On the first run, books already in Zotero (matched by ISBN, or by title and year) are linked instead of being added again. Their data is replaced by Loci's, but their notes, attachments, other tags, other collections, other lines in Extra and any pinned citation key are kept; every field that was overwritten is listed in the run's report.
+On the first run, books already in Zotero (matched by ISBN, or by title and year) are linked instead of being added again. Only their empty fields are filled from Loci (changed on 13 November 2026: what a person entered in Zotero is never replaced, on the first run or later), and their notes, attachments, other tags, other collections, other lines in Extra and any pinned citation key are kept; every field that was overwritten is listed in the run's report.
 
 Zotero 7's local connection on the laptop can only read, so the tool writes through Zotero's web API, which the plan names as the fallback.
 

@@ -102,7 +102,7 @@ test('nothing is deleted: books given away or removed in Loci are tagged instead
   assert.ok(!fake.calls.some(call => call.startsWith('DELETE')));
 });
 
-test('on the first run a book already in Zotero is linked, keeps its pinned key, notes and tags, and the differences are reported', async () => {
+test('on the first run a book already in Zotero is linked and keeps what it holds: only its empty fields are filled, and the differences are reported', async () => {
   const { fake, zotero, links } = setup();
   const key = fake.add({ itemType: 'book', title: 'Confessions', ISBN: '978-0-19-953782-2', publisher: 'OUP', date: '1991',
     extra: 'Citation Key: Augustine1991\nRead for the seminar', tags: [{ tag: 'patristics' }], collections: ['OLDCOLL1'] });
@@ -110,12 +110,14 @@ test('on the first run a book already in Zotero is linked, keeps its pinned key,
   assert.match(report[0], /Zotero: 5 new, 1 updated/);
   assert.equal(links.items[chadwick.id].key, key, 'linked, not made again');
   const item = fake.items.get(key).data;
-  assert.equal(item.publisher, 'Oxford University Press', "Loci's data is written");
+  assert.equal(item.publisher, 'OUP', 'what the person entered in Zotero stays');
+  assert.ok(item.creators && item.creators.length, 'an empty field is filled');
   assert.equal(item.citationKey, 'Augustine1991', 'the key pinned in Extra moves to the Citation Key field');
   assert.equal(item.extra, 'Read for the seminar', 'the note in Extra stays');
   assert.deepEqual(item.tags, [{ tag: 'patristics' }]);
   assert.deepEqual(item.collections.length, 2, 'its other collection stays');
-  assert.ok(report.some(line => line.includes('publisher was "OUP"')), 'the overwritten difference is reported');
+  assert.ok(report.some(line => line.includes('publisher kept as "OUP"')), 'the difference is reported');
+  assert.equal(links.items[chadwick.id].adopted, true, 'remembered, so later runs fill only empty fields too');
 });
 
 test('items deleted in Zotero, and a deleted collection, are made again on the next run, with the same keys', async () => {
@@ -201,14 +203,17 @@ test('the companion has matching .cmd and .sh launchers', () => {
   assert.ok(sh.startsWith('#!/bin/sh') && sh.includes('node loci-zotero.mjs "$@"'));
 });
 
-test("Loci's Library of Congress call number goes to Zotero's Call Number; without one, Zotero's own stays", async () => {
+test("a call number already in Zotero stays on a book that was there before; a book the companion made takes Loci's", async () => {
   const { fake, zotero, links } = setup();
   const key = fake.add({ itemType: 'book', title: 'Confessions', ISBN: '9780199537822', date: '1991', callNumber: 'BR65 .A6 1991', collections: [] });
   await sendToZotero(sampleRecords(), links, zotero);
   assert.equal(fake.items.get(key).data.callNumber, 'BR65 .A6 1991', 'not emptied when Loci has none');
   const numbered = withField(chadwick, 'identifiers', { lccn: '2008491261', oclc: null, lcc: 'BR65.A6 E5 2008', ddc: null }, '2026-11-12T09:00:00Z');
   await sendToZotero(sampleRecords().map(record => (record.id === chadwick.id ? numbered : record)), links, zotero);
-  assert.equal(fake.items.get(key).data.callNumber, 'BR65.A6 E5 2008');
+  assert.equal(fake.items.get(key).data.callNumber, 'BR65 .A6 1991', "Zotero's own stays on a book that was there before");
+  const fresh = setup();
+  await sendToZotero(sampleRecords().map(record => (record.id === chadwick.id ? numbered : record)), fresh.links, fresh.zotero);
+  assert.equal(fresh.fake.byTitle('Confessions')[0].data.callNumber, 'BR65.A6 E5 2008', "a book the companion made takes Loci's");
 });
 
 test("only an exact original year goes to Zotero's Original Date field, and a date typed there by hand stays", async () => {

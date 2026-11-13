@@ -157,3 +157,17 @@ test('the importer has matching .cmd and .sh launchers', () => {
   assert.ok(cmd.includes('cd /d "%~dp0"') && cmd.includes('node logos-import.mjs %*'));
   assert.ok(sh.startsWith('#!/bin/sh') && sh.includes('node logos-import.mjs "$@"'));
 });
+
+test('a "whole library" export that would mark many books gone is refused, unless that is said to be right', async () => {
+  const { importRows } = await import('../import.mjs');
+  const records = [];
+  for (let n = 1; n <= 12; n++) {
+    const id = `t000000001${String(n).padStart(2, '0')}`;
+    records.push(newRecord('edition', id, NOW, { title: `Logos book ${n}`, medium: 'logos', logosId: `LLS:BOOK${n}` }));
+    records.push(newRecord('copy', `t000000002${String(n).padStart(2, '0')}`, NOW, { edition: id, added: '2026-11-10' }));
+  }
+  const options = { now: NOW, today: '2026-11-10', newId: () => 't00000000999', full: true };
+  // The wrong file: none of the twelve books is in it.
+  assert.throws(() => importRows([], records, { imported: {} }, options), /would mark 12 of your 12 Logos books as gone/);
+  assert.equal(importRows([], records, { imported: {} }, { ...options, allowManyGone: true }).gone.length, 12);
+});

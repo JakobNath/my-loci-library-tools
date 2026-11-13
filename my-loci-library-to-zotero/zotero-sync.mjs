@@ -121,9 +121,12 @@ export async function sendToZotero(records, links, zotero, { collectionName = MA
     if (link && link.sent === sent) { unchanged++; continue; }
     if (link || match) {
       const key = link ? link.key : match.key;
-      const differences = await mergeInto(zotero, key, { ...data, tags: item.tags }, links.collection, match && !link ? keepBefore : () => {});
+      // A book that was in Zotero before the companion linked it is the person's own item:
+      // only its empty fields are filled, now and on every later run (the link remembers "adopted").
+      const adopted = !!((match && !link) || (link && link.adopted));
+      const differences = await mergeInto(zotero, key, { ...data, tags: item.tags }, links.collection, match && !link ? keepBefore : () => {}, adopted);
       if (match && !link) report.push(...differences.map(text => `  ${item.data.title}: ${text}`));
-      links.items[item.linkId] = { ...known, key, citationKey, sent };
+      links.items[item.linkId] = { ...known, key, citationKey, sent, ...(adopted ? { adopted: true } : {}) };
       updated++;
       save();
     } else {
@@ -180,11 +183,14 @@ export async function sendToZotero(records, links, zotero, { collectionName = MA
 }
 
 /**
- * Bring an existing item up to date: our fields written, other tags and other
+ * Bring an existing item up to date: our fields written (with fillOnly, only
+ * into fields that are empty in Zotero, so nothing a person entered is replaced), other tags and other
  * collections kept, and anything the first version of the companion put in URL,
  * Loc. in Archive or Extra taken out again. Returns what differed, in words.
  */
-async function mergeInto(zotero, key, ours, collection, keepBefore = () => {}) {
+const isEmpty = value => value === undefined || value === null || value === '' || (Array.isArray(value) && !value.length);
+
+async function mergeInto(zotero, key, ours, collection, keepBefore = () => {}, fillOnly = false) {
   const current = await zotero.item(key);
   keepBefore(current);
   const differences = [];
@@ -192,6 +198,10 @@ async function mergeInto(zotero, key, ours, collection, keepBefore = () => {}) {
   for (const [field, value] of Object.entries(ours)) {
     if (field === 'tags' || field === 'itemType' || field === 'extra') continue; // an item's type is never changed
     if (JSON.stringify(current.data[field] ?? '') !== JSON.stringify(value)) {
+      if (fillOnly && !isEmpty(current.data[field])) {
+        if (!isEmpty(value)) differences.push(`${field} kept as ${JSON.stringify(current.data[field])} (the catalog has ${JSON.stringify(value)})`);
+        continue;
+      }
       change[field] = value;
       if (current.data[field]) differences.push(`${field} was ${JSON.stringify(current.data[field])}`);
     }

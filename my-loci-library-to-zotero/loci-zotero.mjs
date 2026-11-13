@@ -10,7 +10,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readConfig, readRecords, isGitRepo, git, commitAndPush } from '../shared/data-repo.mjs';
+import { readConfig, readRecords, isGitRepo, git, pullLatest, commitAndPush } from '../shared/data-repo.mjs';
 import { connectToZotero } from './zotero-api.mjs';
 import { sendToZotero } from './zotero-sync.mjs';
 
@@ -51,7 +51,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
     if (!config.zoteroUserId || !config.zoteroKey) throw new Error('config.json needs "zoteroUserId" and "zoteroKey" (the tools README explains where to find them).');
     const useGit = !args.includes('--no-git') && isGitRepo(dataRepo);
     console.log(`Reading the catalog in ${dataRepo}…`);
-    if (useGit) git(dataRepo, 'pull', '--ff-only');
+    if (useGit) pullLatest(dataRepo);
     const collectionAt = args.indexOf('--collection');
     const lines = await runZotero(dataRepo, connectToZotero({ userId: String(config.zoteroUserId), key: config.zoteroKey }), {
       collectionName: collectionAt >= 0 ? args[collectionAt + 1] : 'My Loci Library',

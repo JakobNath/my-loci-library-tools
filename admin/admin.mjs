@@ -119,7 +119,7 @@ function toolsHtml() {
   <p>${button('backup')} ${button('enrich')} ${button('sources')}</p>
   <p><label>Logos export (full path of the .csv) <input name="file" size="48" placeholder="C:\\Users\\…\\Logos export.csv"></label>
     <label class="check"><input type="checkbox" name="full"> it lists the whole Logos library</label> ${button('logos')} ${button('covers')}</p>
-  <p>${button('zotero', ' data-confirm="This sends the catalog into your Zotero library (the &quot;My Loci Library&quot; collection). Go on?"')}</p>
+  <p>${button('zotero', ' data-confirm="This sends the catalog into your Zotero library (the &quot;My Loci Library&quot; collection). On the first run, books already in Zotero with the same ISBN or title are linked to it: their empty fields are filled, and nothing you entered is replaced. Go on?"')}</p>
   <p class="pages">Laptop pages of the app, opened in this browser where the app is synced:
     <a href="${APP_URL}laptop/covers.html" target="_blank" rel="noopener">Covers from the inbox</a> ·
     <a href="${APP_URL}laptop/contents.html" target="_blank" rel="noopener">Contents to enter</a></p>

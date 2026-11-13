@@ -5,7 +5,7 @@
 
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { readRecords, writeRecord, isGitRepo, git, commitAndPush, FOLDERS } from '../shared/data-repo.mjs';
+import { readRecords, writeRecord, isGitRepo, git, pullLatest, commitAndPush, FOLDERS } from '../shared/data-repo.mjs';
 import { isInside } from '../core/library.js';
 import { readShelves, shelvesText, planShelves, recordsForPlan, planText } from './plan.mjs';
 
@@ -52,7 +52,7 @@ export function record(dataRepo, { place, shelves, order }, { now, useGit = isGi
   const suggestion = suggest(dataRepo, { place, shelves, order });
   if (!suggestion.ok) return suggestion;
   if (suggestion.plan.left.length) return { ok: false, output: `${suggestion.plan.left.length} books do not fit on these shelves, so nothing was recorded. Add a shelf or choose a smaller place.` };
-  if (useGit) git(dataRepo, 'pull', '--ff-only');
+  if (useGit) pullLatest(dataRepo);
   const records = readRecords(dataRepo);
   const changed = recordsForPlan(records, suggestion.plan, now);
   for (const copy of changed) writeRecord(dataRepo, copy);

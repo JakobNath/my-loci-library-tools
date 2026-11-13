@@ -81,8 +81,39 @@ export function git(folder, ...args) {
   return execFileSync('git', args, { cwd: folder, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 }
 
+// What to do when the laptop's copy and GitHub cannot be brought together by themselves.
+const STUCK = 'The laptop and a phone changed the same record at the same time, and Git could not join the two. '
+  + 'Nothing was lost: the laptop\'s change is kept in its copy of the data repository, and the phone\'s is on GitHub. '
+  + 'The tools will not run until this is settled by hand in that folder (HOW_IT_WORKS.md, "The laptop is stuck").';
+
+/**
+ * Fetch what the phones saved. A commit the laptop made earlier and could not
+ * send (a phone had saved in between) is placed after theirs, so the tools
+ * are never left unable to pull. Files changed here and not committed are
+ * put aside for the pull and put back after it.
+ */
+export function pullLatest(folder) {
+  try {
+    git(folder, 'pull', '--ff-only');
+  } catch {
+    joinWithRemote(folder);
+  }
+}
+
+function joinWithRemote(folder) {
+  try {
+    git(folder, 'pull', '--rebase', '--autostash');
+  } catch (error) {
+    try { git(folder, 'rebase', '--abort'); } catch { /* no rebase was under way: the pull failed before starting one */ }
+    throw new Error(`${STUCK} Git said: ${String(error.stderr || error.message).trim().split('\n').pop()}`);
+  }
+}
+
 /**
  * Commit the given paths (if any changed) and push. Never commits anything else.
+ * If a phone saved while the tool was working, GitHub refuses the push: the
+ * phone's changes are fetched, the laptop's commit is placed after them, and
+ * the push is tried once more.
  * @returns {boolean} whether a commit was made
  */
 export function commitAndPush(folder, paths, message) {
@@ -91,6 +122,11 @@ export function commitAndPush(folder, paths, message) {
   git(folder, 'add', '--', ...present);
   if (!git(folder, 'diff', '--cached', '--name-only')) return false;
   git(folder, 'commit', '-m', message);
-  git(folder, 'push');
+  try {
+    git(folder, 'push');
+  } catch {
+    joinWithRemote(folder);
+    git(folder, 'push');
+  }
   return true;
 }

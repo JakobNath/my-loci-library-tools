@@ -57,7 +57,10 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
  * @returns {{ changed: object[], added: string[], updated: string[], kept: number, gone: string[], back: string[], fromSets: string[], suggestions: { editionId: string, workId: string, text: string }[], problems: string[] }}
  *   fromSets: the new books whose works came from a known set's list
  */
-export function importRows(rows, records, memory, { now, today, newId, full = false, sets = [] }) {
+const MANY_GONE = 10; // more books than this going at once is questioned
+const MANY_GONE_SHARE = 0.1; // or more than a tenth of the Logos library, whichever is larger
+
+export function importRows(rows, records, memory, { now, today, newId, full = false, sets = [], allowManyGone = false }) {
   const result = { changed: [], added: [], updated: [], kept: 0, gone: [], back: [], fromSets: [], suggestions: [], problems: [] };
   const byLogosId = new Map(records.filter(record => record.type === 'edition' && record.logosId).map(edition => [edition.logosId, edition]));
   const copiesOf = editionId => records.filter(record => record.type === 'copy' && record.edition === editionId);
@@ -142,11 +145,21 @@ export function importRows(rows, records, memory, { now, today, newId, full = fa
   }
 
   if (full) {
+    let owned = 0;
     for (const [logosId, edition] of byLogosId) {
-      if (seen.has(logosId) || edition.trashed) continue;
+      if (edition.trashed) continue;
       for (const copy of copiesOf(edition.id)) {
-        if (copy.status === 'owned') { result.changed.push(withField(copy, 'status', 'gone from Logos', now)); result.gone.push(edition.title); }
+        if (copy.status !== 'owned') continue;
+        owned++;
+        if (!seen.has(logosId)) { result.changed.push(withField(copy, 'status', 'gone from Logos', now)); result.gone.push(edition.title); }
       }
+    }
+    // A whole library seldom loses many books at once. A file that would mark
+    // a large share gone is far more likely a partial export or the wrong file.
+    if (!allowManyGone && result.gone.length > Math.max(MANY_GONE, owned * MANY_GONE_SHARE)) {
+      throw new Error(`This export would mark ${result.gone.length} of your ${owned} Logos books as gone from Logos. `
+        + 'That usually means the file is not the whole library (a collection, a filtered list, or the wrong file). Nothing was changed. '
+        + 'If the file is right, import it without "it lists the whole Logos library", or run logos-import with --full --many-gone.');
     }
   }
   return result;

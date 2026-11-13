@@ -3,6 +3,7 @@
 //
 //   node logos-import.mjs <export.csv> [--full] [--no-git]
 //       import the export; --full when it lists the whole Logos library
+//       (add --many-gone if it is right that many books have left the library)
 //       (resources missing from it are then marked "gone from Logos")
 //   node logos-import.mjs --confirm-links [--no-git]
 //       link the suggestions marked "yes" in links-to-confirm.txt
@@ -14,7 +15,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, rmSync
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomBytes } from 'node:crypto';
-import { readConfig, readRecords, writeRecord, isGitRepo, git, commitAndPush } from '../shared/data-repo.mjs';
+import { readConfig, readRecords, writeRecord, isGitRepo, git, pullLatest, commitAndPush } from '../shared/data-repo.mjs';
 import { readKnownSets } from '../shared/known-sets.mjs';
 import { makeId } from '../core/ids.js';
 import { parseCsv, decodeExport } from './columns.mjs';
@@ -46,10 +47,10 @@ function writeMemory(dataRepo, memory) {
  * Import an export file. Returns the report, one line each.
  * @param {{ full?: boolean, now?: string, linksFile?: string }} options
  */
-export function importFile(dataRepo, file, { full = false, now = nowText(), linksFile = LINKS_FILE } = {}) {
+export function importFile(dataRepo, file, { full = false, allowManyGone = false, now = nowText(), linksFile = LINKS_FILE } = {}) {
   const rows = parseCsv(decodeExport(readFileSync(file)));
   const memory = readMemory(dataRepo);
-  const result = importRows(rows, readRecords(dataRepo), memory, { now, today: now.slice(0, 10), newId: () => makeId(randomBytes(12)), full, sets: readKnownSets() });
+  const result = importRows(rows, readRecords(dataRepo), memory, { now, today: now.slice(0, 10), newId: () => makeId(randomBytes(12)), full, allowManyGone, sets: readKnownSets() });
   for (const record of result.changed) writeRecord(dataRepo, record);
   writeMemory(dataRepo, memory);
   if (result.suggestions.length) {
@@ -144,7 +145,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
   try {
     const { dataRepo } = readConfig();
     const useGit = !args.includes('--no-git') && isGitRepo(dataRepo);
-    if (useGit) git(dataRepo, 'pull', '--ff-only');
+    if (useGit) pullLatest(dataRepo);
     let lines;
     let message;
     if (args.includes('--confirm-links')) {
@@ -156,7 +157,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
     } else {
       const file = args.find(arg => !arg.startsWith('--'));
       if (!file) throw new Error('Name the export file: node logos-import.mjs "C:\\Users\\me\\Downloads\\Library.csv"');
-      lines = importFile(dataRepo, resolve(file), { full: args.includes('--full') });
+      lines = importFile(dataRepo, resolve(file), { full: args.includes('--full'), allowManyGone: args.includes('--many-gone') });
       message = 'Import from Logos';
     }
     if (useGit && commitAndPush(dataRepo, ['works', 'editions', 'copies', 'authors', 'integrations', 'images/inbox'], message)) lines.push('Committed and pushed.');

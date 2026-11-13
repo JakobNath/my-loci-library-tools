@@ -12,7 +12,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { gzipSync, gunzipSync } from 'node:zlib';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readConfig, readRecords, writeRecord, isGitRepo, git, commitAndPush, FOLDERS } from '../shared/data-repo.mjs';
+import { readConfig, readRecords, writeRecord, isGitRepo, git, pullLatest, commitAndPush, FOLDERS } from '../shared/data-repo.mjs';
 import { editionsToAsk, fillBook, askKey, sourcesOfWritten, RECHECK_DAYS } from './enrich.mjs';
 import { checkWikidataIds } from './wikidata-ids.mjs';
 import { askSources } from './sources.mjs';
@@ -137,7 +137,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
   try {
     const { dataRepo, googleBooksKey } = readConfig();
     const useGit = !args.includes('--no-git') && isGitRepo(dataRepo);
-    if (useGit) git(dataRepo, 'pull', '--ff-only');
+    if (useGit) pullLatest(dataRepo);
     const lines = await runEnrich(dataRepo, { useGit, googleBooksKey, limit: limitAt >= 0 ? Number(args[limitAt + 1]) : Infinity });
     console.log(lines.join('\n'));
   } catch (error) {

@@ -14,9 +14,9 @@
 
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readConfig, isGitRepo, git, commitAndPush } from '../shared/data-repo.mjs';
+import { readConfig, isGitRepo, git, pullLatest, commitAndPush } from '../shared/data-repo.mjs';
 import { rebuildCatalog, mirrorFolder, monthlySnapshot, fullArchive, writeStatus, STATUS_FILE } from './backup.mjs';
-import { runEnrich, MEMORY as ENRICH_MEMORY } from '../loci-enrich/loci-enrich.mjs';
+import { runEnrich, MEMORY as ENRICH_MEMORY, ANSWERS as ENRICH_ANSWERS } from '../loci-enrich/loci-enrich.mjs';
 
 /**
  * The daily backup. Returns the report, one line each.
@@ -24,8 +24,16 @@ import { runEnrich, MEMORY as ENRICH_MEMORY } from '../loci-enrich/loci-enrich.m
  */
 export async function dailyBackup({ dataRepo, backupFolder, googleBooksKey = '' }, { useGit = true, enrich = true, now = new Date().toISOString().slice(0, 19) + 'Z', fetchFn } = {}) {
   const lines = [];
-  if (useGit) { git(dataRepo, 'pull', '--ff-only'); lines.push('Pulled the latest data.'); }
-  if (enrich) lines.push(...await runEnrich(dataRepo, { useGit, commit: false, now, googleBooksKey, ...(fetchFn ? { fetchFn } : {}) }));
+  if (useGit) { pullLatest(dataRepo); lines.push('Pulled the latest data.'); }
+  // Filling book data is an extra: whatever goes wrong in it (a source down, a
+  // record newer than these tools), the backup itself still runs.
+  if (enrich) {
+    try {
+      lines.push(...await runEnrich(dataRepo, { useGit, commit: false, now, googleBooksKey, ...(fetchFn ? { fetchFn } : {}) }));
+    } catch (error) {
+      lines.push(`Book data was not filled this time (${error.message}). The backup went on.`);
+    }
+  }
   lines.push(rebuildCatalog(dataRepo, now) ? 'catalog.json rebuilt.' : 'catalog.json already up to date.');
   const done = {};
   if (backupFolder) {
@@ -37,7 +45,7 @@ export async function dailyBackup({ dataRepo, backupFolder, googleBooksKey = '' 
     lines.push('No backupFolder in config.json, so nothing was mirrored.');
   }
   writeStatus(dataRepo, done);
-  if (useGit && commitAndPush(dataRepo, ['catalog.json', STATUS_FILE, 'editions', 'works', ENRICH_MEMORY], `Daily backup ${now.slice(0, 10)}`)) lines.push('Committed and pushed.');
+  if (useGit && commitAndPush(dataRepo, ['catalog.json', STATUS_FILE, 'editions', 'works', ENRICH_MEMORY, ENRICH_ANSWERS], `Daily backup ${now.slice(0, 10)}`)) lines.push('Committed and pushed.');
   return lines;
 }
 
@@ -51,7 +59,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
     if (archiveAt >= 0) {
       if (!args[archiveAt + 1]) throw new Error('Name the folder for the archive: node loci-backup.mjs --archive "E:\\Loci archive"');
       const now = new Date().toISOString().slice(0, 19) + 'Z';
-      if (useGit) git(config.dataRepo, 'pull', '--ff-only');
+      if (useGit) pullLatest(config.dataRepo);
       const folder = fullArchive(config.dataRepo, resolve(args[archiveAt + 1]), now);
       writeStatus(config.dataRepo, { archive: now });
       if (useGit) commitAndPush(config.dataRepo, [STATUS_FILE], `Yearly archive ${now.slice(0, 10)}`);
