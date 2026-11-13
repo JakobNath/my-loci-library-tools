@@ -65,6 +65,58 @@ function update(record, values, now) {
   return result;
 }
 
+// Which of a book's works each contents line stands for, when the book is
+// edited. Title and authors together come first, so two works with one title
+// (Sophocles' and Euripides' Electra) stay apart; a line whose author was
+// changed is then found by its title. Each work is taken once.
+function worksForLines(lines, works, sameAuthors) {
+  const free = new Set(works);
+  const take = test => {
+    const work = [...free].find(test);
+    if (work) free.delete(work);
+    return work;
+  };
+  const exact = lines.map(line => take(work => key(work.title) === key(line.title) && sameAuthors(work, line)));
+  return lines.map((line, i) => exact[i] || take(work => key(work.title) === key(line.title)));
+}
+
+// The form has no box for pieces (the short items of a known set's volume),
+// so an edit carries them through where they stood: before the first work, or
+// after the work they followed. A piece the lines made again is not repeated.
+function withOldPieces(contents, oldContents) {
+  const made = new Set(contents.filter(entry => entry.piece).map(entry => key(entry.piece.title)));
+  const after = new Map();
+  let anchor = null;
+  for (const entry of oldContents) {
+    if (entry.work) { anchor = entry.work; continue; }
+    if (!entry.piece || made.has(key(entry.piece.title))) continue;
+    after.set(anchor, [...(after.get(anchor) || []), entry]);
+  }
+  if (!after.size) return contents;
+  const result = [...(after.get(null) || [])];
+  after.delete(null);
+  for (const entry of contents) {
+    result.push(entry);
+    if (entry.work && after.has(entry.work)) {
+      result.push(...after.get(entry.work));
+      after.delete(entry.work);
+    }
+  }
+  for (const pieces of after.values()) result.push(...pieces);
+  return result;
+}
+
+// A work's datings with its working dating changed to the date typed on its
+// contents line. The dating's note and kind, and any other datings, are kept.
+function withWorkingDate(work, text, problems) {
+  const working = work.datings.find(dating => dating.working) || work.datings[0];
+  if (working && working.text === text) return work.datings;
+  const reading = datingsFromRows([{ text, working: true, note: working ? working.note : '', kind: working ? working.kind : null }]);
+  problems.push(...reading.problems);
+  if (!reading.datings.length) return work.datings;
+  return working ? work.datings.map(dating => (dating === working ? reading.datings[0] : dating)) : reading.datings;
+}
+
 /** A copy's value history without the entries of the given dates. */
 export function valueHistoryWithout(history, dates) {
   return history.filter(point => !dates.includes(point.date));
@@ -144,12 +196,23 @@ export function recordsFromForm(form, existing, context) {
 
   // Works: one for a single book, or one per contents line for an anthology.
   const oldWorks = existing ? existing.works : [];
+  const oldContents = existing ? existing.edition.contents : [];
+  // The contents entry a work already has keeps its translator, pages and extent through an edit.
+  const entryFor = (workId, fresh) => oldContents.find(entry => entry.work === workId) || fresh;
   let contents;
   if (form.contents !== null) {
     contents = [];
+    const lines = parseContentsLines(form.contents);
+    const namesOn = line => (line.author ? line.author.split(/\s+and\s+/).map(name => name.trim()).filter(Boolean) : []);
+    const sameAuthors = (work, line) => {
+      const ids = namesOn(line).map(name => known.get(key(name)));
+      return ids.length === work.authors.length && ids.every(id => work.authors.includes(id));
+    };
+    const matches = worksForLines(lines, oldWorks, sameAuthors);
     // The works of a known set's volume (core/known-sets.js), when the contents came from its list.
     const knownSet = form.knownWorks || { set: '', works: [] };
-    for (const line of parseContentsLines(form.contents)) {
+    for (const [i, line] of lines.entries()) {
+      const match = matches[i];
       // A line still as the list gives it takes the list's details; a line a person changed is saved as typed.
       const listed = knownSet.works.find(item => key(item.title) === key(line.title) && key(item.author) === key(line.author || ''));
       if (listed && listed.piece) {
@@ -159,15 +222,15 @@ export function recordsFromForm(form, existing, context) {
       }
       // A work the list puts in several volumes (Gibbon, the Summa) is one work: a later volume links to the
       // work an earlier volume of the same set made, and leaves its datings as they are.
-      const inSet = listed && !oldWorks.some(work => key(work.title) === key(line.title))
-        && (context.setWorks || []).find(work => key(work.title) === key(line.title));
+      const inSet = listed && !match
+        && (context.setWorks || []).find(work => key(work.title) === key(line.title) && sameAuthors(work, line));
       if (inSet) {
         contents.push({ work: inSet.id, piece: null, extent: 'complete', translator: listed.translator || null, pages: listed.pages || null, cite: false });
         continue;
       }
       // A line a person joined to a work already held ("Possibly the same as…", form.sameWorks:
       // work IDs by the line's title) links to that work and leaves it as it is.
-      const joined = form.sameWorks && !oldWorks.some(work => key(work.title) === key(line.title))
+      const joined = form.sameWorks && !match
         && context.works && context.works.get(form.sameWorks[key(line.title)]);
       if (joined) {
         contents.push({ work: joined.id, piece: null, extent: 'complete', translator: (listed && listed.translator) || null, pages: (listed && listed.pages) || null, cite: false });
@@ -175,9 +238,17 @@ export function recordsFromForm(form, existing, context) {
       }
       const ids = authorIds(line.author ? line.author.split(/\s+and\s+/) : []);
       const note = listed && line.date === listed.date ? `from the ${knownSet.set} list` : '';
+      const fresh = { work: null, piece: null, extent: 'complete', translator: (listed && listed.translator) || null, pages: (listed && listed.pages) || null, cite: false };
+      if (match) {
+        // A work the book already holds: only what the line changed is changed.
+        const datings = line.date ? withWorkingDate(match, line.date, problems) : match.datings;
+        const work = update(match, { title: line.title, authors: ids, datings }, now);
+        if (work !== match) records.push(work);
+        contents.push(listed ? { ...fresh, work: work.id } : entryFor(work.id, { ...fresh, work: work.id }));
+        continue;
+      }
       const reading = line.date ? datingsFromRows([{ text: line.date, working: true, note }]) : { datings: [], problems: [] };
       problems.push(...reading.problems);
-      const match = oldWorks.find(work => key(work.title) === key(line.title));
       const values = { title: line.title, authors: ids, ...(line.date ? { datings: reading.datings } : {}) };
       // A new work in a collection takes the language, category and tags asked once for the whole book,
       // and from a known set's list its own original title and language. A language chosen for this
@@ -188,11 +259,12 @@ export function recordsFromForm(form, existing, context) {
         category: form.work.category || null, tags: form.work.tags,
         ...(listed && listed.originalTitle ? { originalTitle: listed.originalTitle } : {}),
       };
-      const work = match ? update(match, values, now) : newRecord('work', newId(), now, { ...values, ...shared });
-      if (work !== match) records.push(work);
-      contents.push({ work: work.id, piece: null, extent: 'complete', translator: (listed && listed.translator) || null, pages: (listed && listed.pages) || null, cite: false });
+      const work = newRecord('work', newId(), now, { ...values, ...shared });
+      records.push(work);
+      contents.push({ ...fresh, work: work.id });
     }
     if (!contents.length) problems.push('List at least one work in the contents, one per line.');
+    contents = withOldPieces(contents, oldContents);
   } else if (form.workId && context.works) {
     // A person confirmed "same work as ...": link to it, and give it a
     // dating only if it has none yet (an existing dating is never replaced here).
@@ -204,18 +276,24 @@ export function recordsFromForm(form, existing, context) {
       if (!work.datings.length && reading.datings.length) records.push(withField(work, 'datings', reading.datings, now));
       contents = [{ work: work.id, piece: null, extent: 'complete', translator: null, pages: null, cite: false }];
     }
+  } else if (existing && !oldWorks.length && oldContents.some(entry => entry.piece)) {
+    // A volume of pieces only has no work to edit; its contents stay as they are.
+    contents = oldContents;
   } else {
     const reading = datingsFromRows(form.work.datings);
     problems.push(...reading.problems);
+    const old = oldWorks.length === 1 ? oldWorks[0] : null;
+    // The form has no box for the work's own title. It follows the book's title while the two
+    // were the same; a work with its own title ("Confessions", shared by two books) keeps it.
+    const ownTitle = old && old.title !== existing.edition.title ? old.title : '';
     const values = {
-      title: form.work.title || form.title.trim(), authors: authorIds(form.authors),
+      title: form.work.title || ownTitle || form.title.trim(), authors: authorIds(form.authors),
       originalTitle: form.work.originalTitle || null, originalLanguage: form.work.originalLanguage || null,
       datings: reading.datings, category: form.work.category || null, tags: form.work.tags,
     };
-    const old = oldWorks.length === 1 ? oldWorks[0] : null;
     const work = old ? update(old, values, now) : newRecord('work', newId(), now, values);
     if (work !== old) records.push(work);
-    contents = [{ work: work.id, piece: null, extent: 'complete', translator: null, pages: null, cite: false }];
+    contents = withOldPieces([entryFor(work.id, { work: work.id, piece: null, extent: 'complete', translator: null, pages: null, cite: false })], oldContents);
   }
   if (problems.length) return { records: [], editionId: null, problems };
   // A work this book no longer lists goes to the trash, unless another book holds it too

@@ -177,15 +177,17 @@ export function wishesForGaps(set, missing, wishes) {
  */
 export function recordsForKnownVolume(set, volume, { newId, now, authorIds, setWorks = [] }) {
   const works = [];
-  const held = new Map(setWorks.map(work => [normalizeForSearch(work.title), work]));
   const contents = volume.works.map(item => {
     const entry = { work: null, piece: null, extent: 'complete', translator: item.translator || null, pages: item.pages || null, cite: false };
     if (item.piece) return { ...entry, piece: { title: item.title, author: item.author || null, originalTitle: item.originalTitle || null, date: item.date || null } };
-    const inSet = held.get(normalizeForSearch(item.title));
+    // The same title by the same authors: two tragedians' Electra are two works.
+    const authors = authorIds(item.author ? item.author.split(/\s+and\s+/) : []);
+    const inSet = setWorks.find(work => normalizeForSearch(work.title) === normalizeForSearch(item.title)
+      && work.authors.length === authors.length && authors.every(id => work.authors.includes(id)));
     if (inSet) return { ...entry, work: inSet.id };
     const reading = set.checked && item.date ? datingsFromRows([{ text: item.date, working: true, note: `from the ${set.set} list` }]) : { datings: [] };
     const work = newRecord('work', newId(), now, {
-      title: item.title, authors: authorIds(item.author ? item.author.split(/\s+and\s+/) : []),
+      title: item.title, authors,
       originalTitle: item.originalTitle || null, originalLanguage: item.originalLanguage || null, datings: reading.datings,
     });
     works.push(work);

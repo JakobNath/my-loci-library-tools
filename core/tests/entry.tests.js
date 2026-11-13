@@ -52,9 +52,21 @@ export const tests = [
       const lines = 'Edward Gibbon — The Decline and Fall of the Roman Empire — 1776–1789';
       const first = recordsFromForm(blankForm({ title: 'Gibbon I', contents: lines, knownWorks }), null, context());
       const work = first.records.find(record => record.type === 'work');
-      const second = recordsFromForm(blankForm({ title: 'Gibbon II', contents: lines, knownWorks }), null, { ...context(), setWorks: [work] });
+      const second = recordsFromForm(blankForm({ title: 'Gibbon II', contents: lines, knownWorks }), null, { ...context(first.records.filter(record => record.type === 'author')), setWorks: [work] });
       equal(second.records.filter(record => record.type === 'work').length, 0, 'no second work');
       equal(second.records.find(record => record.type === 'edition').contents[0].work, work.id);
+    },
+  },
+  {
+    name: 'a later volume of a known set does not join a work to one of the same title by another author',
+    fn() {
+      const play = author => ({ author, title: 'Electra', originalTitle: '', originalLanguage: 'Greek', date: '', translator: '', pages: '', piece: false });
+      const first = recordsFromForm(blankForm({ title: 'Sophocles II', contents: 'Sophocles — Electra', knownWorks: { set: 'The Complete Greek Tragedies', works: [play('Sophocles')] } }), null, context());
+      const sophocles = first.records.find(record => record.type === 'work');
+      const second = recordsFromForm(blankForm({ title: 'Euripides V', contents: 'Euripides — Electra', knownWorks: { set: 'The Complete Greek Tragedies', works: [play('Euripides')] } }), null,
+        { ...context(first.records.filter(record => record.type === 'author')), setWorks: [sophocles] });
+      const euripides = second.records.find(record => record.type === 'work');
+      ok(euripides && euripides.id !== sophocles.id, 'Euripides\' Electra is its own work');
     },
   },
   {
@@ -138,6 +150,66 @@ export const tests = [
       const again = recordsFromForm(blankForm({ title: 'Confessions', authors: ['augustine'], copy: { ...blankForm({}).copy, value: '30' } }), existing, context([author]));
       same(again.records.map(record => record.type), ['copy'], 'only the copy changed');
       same(Object.keys(again.records[0].changed).sort(), ['value', 'valueHistory']);
+    },
+  },
+  {
+    name: 'changing only the shelf of a known set\'s volume changes only the copy: its pieces, translators and dating notes stay',
+    fn() {
+      const knownWorks = { set: 'Great Books of the Western World', works: [
+        { author: 'Hippocrates', title: 'The Oath', originalTitle: '', originalLanguage: 'Greek', date: '', translator: 'Francis Adams', pages: '', piece: true },
+        { author: 'Galen', title: 'On the Natural Faculties', originalTitle: '', originalLanguage: 'Greek', date: 'c. 170', translator: 'Arthur John Brock', pages: '163-215', piece: false },
+        { author: 'Hippocrates', title: 'Aphorisms', originalTitle: '', originalLanguage: 'Greek', date: '', translator: 'Francis Adams', pages: '', piece: true },
+      ] };
+      const contents = 'Hippocrates — The Oath\nGalen — On the Natural Faculties — c. 170\nHippocrates — Aphorisms';
+      const first = recordsFromForm(blankForm({ title: 'Hippocrates. Galen', contents, knownWorks }), null, context());
+      const existing = { edition: first.records.find(r => r.type === 'edition'), copy: first.records.find(r => r.type === 'copy'), works: first.records.filter(r => r.type === 'work') };
+      equal(existing.works[0].datings[0].note, 'from the Great Books of the Western World list');
+      // The edit form shows only the works, and the one-work form when there is one.
+      const copy = { ...blankForm({}).copy, location: ['Home', 'Study', 'A', '2'] };
+      const again = recordsFromForm(blankForm({ title: 'Hippocrates. Galen', authors: ['Galen'], copy, work: { ...blankForm({}).work, originalLanguage: 'Greek', datings: [{ text: 'c. 170', note: 'from the Great Books of the Western World list', working: true }] } }), existing, context(first.records.filter(r => r.type === 'author')));
+      same(again.records.map(r => r.type), ['copy'], 'only the copy changed');
+      const asCollection = recordsFromForm(blankForm({ title: 'Hippocrates. Galen', contents: 'Galen — On the Natural Faculties — c. 170', copy }), existing, context(first.records.filter(r => r.type === 'author')));
+      same(asCollection.records.map(r => r.type), ['copy'], 'the same through the contents box');
+    },
+  },
+  {
+    name: 'editing a collection keeps each work\'s second dating and notes, and changes only the working date that was retyped',
+    fn() {
+      const first = recordsFromForm(blankForm({ title: 'The Apostolic Fathers', contents: 'Didache — c. 100–120\nI Clement — c. 96' }), null, context());
+      const works = first.records.filter(r => r.type === 'work');
+      const didache = { ...works[0], datings: [{ ...works[0].datings[0], note: 'majority view' }, { ...works[0].datings[0], text: 'c. 50–70', note: 'early view', working: false }] };
+      const existing = { edition: first.records.find(r => r.type === 'edition'), copy: first.records.find(r => r.type === 'copy'), works: [didache, works[1]] };
+      const untouched = recordsFromForm(blankForm({ title: 'The Apostolic Fathers', contents: 'Didache — c. 100–120\nI Clement — c. 96' }), existing, context());
+      equal(untouched.records.length, 0, 'nothing changed');
+      const retyped = recordsFromForm(blankForm({ title: 'The Apostolic Fathers', contents: 'Didache — c. 110\nI Clement — c. 96' }), existing, context());
+      const changed = retyped.records.find(r => r.type === 'work');
+      same(changed.datings.map(d => [d.text, d.note, d.working]), [['c. 110', 'majority view', true], ['c. 50–70', 'early view', false]]);
+    },
+  },
+  {
+    name: 'two works with one title and different authors stay two works when their book is edited',
+    fn() {
+      const contents = 'Sophocles — Electra\nEuripides — Electra';
+      const first = recordsFromForm(blankForm({ title: 'Greek Tragedies', contents }), null, context());
+      const works = first.records.filter(r => r.type === 'work');
+      const existing = { edition: first.records.find(r => r.type === 'edition'), copy: first.records.find(r => r.type === 'copy'), works };
+      const again = recordsFromForm(blankForm({ title: 'Greek Tragedies', subtitle: 'II', contents }), existing, { ...context(first.records.filter(r => r.type === 'author')), usedElsewhere: () => false });
+      same(again.records.map(r => r.type), ['edition'], 'only the subtitle changed');
+      same(again.records[0].contents.map(entry => entry.work), works.map(work => work.id));
+    },
+  },
+  {
+    name: 'editing a book leaves its work\'s own title alone, and a work named like its book follows the book\'s new title',
+    fn() {
+      const first = recordsFromForm(blankForm({ title: 'The Confessions of St. Augustine', authors: ['Augustine'], work: { ...blankForm({}).work, title: 'Confessions' } }), null, context());
+      const authors = first.records.filter(r => r.type === 'author');
+      const existing = { edition: first.records.find(r => r.type === 'edition'), copy: first.records.find(r => r.type === 'copy'), works: first.records.filter(r => r.type === 'work') };
+      const again = recordsFromForm(blankForm({ title: 'The Confessions of Saint Augustine', authors: ['Augustine'] }), existing, context(authors));
+      same(again.records.map(r => r.type), ['edition'], 'the work keeps "Confessions"');
+      const plain = recordsFromForm(blankForm({ title: 'Confesions', authors: ['Augustine'] }), null, context(authors));
+      const typo = { edition: plain.records.find(r => r.type === 'edition'), copy: plain.records.find(r => r.type === 'copy'), works: plain.records.filter(r => r.type === 'work') };
+      const fixed = recordsFromForm(blankForm({ title: 'Confessions', authors: ['Augustine'] }), typo, context(authors));
+      equal(fixed.records.find(r => r.type === 'work').title, 'Confessions', 'a corrected title reaches the work');
     },
   },
   {
