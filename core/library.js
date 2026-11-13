@@ -5,6 +5,7 @@
 import { sortYearOf } from './dating.js';
 import { anthologyRange } from './anthology.js';
 import { searchTextOf, piecesTextOf, normalizeForSearch } from './search.js';
+import { bindingText } from './bindings.js';
 
 /**
  * Build the library from all records.
@@ -12,12 +13,13 @@ import { searchTextOf, piecesTextOf, normalizeForSearch } from './search.js';
  * @param {{ searchText?: boolean }} [options] searchText: false leaves the
  *   search text out, so the first screen appears sooner; add it afterwards
  *   with withSearchText (searching works either way).
- * @returns {{ entries: object[], worksById: Map, authorsById: Map, editionsById: Map, wishlist: { item: object, searchText: string }[] }}
+ * @returns {{ entries: object[], worksById: Map, authorsById: Map, editionsById: Map, setsById: Map, wishlist: { item: object, searchText: string }[] }}
  */
 export function buildLibrary(records, { searchText = true } = {}) {
   const worksById = new Map();
   const authorsById = new Map();
   const editionsById = new Map();
+  const setsById = new Map();
   const copiesByEdition = new Map();
   const wishlist = [];
   for (const record of records) {
@@ -25,6 +27,7 @@ export function buildLibrary(records, { searchText = true } = {}) {
     if (record.type === 'work') worksById.set(record.id, record);
     else if (record.type === 'author') authorsById.set(record.id, record);
     else if (record.type === 'edition') editionsById.set(record.id, record);
+    else if (record.type === 'set') setsById.set(record.id, record);
     else if (record.type === 'wishlist') wishlist.push(record);
     else if (record.type === 'copy') {
       if (!copiesByEdition.has(record.edition)) copiesByEdition.set(record.edition, []);
@@ -33,18 +36,19 @@ export function buildLibrary(records, { searchText = true } = {}) {
   }
   const entries = [];
   for (const edition of editionsById.values()) {
-    entries.push(entryOf(edition, copiesByEdition.get(edition.id) || [], worksById, authorsById, searchText));
+    const set = setsById.get(edition.setRecord) || null;
+    entries.push(entryOf(edition, copiesByEdition.get(edition.id) || [], worksById, authorsById, searchText, set));
   }
   // Wishlist items get their own search text, kept beside the record.
   const wishes = wishlist.map(item => ({
     item,
     searchText: normalizeForSearch([item.title, item.subtitle, ...item.authors, item.publisher, item.isbn, item.notes].filter(Boolean).join(' ')),
   }));
-  return { entries, worksById, authorsById, editionsById, wishlist: wishes };
+  return { entries, worksById, authorsById, editionsById, setsById, wishlist: wishes };
 }
 
-/** One edition with what the screens need, worked out once. */
-export function entryOf(edition, copies, worksById, authorsById, withSearch = true) {
+/** One edition with what the screens need, worked out once; `set` is its set's own record, or null. */
+export function entryOf(edition, copies, worksById, authorsById, withSearch = true, set = null) {
   const works = edition.contents.map(entry => worksById.get(entry.work)).filter(Boolean);
   const authorIds = [...new Set(works.flatMap(work => work.authors))];
   const authors = authorIds.map(id => authorsById.get(id)).filter(Boolean);
@@ -56,6 +60,7 @@ export function entryOf(edition, copies, worksById, authorsById, withSearch = tr
     id: edition.id,
     edition,
     copies,
+    set,
     works,
     authors,
     authorLine: authorLineOf(works, authors, editors),
@@ -67,11 +72,11 @@ export function entryOf(edition, copies, worksById, authorsById, withSearch = tr
     added: copies.map(copy => copy.added).sort()[0] || '',
     value: copies.filter(copy => copy.status === 'owned').reduce((sum, copy) => sum + (copy.value || 0), 0),
     location: (copies.find(copy => copy.location.length) || { location: [] }).location,
-    binding: (copies.find(copy => copy.binding) || { binding: '' }).binding,
+    binding: copies.map(bindingText).find(Boolean) || '',
     categories: [...new Set(works.map(work => work.category).filter(Boolean))],
     tags: [...new Set(works.flatMap(work => work.tags))],
     needsDate: works.some(work => sortYearOf(work) === null),
-    searchText: withSearch ? searchTextOf(edition, worksById, authorsById, copies) : null,
+    searchText: withSearch ? searchTextOf(edition, worksById, authorsById, copies, set) : null,
     piecesText: withSearch ? piecesTextOf(edition) : null,
   };
 }
@@ -91,7 +96,7 @@ export function authorLineOf(works, authors, editors) {
 /** The library with every entry's search text filled in. Never changes its input. */
 export function withSearchText(library) {
   const entries = library.entries.map(entry => (entry.searchText !== null ? entry
-    : { ...entry, searchText: searchTextOf(entry.edition, library.worksById, library.authorsById, entry.copies), piecesText: piecesTextOf(entry.edition) }));
+    : { ...entry, searchText: searchTextOf(entry.edition, library.worksById, library.authorsById, entry.copies, entry.set), piecesText: piecesTextOf(entry.edition) }));
   return { ...library, entries };
 }
 
@@ -226,7 +231,7 @@ export function searchEntries(library, query, limit = 50) {
   if (!words.length) return [];
   const found = [];
   for (const entry of library.entries) {
-    const text = entry.searchText ?? searchTextOf(entry.edition, library.worksById, library.authorsById, entry.copies);
+    const text = entry.searchText ?? searchTextOf(entry.edition, library.worksById, library.authorsById, entry.copies, entry.set);
     if (words.every(word => text.includes(word))) {
       found.push(entry);
       if (found.length >= limit) break;

@@ -9,7 +9,8 @@ import { escapeHtml } from '../html.js';
 import { editionToCsl, cslName, volumeOfSet, editionForCitation, originalDateOf } from '../zotero.js';
 import { parseDating } from '../dating.js';
 import { equal, same, ok, throws } from './check.js';
-import { SHARED_DEFAULTS, settingsToFileText, isAnotherCatalog, setupLink, readSetupLink, guessDataRepo } from '../settings.js';
+import { SHARED_DEFAULTS, withDefaults, settingsToFileText, isAnotherCatalog, setupLink, readSetupLink, guessDataRepo } from '../settings.js';
+import { readBindingText, bindingText, sortBindingList } from '../bindings.js';
 import { trashBook, restoreBook, trashedItems } from '../trash.js';
 import { listValues, renameValue } from '../lists.js';
 import { buildLibrary, viewEntries } from '../library.js';
@@ -73,7 +74,7 @@ export const tests = [
       ok(problems.some(p => p.includes('13 digits')), 'ISBN');
       const twoWorking = { ...na28Works[3], datings: na28Works[3].datings.map(d => ({ ...d, working: true })) };
       ok(validateRecord(twoWorking).some(p => p.includes('Exactly one dating')), 'one working dating');
-      ok(validateRecord({ ...chadwick, format: 4 }).some(p => p.includes('version 4')), 'newer format');
+      ok(validateRecord({ ...chadwick, format: FORMAT_VERSION + 1 }).some(p => p.includes(`version ${FORMAT_VERSION + 1}`)), 'newer format');
     },
   },
   {
@@ -81,7 +82,7 @@ export const tests = [
     fn() {
       const text = recordToFileText(chadwick);
       ok(text.endsWith('}\n'), 'newline at the end');
-      ok(text.startsWith('{\n  "format": 3,\n  "type": "edition",\n  "id": "chadw1ck1991",\n  "title"'), 'key order');
+      ok(text.startsWith(`{\n  "format": ${FORMAT_VERSION},\n  "type": "edition",\n  "id": "chadw1ck1991",\n  "title"`), 'key order');
       same(JSON.parse(text), JSON.parse(recordToFileText(JSON.parse(text))), 'stable when rewritten');
       ok(text.includes('"contributors": [\n    {\n      "name": "Henry Chadwick",\n      "role": "translator"'), 'nested order');
     },
@@ -320,7 +321,7 @@ export const tests = [
       const read = migrate(stored);
       equal(stored.format, 1, 'the record read is not changed');
       equal(recordToFileText(stored), `${JSON.stringify(stored, null, 2)}\n`, 'a version-1 record is written exactly as stored, for comparing with its file');
-      same([read.format, read.identifiers, read.subjects, read.foundContents], [3, { lccn: null, oclc: null, lcc: null, ddc: null, openLibrary: null, hathiTrust: null }, [], []]);
+      same([read.format, read.identifiers, read.subjects, read.foundContents], [FORMAT_VERSION, { lccn: null, oclc: null, lcc: null, ddc: null, openLibrary: null, hathiTrust: null }, [], []]);
       same(read.contents, [{ work: '6jwwbbrvgvdy', piece: null, extent: 'complete', translator: null, pages: null, cite: false }], 'each contents entry gains no piece and is not cited');
       for (const name of Object.keys(stored).filter(name => !['format', 'contents'].includes(name))) same(read[name], stored[name], name);
       const edited = withField(read, 'pages', 'xxviii, 311', '2026-11-12T09:00:00Z');
@@ -336,7 +337,7 @@ export const tests = [
     name: 'other version-1 records only change their format number, and a newer record is left alone',
     fn() {
       const work = { ...newRecord('work', 'c0nf3ss10n5x', NOW_TEST, { title: 'Confessions' }), format: 1 };
-      same(migrate(work), { ...work, format: 3 });
+      same(migrate(work), { ...work, format: FORMAT_VERSION });
       same(validateRecord(migrate(work)), []);
       const newer = { ...work, format: FORMAT_VERSION + 1, futureField: 'kept' };
       equal(migrate(newer), newer);
@@ -349,7 +350,7 @@ export const tests = [
       const theirs = withField(migrate(old), 'identifiers', { lccn: '2008491261', oclc: null, lcc: 'BR65.A6 E5 2008', ddc: null }, '2026-11-12T09:00:00Z');
       const mine = withField(migrate(old), 'pages', 'xxviii, 311', '2026-11-12T10:00:00Z');
       const merged = mergeRecords(mine, theirs);
-      same([merged.format, merged.pages, merged.identifiers.lcc, merged.subjects], [3, 'xxviii, 311', 'BR65.A6 E5 2008', []]);
+      same([merged.format, merged.pages, merged.identifiers.lcc, merged.subjects], [FORMAT_VERSION, 'xxviii, 311', 'BR65.A6 E5 2008', []]);
     },
   },
   {
@@ -359,7 +360,7 @@ export const tests = [
       delete work.otherTitles;
       delete work.wikidata;
       equal(recordToFileText(work), `${JSON.stringify(work, null, 2)}\n`, 'a version-2 work, as stored');
-      same([migrate(work).format, migrate(work).otherTitles, migrate(work).wikidata], [3, [], null]);
+      same([migrate(work).format, migrate(work).otherTitles, migrate(work).wikidata], [FORMAT_VERSION, [], null]);
       const edition = { ...newRecord('edition', 'chadw1ck1991', NOW_TEST, { title: 'Confessions', contents: [{ work: 'c0nf3ss10n5x', extent: 'complete', translator: null, pages: null }] }), format: 2, identifiers: { lccn: null, oclc: null, lcc: null, ddc: null } };
       delete edition.foundContents;
       equal(recordToFileText(edition), `${JSON.stringify(edition, null, 2)}\n`, 'a version-2 edition, as stored');
@@ -377,6 +378,83 @@ export const tests = [
       ok(recordToFileText(poe).includes('"title": "The Raven",\n        "author": "Edgar Allan Poe",'), 'the piece keeps its keys in order');
       ok(validateRecord({ ...poe, contents: [{ ...piece, piece: { ...piece.piece, title: '' } }] }).length > 0, 'a piece without a title');
       ok(validateRecord({ ...poe, foundContents: [{ author: null, title: '', extent: null }] }).length > 0, 'found contents need titles');
+    },
+  },
+  {
+    name: 'older binding text is read into binding, material and extras: the five texts of the real catalog in November 2026',
+    fn() {
+      const read = text => { const parts = readBindingText(text); return [parts.binding, parts.material, parts.extras]; };
+      same(read('Hardcover with dust jacket'), ['Hardcover', null, ['Dust jacket']]);
+      same(read('Hardcover'), ['Hardcover', null, []]);
+      same(read('Paperback'), ['Paperback', null, []]);
+      same(read('Cloth'), [null, 'Cloth', []]);
+      same(read('Cloth and hardcover in slip case'), ['Hardcover', 'Cloth', ['Slipcase']]);
+    },
+  },
+  {
+    name: 'binding text that cannot be read wholly is kept as it was, never guessed at',
+    fn() {
+      const read = text => { const parts = readBindingText(text); return [parts.binding, parts.material, parts.extras]; };
+      same(read('Mass-market paperback'), ['Mass-market paperback', null, []], 'not read as plain paperback');
+      same(read('Bonded leather'), [null, 'Bonded leather', []], 'not read as leather');
+      same(read('Hardcover, Smyth-sewn'), ['Hardcover, Smyth-sewn', null, []], 'a word left over');
+      same(read('Hardcover and paperback'), ['Hardcover and paperback', null, []], 'two bindings at once');
+      same(read(null), [null, null, []]);
+      same(read(''), [null, null, []]);
+      equal(bindingText({ binding: 'Hardcover', material: 'Cloth', extras: ['Dust jacket', 'Slipcase'] }), 'Hardcover · Cloth · Dust jacket · Slipcase');
+      equal(bindingText({ binding: null, material: null, extras: [] }), '');
+    },
+  },
+  {
+    name: 'a version-3 copy reads as version 4 with its binding in parts, and is written exactly as stored until edited',
+    fn() {
+      const copy = { ...newRecord('copy', 'c0pyna280001', NOW_TEST, { edition: na28.id, added: '2026-11-09', binding: 'Hardcover with dust jacket' }), format: 3 };
+      delete copy.material;
+      delete copy.extras;
+      equal(recordToFileText(copy), `${JSON.stringify(copy, null, 2)}\n`, 'a version-3 copy, as stored');
+      const read = migrate(copy);
+      same([read.format, read.binding, read.material, read.extras], [4, 'Hardcover', null, ['Dust jacket']]);
+      same(validateRecord(read), []);
+      ok(recordToFileText(read).includes('"binding": "Hardcover",\n  "material": null,\n  "extras": [\n    "Dust jacket"\n  ],\n  "location"'), 'the new fields sit after the binding');
+      equal(copy.binding, 'Hardcover with dust jacket', 'the record read is not changed');
+    },
+  },
+  {
+    name: 'a version-3 edition gains no set record, and other records only change their format number',
+    fn() {
+      const edition = { ...chadwick, format: 3 };
+      delete edition.setRecord;
+      same([migrate(edition).format, migrate(edition).setRecord], [4, null]);
+      same(validateRecord(migrate(edition)), []);
+      same(migrate({ ...augustine, format: 3 }), augustine);
+      ok(validateRecord({ ...chadwick, setRecord: 'Luther\'s Works' }).some(p => p.includes('setRecord')), 'a link holds an ID, not a title');
+    },
+  },
+  {
+    name: 'a set record holds its title, short form, editors, volumes, price, value and the switch to count one value for the whole set',
+    fn() {
+      const set = newRecord('set', 'setw0rks0001', NOW_TEST, { title: 'Luther\'s Works', shortTitle: 'LW', editors: ['Jaroslav Pelikan', 'Helmut T. Lehmann'], volumes: 55, price: 900, value: 1200 });
+      same(Object.keys(set), ['format', 'type', 'id', 'title', 'shortTitle', 'editors', 'volumes', 'price', 'value', 'valueHistory', 'valueAsSet', 'notes', 'trashed', 'created', 'changed']);
+      same(validateRecord(set), []);
+      equal(set.valueAsSet, false, 'each volume counts its own value until the switch is turned on');
+      ok(validateRecord({ ...set, title: '' }).some(p => p.includes('needs a title')));
+      ok(validateRecord({ ...set, volumes: 'fifty-five' }).some(p => p.includes('volumes')));
+      ok(validateRecord({ ...set, valueAsSet: 'yes' }).some(p => p.includes('true or false')));
+      ok(recordToFileText(withField(set, 'valueHistory', [{ value: 1200, date: '2026-11-12' }], NOW_TEST)).includes('"date": "2026-11-12",\n      "value": 1200'), 'value history keeps its key order');
+    },
+  },
+  {
+    name: 'an older settings.json, with one mixed bindings list, is read as three lists',
+    fn() {
+      // The real catalog's list in November 2026.
+      const old = { bindings: ['Hardcover', 'Hardcover with dust jacket', 'Paperback', 'Mass-market paperback', 'Leather', 'Bonded leather', 'Cloth', 'Library binding', 'Journal issue'] };
+      const read = withDefaults(old);
+      same(read.bindings, ['Hardcover', 'Paperback', 'Mass-market paperback', 'Library binding', 'Journal issue']);
+      same(read.materials, ['Leather', 'Bonded leather', 'Cloth']);
+      same(read.extras, ['Dust jacket', 'Slipcase'], 'the default extras are added');
+      same(withDefaults({ bindings: ['Hardcover'], materials: ['Vellum'], extras: [] }).materials, ['Vellum'], 'settings already in three lists are kept as they are');
+      same(withDefaults({}).bindings, SHARED_DEFAULTS.bindings);
+      same(sortBindingList(['Hardcover, Smyth-sewn']).bindings, ['Hardcover, Smyth-sewn'], 'an entry that cannot be read stays a binding');
     },
   },
 ];

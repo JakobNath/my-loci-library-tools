@@ -12,7 +12,7 @@ import { gunzipSync } from 'node:zlib';
 import { fillBook } from '../enrich.mjs';
 import { mergeFound } from '../../core/book-data.js';
 import { fromLibraryOfCongress } from '../../core/marc.js';
-import { newRecord } from '../../core/records.js';
+import { newRecord, FORMAT_VERSION } from '../../core/records.js';
 import { writeRecord, readRecords } from '../../shared/data-repo.mjs';
 import * as plato from '../../core/tests/answers/9780872203495.js';
 import * as holmes from '../../core/tests/answers/9780801031083.js';
@@ -68,7 +68,7 @@ test('empty fields are filled from all three sources, and a field a person typed
     assert.equal(book.thickness, null, "Google Books' impossible thickness is not used");
     assert.deepEqual(book.identifiers, { lccn: '96053280', oclc: null, lcc: 'B358 .C3 1997', ddc: '184', openLibrary: 'OL49233743M', hathiTrust: null });
     assert.deepEqual(book.subjects, ['Socrates', 'Philosophy, Ancient']);
-    assert.equal(book.format, 3);
+    assert.equal(book.format, FORMAT_VERSION, 'written in the current format');
     assert.equal(after.get(platoWork.id).originalLanguage, 'Ancient Greek');
     assert.deepEqual(after.get(platoWork.id).datings, [], 'an original date is never filled');
     const memory = JSON.parse(readFileSync(join(folder, MEMORY), 'utf8'));

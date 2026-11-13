@@ -5,6 +5,7 @@
 
 import { escapeHtml } from '../core/html.js';
 import { originalDateText } from '../core/exports.js';
+import { bindingText } from '../core/bindings.js';
 
 const STYLE = `
   :root { color-scheme: light dark; font-family: Georgia, "Times New Roman", serif; }
@@ -39,7 +40,7 @@ export function catalogHtml(library, thumbnail, { built, dateStyle = 'AD' }) {
     const lines = [
       [entry.authorLine, originalDateText(entry, dateStyle)].filter(Boolean).join(' · '),
       [edition.publisher, edition.place, edition.year, edition.editionStatement].filter(Boolean).join(', '),
-      [entry.isDigital ? 'Logos' : owned && owned.binding, owned && owned.location.filter(Boolean).join(' › '), !entry.owned && 'No longer in the library'].filter(Boolean).join(' · '),
+      [entry.isDigital ? 'Logos' : owned && bindingText(owned), owned && owned.location.filter(Boolean).join(' › '), !entry.owned && 'No longer in the library'].filter(Boolean).join(' · '),
       entry.copies.map(copy => copy.notes).filter(Boolean).join(' '),
     ].filter(Boolean);
     return `<li${entry.owned ? '' : ' class="gone"'}>${pictureHtml}<div><p><strong>${escapeHtml(edition.title)}</strong>${edition.subtitle ? `: ${escapeHtml(edition.subtitle)}` : ''}</p>`

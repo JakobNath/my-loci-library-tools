@@ -3,23 +3,26 @@
 // text. Checking a record is in core/validate.js, which the app never loads. Core never reads the clock: "now" is passed in.
 
 
-export const FORMAT_VERSION = 3;
+import { readBindingText } from './bindings.js';
+
+export const FORMAT_VERSION = 4;
 
 // The fields of each record type, in file order, with the value of an empty field.
 export const FIELDS = {
   work: { title: '', subtitle: null, authors: [], originalTitle: null, otherTitles: [], originalLanguage: null, datings: [], sortYear: null, category: null, tags: [], wikidata: null },
   edition: {
     title: '', subtitle: null, contents: [], contributors: [], publisher: null, place: null, year: null,
-    editionStatement: null, translationFirstPublished: null, series: null, seriesNumber: null, set: null, volume: null,
+    editionStatement: null, translationFirstPublished: null, series: null, seriesNumber: null, set: null, volume: null, setRecord: null,
     isbn: null, identifiers: { lccn: null, oclc: null, lcc: null, ddc: null, openLibrary: null, hathiTrust: null }, languages: [], subjects: [], foundContents: [], pages: null, height: null, heightSource: null, thickness: null, thicknessSource: null,
     medium: 'physical', logosId: null, logosExtra: {}, cite: false, images: [],
   },
   copy: {
-    edition: '', binding: null, location: [], shelfOrder: null, markings: false, added: '', acquired: null,
+    edition: '', binding: null, material: null, extras: [], location: [], shelfOrder: null, markings: false, added: '', acquired: null,
     price: null, value: null, valueHistory: [], notes: '', status: 'owned',
   },
   author: { name: '', otherNames: [], sortName: null },
   wishlist: { title: '', subtitle: null, authors: [], contributors: [], publisher: null, isbn: null, images: [], notes: '' },
+  set: { title: '', shortTitle: null, editors: [], volumes: null, price: null, value: null, valueHistory: [], valueAsSet: false, notes: '' },
 };
 
 // Key order of the objects inside lists, so files always read the same.
@@ -44,7 +47,7 @@ export const ROLES = ['translator', 'editor', 'introduction', 'illustrator', 'ot
 
 /**
  * A new record with every field present.
- * @param {string} type work, edition, copy, author or wishlist
+ * @param {string} type work, edition, copy, author, wishlist or set
  * @param {string} id from makeId
  * @param {string} now the current moment, "YYYY-MM-DDTHH:MM:SSZ"
  * @param {object} [values] fields to fill in
@@ -137,7 +140,16 @@ export function migrate(record) {
   let upgraded = record;
   if (upgraded.format === 1) upgraded = fromVersion1(upgraded);
   if (upgraded.format === 2) upgraded = fromVersion2(upgraded);
+  if (upgraded.format === 3) upgraded = fromVersion3(upgraded);
   return upgraded;
+}
+
+// Version 4 (November 2026) split a copy's binding into binding, material and
+// extras, each from a list, and linked an edition to its set's own record.
+function fromVersion3(record) {
+  if (record.type === 'copy') return { ...record, format: 4, ...readBindingText(record.binding) };
+  if (record.type === 'edition') return { ...record, format: 4, setRecord: null };
+  return { ...record, format: 4 };
 }
 
 // Version 2 (November 2026) gave each edition its catalogue numbers and subject headings.

@@ -68,6 +68,7 @@ const TYPE_CHECKS = {
     if (IDENTIFIER_KEYS.some(key => !(key in identifiers) || (identifiers[key] !== null && typeof identifiers[key] !== 'string'))) {
       problems.push(`"identifiers" should hold ${IDENTIFIER_KEYS.join(', ')}, each text or null.`);
     }
+    if (edition.setRecord !== null && !isId(edition.setRecord)) problems.push(`"setRecord" should be the ID of a set, or null; it is "${edition.setRecord}".`);
     return problems;
   },
   copy(copy) {
@@ -76,6 +77,16 @@ const TYPE_CHECKS = {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(copy.added)) problems.push('"added" should be a date, YYYY-MM-DD.');
     if (!STATUSES.includes(copy.status)) problems.push(`Status "${copy.status}" is not one of: ${STATUSES.join(', ')}.`);
     if (copy.location.length > 4) problems.push('A location has at most four parts: place, room, case, shelf.');
+    if (copy.extras.some(extra => typeof extra !== 'string' || !extra)) problems.push('Every entry of "extras" should be a name, such as "Dust jacket".');
+    return problems;
+  },
+  set(set) {
+    const problems = [];
+    if (!set.title) problems.push('A set needs a title.');
+    if (set.volumes !== null && !(Number.isInteger(set.volumes) && set.volumes > 0)) problems.push(`"volumes" should be how many volumes the set has, or null; it is "${set.volumes}".`);
+    for (const field of ['price', 'value']) {
+      if (set[field] !== null && typeof set[field] !== 'number') problems.push(`"${field}" should be a number, or null.`);
+    }
     return problems;
   },
   author(author) {

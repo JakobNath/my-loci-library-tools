@@ -5,7 +5,8 @@
 
 import { workingDating, formatYearRange } from './dating.js';
 import { editionToCsl, citationKeyBase, freeCitationKey } from './zotero.js';
-import { valueSummary } from './value.js';
+import { valueSummary, copyValueOf } from './value.js';
+import { bindingText } from './bindings.js';
 
 // A CSV cell: quoted when it holds a comma, quote or line break, quotes doubled (RFC 4180).
 function cell(value) {
@@ -40,7 +41,7 @@ export function catalogCsv(entries, { dateStyle = 'AD' } = {}) {
       edition.pages, entry.isDigital ? 'Logos' : 'Physical'];
     const copies = entry.copies.length ? entry.copies : [null];
     for (const copy of copies) {
-      rows.push([...book, copy && copy.binding, copy && copy.location.filter(Boolean).join(' › '), copy && copy.status,
+      rows.push([...book, copy && bindingText(copy), copy && copy.location.filter(Boolean).join(' › '), copy && copy.status,
         copy && copy.value, copy && copy.price, copy && copy.added, copy && copy.notes, edition.id]);
     }
   }
@@ -48,9 +49,10 @@ export function catalogCsv(entries, { dateStyle = 'AD' } = {}) {
 }
 
 /**
- * For an insurance agent: each owned physical copy with its value, then the
- * totals by room (or the level of a location given as depth, core/value.js)
- * and the count with no value. Logos books are left out.
+ * For an insurance agent: each owned physical copy with its value, each set
+ * valued as a whole on one row, then the totals by room (or the level of a
+ * location given as depth, core/value.js) and the count with no value. Logos
+ * books are left out.
  */
 export function valueCsv(entries, { currency = '$', depth = 2 } = {}) {
   const rows = [['Title', 'Authors', 'Publisher', 'Year', 'Binding', 'Location', `Value (${currency})`]];
@@ -58,11 +60,16 @@ export function valueCsv(entries, { currency = '$', depth = 2 } = {}) {
     if (entry.isDigital) continue;
     for (const copy of entry.copies) {
       if (copy.status !== 'owned') continue;
+      const counted = copyValueOf(copy, entry.set);
       rows.push([entry.edition.title, entry.authors.map(author => author.name).join('; '), entry.edition.publisher, entry.edition.year,
-        copy.binding, copy.location.filter(Boolean).join(' › '), copy.value]);
+        bindingText(copy), copy.location.filter(Boolean).join(' › '), counted.withSet ? `in the set ${entry.set.title}` : counted.value]);
     }
   }
   const summary = valueSummary(entries, depth);
+  for (const { set, place, volumes, isDigital } of summary.sets) {
+    if (isDigital) continue;
+    rows.push([`${set.title} (the whole set: ${volumes} ${volumes === 1 ? 'volume' : 'volumes'} owned)`, set.editors.join('; '), '', '', '', place, set.value]);
+  }
   rows.push([], ['Total', '', '', '', '', '', summary.total]);
   for (const place of summary.byPlace) rows.push([`Total: ${place.place}`, '', '', '', '', '', place.total]);
   rows.push([`Books with no value yet: ${summary.missing}`]);
@@ -71,8 +78,8 @@ export function valueCsv(entries, { currency = '$', depth = 2 } = {}) {
 
 /** Every record as stored, in one file shaped like catalog.json (DATA_FORMAT.md). */
 export function catalogJson(records, built) {
-  const lists = { works: [], editions: [], copies: [], authors: [], wishlist: [] };
-  const listOf = { work: 'works', edition: 'editions', copy: 'copies', author: 'authors', wishlist: 'wishlist' };
+  const lists = { works: [], editions: [], copies: [], authors: [], wishlist: [], sets: [] };
+  const listOf = { work: 'works', edition: 'editions', copy: 'copies', author: 'authors', wishlist: 'wishlist', set: 'sets' };
   for (const record of records) if (listOf[record.type]) lists[listOf[record.type]].push(record);
   for (const list of Object.values(lists)) list.sort((a, b) => a.id.localeCompare(b.id));
   return `${JSON.stringify({ format: 1, built, ...lists }, null, 2)}\n`;

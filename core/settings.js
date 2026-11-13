@@ -2,6 +2,8 @@
 // the file text, with keys always in the same order. Also the rule for when a
 // device moves from one data repository to another.
 
+import { sortBindingList } from './bindings.js';
+
 export const SHARED_DEFAULTS = {
   format: 1,
   dateStyle: 'AD',
@@ -10,13 +12,24 @@ export const SHARED_DEFAULTS = {
   batchAddPrompts: ['title', 'subtitle', 'authors', 'datings', 'binding', 'publisher', 'year'],
   defaultSort: { library: 'title', wishlist: 'added' },
   lookups: { openLibrary: true, hathiTrust: true, googleBooks: true, wikidata: true },
-  bindings: ['Hardcover', 'Hardcover with dust jacket', 'Paperback', 'Mass-market paperback', 'Leather', 'Bonded leather', 'Cloth', 'Library binding', 'Journal issue'],
+  bindings: ['Hardcover', 'Paperback', 'Mass-market paperback', 'Library binding', 'Journal issue'],
+  materials: ['Cloth', 'Leather', 'Bonded leather'],
+  extras: ['Dust jacket', 'Slipcase'],
   views: [],
 };
 
 /** Settings read from a file or storage, with a default for anything missing. */
 export function withDefaults(settings) {
   const merged = { ...SHARED_DEFAULTS, ...(settings || {}) };
+  // Settings saved before data format 4 kept one bindings list that mixed
+  // bindings, materials and extras ("Hardcover with dust jacket"); it is
+  // sorted into the three lists, beside the default materials and extras.
+  if (settings && settings.bindings && !settings.materials) {
+    const sorted = sortBindingList(settings.bindings);
+    merged.bindings = sorted.bindings;
+    merged.materials = [...new Set([...sorted.materials, ...SHARED_DEFAULTS.materials])];
+    merged.extras = [...new Set([...sorted.extras, ...SHARED_DEFAULTS.extras])];
+  }
   // A lookup added later (HathiTrust, 2026-11-11) is on until someone turns it off.
   return { ...merged, lookups: { ...SHARED_DEFAULTS.lookups, ...merged.lookups } };
 }

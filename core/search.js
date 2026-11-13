@@ -33,9 +33,11 @@ export function normalizeForSearch(text) {
  * @param {Map<string, object>} worksById
  * @param {Map<string, object>} authorsById
  * @param {object[]} [copies] the edition's copies, for their notes
+ * @param {object|null} [set] the set's own record, for its short form: "LW 31" finds Luther's Works volume 31
  */
-export function searchTextOf(edition, worksById, authorsById, copies = []) {
+export function searchTextOf(edition, worksById, authorsById, copies = [], set = null) {
   const parts = [edition.title, edition.subtitle, edition.series, edition.seriesNumber, edition.set, edition.isbn];
+  if (set) parts.push(set.title, set.shortTitle, set.shortTitle && edition.volume && `${set.shortTitle} ${edition.volume}`);
   for (const contributor of edition.contributors) parts.push(contributor.name);
   for (const entry of edition.contents) {
     const work = worksById.get(entry.work);

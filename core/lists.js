@@ -1,8 +1,9 @@
 // Managed lists (PLAN.md, "Settings": "Lists"): the categories, tags, series,
-// bindings and places in use, and renaming one, which edits every record that
-// uses it. Renaming to a name already in use merges the two. These values live
-// only on the records (DATA_FORMAT.md, "settings.json"), apart from the
-// binding choices, which the shared settings also list.
+// bindings, materials, extras and places in use, and renaming one, which
+// edits every record that uses it. Renaming to a name already in use merges
+// the two. These values live only on the records (DATA_FORMAT.md,
+// "settings.json"), apart from the binding, material and extras choices,
+// which the shared settings also list.
 
 import { withField } from './records.js';
 
@@ -14,6 +15,8 @@ const LISTS = {
   tag: { type: 'work', field: 'tags', values: work => work.tags, rename: (work, from, to) => [...new Set(work.tags.map(tag => (tag === from ? to : tag)))] },
   series: { type: 'edition', field: 'series', values: edition => (edition.series ? [edition.series] : []), rename: (edition, from, to) => (edition.series === from ? to : edition.series) },
   binding: { type: 'copy', field: 'binding', values: copy => (copy.binding ? [copy.binding] : []), rename: (copy, from, to) => (copy.binding === from ? to : copy.binding) },
+  material: { type: 'copy', field: 'material', values: copy => (copy.material ? [copy.material] : []), rename: (copy, from, to) => (copy.material === from ? to : copy.material) },
+  extra: { type: 'copy', field: 'extras', values: copy => copy.extras, rename: (copy, from, to) => [...new Set(copy.extras.map(extra => (extra === from ? to : extra)))] },
   place: {
     type: 'copy',
     field: 'location',

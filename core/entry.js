@@ -233,6 +233,11 @@ export function recordsFromForm(form, existing, context) {
     series: form.series || null, seriesNumber: form.seriesNumber || null, set: form.set || null, volume: form.volume || null,
     isbn, languages: form.languages, pages: form.pages || null, medium: form.medium, logosId: form.logosId || null,
   };
+  // The link to a set's own record: given when adding a volume of a set with
+  // one, kept when editing, and dropped when the set's title is changed to
+  // another set's, since the volume then belongs elsewhere.
+  if (form.setRecord !== undefined) editionValues.setRecord = form.setRecord || null;
+  else if (existing && existing.edition.setRecord && (form.set || null) !== existing.edition.set) editionValues.setRecord = null;
   const edition = existing ? update(existing.edition, editionValues, now) : newRecord('edition', newId(), now, editionValues);
   if (!existing || edition !== existing.edition) records.push(edition);
 
@@ -246,7 +251,8 @@ export function recordsFromForm(form, existing, context) {
     history = [...history.filter(point => point.date !== today), { date: today, value }];
   }
   const copyValues = {
-    binding: copyForm.binding || null, location: copyForm.location.filter(Boolean), acquired: copyForm.acquired || null,
+    binding: copyForm.binding || null, material: copyForm.material || null, extras: copyForm.extras || [],
+    location: copyForm.location.filter(Boolean), acquired: copyForm.acquired || null,
     price: copyForm.price === '' ? null : Number(copyForm.price), value, valueHistory: history,
     markings: copyForm.markings, notes: copyForm.notes, status: copyForm.status,
     ...(copyForm.shelfOrder !== undefined ? { shelfOrder: copyForm.shelfOrder || null } : {}),
@@ -263,7 +269,8 @@ export function recordsFromForm(form, existing, context) {
  */
 export function anotherCopy(editionId, copyForm, { newId, now, today }) {
   return newRecord('copy', newId(), now, {
-    edition: editionId, added: today, binding: copyForm.binding || null, location: copyForm.location.filter(Boolean),
+    edition: editionId, added: today, binding: copyForm.binding || null, material: copyForm.material || null, extras: copyForm.extras || [],
+    location: copyForm.location.filter(Boolean),
     shelfOrder: copyForm.shelfOrder || null, acquired: copyForm.acquired || null, notes: copyForm.notes || '', status: 'owned',
   });
 }
@@ -301,14 +308,14 @@ export function nextVolumeLabel(label) {
 
 /**
  * A volume's looked-up details with its set's shared facts, given once when
- * "Adding a set". The set's title, publisher, edition and binding apply to
- * every volume, and its general editors are added once each. The year found
- * for the volume is kept, since a set's volumes often appear over decades;
- * the set's year fills in only when none was found.
+ * "Adding a set". The set's title, publisher, edition, binding, material and
+ * extras apply to every volume, and its general editors are added once each.
+ * The year found for the volume is kept, since a set's volumes often appear
+ * over decades; the set's year fills in only when none was found.
  * @param {object} found what the lookups found (core/lookup.js, emptyFound)
- * @param {{ title: string, publisher: string, year: string, editionStatement: string, editors: string[], binding: string }} set
+ * @param {{ title: string, publisher: string, year: string, editionStatement: string, editors: string[], binding: string, material?: string, extras?: string[] }} set
  * @param {string} volume the volume label
- * @returns {object} a new found object; the input is not changed
+ * @returns {object} a new found object, with `material` and `extras` when the set gives them; the input is not changed
  */
 export function withSetFacts(found, set, volume) {
   const named = new Set(found.contributors.map(person => key(person.name)));
@@ -321,6 +328,8 @@ export function withSetFacts(found, set, volume) {
     editionStatement: set.editionStatement || found.editionStatement,
     year: found.year || set.year,
     binding: set.binding || found.binding,
+    material: set.material || found.material || '',
+    extras: set.extras && set.extras.length ? set.extras : found.extras || [],
     contributors: [...found.contributors, ...editors],
   };
 }

@@ -18,7 +18,8 @@ export const LANGUAGE_NAMES = {
   spa: 'Spanish', swe: 'Swedish', syr: 'Syriac',
 };
 
-// Open Library's physical formats, in the names of our binding list (core/settings.js).
+// Open Library's physical formats, in the names of our lists (core/settings.js); the
+// add screen reads the word into binding, material and extras (core/bindings.js).
 const BINDINGS = [
   [/mass[\s-]*market/i, 'Mass-market paperback'], [/paper|soft/i, 'Paperback'], [/bonded/i, 'Bonded leather'],
   [/leather/i, 'Leather'], [/library/i, 'Library binding'], [/hard|cased/i, 'Hardcover'], [/cloth/i, 'Cloth'],

@@ -10,7 +10,7 @@ import { recordToFileText, migrate, FORMAT_VERSION } from '../core/records.js';
 const toolsFolder = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 // The folder of each record type in a data repository (DATA_FORMAT.md, "Files").
-export const FOLDERS = { work: 'works', edition: 'editions', copy: 'copies', author: 'authors', wishlist: 'wishlist' };
+export const FOLDERS = { work: 'works', edition: 'editions', copy: 'copies', author: 'authors', wishlist: 'wishlist', set: 'sets' };
 
 /**
  * This laptop's settings, from config.json beside the tools (copy
