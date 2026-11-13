@@ -1,6 +1,9 @@
-# Luther's Works, American Edition, volumes 1–55 (Concordia Publishing House and Fortress Press,
-# 1955–1986; general editors Jaroslav Pelikan and Helmut T. Lehmann): every volume and the works it holds.
-# Researched 12 November 2026. Every volume title was checked against at least two sources (Logos,
+# Luther's Works, American Edition: volumes 1–55 (Concordia Publishing House and Fortress Press,
+# 1955–1986; general editors Jaroslav Pelikan and Helmut T. Lehmann) and the new series from volume 56
+# (Concordia Publishing House, 2009–; general editors Christopher Boyd Brown and Benjamin T. G. Mayes):
+# every volume published by November 2026 and the works it holds. The notes for volumes 56 on are at
+# the end of this header; the rest of it describes volumes 1–55.
+# Volumes 1–55 were researched 12 November 2026. Every volume title was checked against at least two sources (Logos,
 # Open Library, the Fortress Press and Concordia Publishing House pages, the Concordia Seminary
 # library's Library of Congress set record, therebelgod.com's tables of contents); the contents of
 # volumes 31–55 against two tables of contents (Fortress Press and therebelgod.com), those of 1–30
@@ -8,11 +11,25 @@
 # on one source (listed in the project's working notes for the person who checks this list).
 # Translators and page ranges are left out: no source reachable on that day gave them per work.
 # Letters, sermons, hymns and the Table Talk are one work per volume, not one per letter or sermon.
+#
+# Volumes 56 on were researched 12 November 2026. Titles and ISBNs are from Concordia Publishing House's
+# pages for each volume; every ISBN's check digit was computed, and 16 of the 20 agree with Open Library
+# (61, 63, 72 and 80 are not in it). The contents are from the publisher's 2025 prospectus of the new
+# series, which lists what each volume holds; for volumes 61, 62, 63 and 72 they were also checked
+# against the printed contents pages in the publisher's sample pages, which give the translators.
+# Dates follow the printed contents: "1525/1528" (written, then printed) is a range when Luther saw it
+# printed, and only the first year when it was printed after his death ("1530/1907" is 1530).
+# Sermons, prefaces and the two postils are one work per volume, as in volumes 48–54; the Church Postil
+# runs across volumes 75–79 as one work. Disputations and treatises are one work each; short pieces
+# inside them (an appendix, a register entry, a song) are kept as pieces.
+# Not yet published, so not listed: 64–66 (Luther on the Psalms; 66 announced for summer 2027, 65 for
+# summer 2028), 70–71 (Early Works), 74 (Letters), 81–82 (House Postil II–III), and the new index volume.
+# The unnumbered Companion Volume is listed with the label "Companion".
 # Not yet checked by a person: its dates are offered, not filled in.
 set: Luther's Works
 publisher: Concordia Publishing House; Fortress Press
 place: St. Louis; Philadelphia
-year: 1955–1986
+year: 1955–2026
 edition: American Edition
 
 volume: 1 | Lectures on Genesis: Chapters 1–5 | isbn 9780570064015
@@ -353,3 +370,206 @@ Martin Luther — Table Talk | Tischreden | German and Latin — 1531–1544
 volume: 55 | Index | isbn 9780800603557
 # note: compiled by Joel W. Lundeen (Fortress Press, Open Library); it holds no work by Luther
 Joel W. Lundeen — Index | | English — 1986
+
+# The new series (Concordia Publishing House, 2009–)
+
+# note: Concordia gives 2019, Open Library and a review in Concordia Theological Quarterly 2018; some lists title it "Selected Sermons III"
+volume: 56 | Sermons III | isbn 9780758613851
+# note: about forty sermons, from Palm Sunday 1522 to May 1531
+Martin Luther — Sermons III | | German and Latin — 1522–1531
+
+volume: 57 | Sermons IV | isbn 9780758613868
+# note: from Pentecost 1531 to June 1539
+Martin Luther — Sermons IV | | German and Latin — 1531–1539
+
+# note: Concordia's page says "Selected Sermons V"; Open Library "Sermons V"
+volume: 58 | Sermons V | isbn 9780758613875
+# note: from February 1539 to the last sermons at Eisleben, February 1546
+Martin Luther — Sermons V | | German and Latin — 1539–1546
+
+volume: 59 | Prefaces I (1522–1532) | isbn 9780758613882
+# note: prefaces to other authors' books; the prospectus dates the first one, to Ps.-Ulrich of Augsburg, 1520
+Martin Luther — Prefaces I | | German and Latin — 1520–1532
+
+volume: 60 | Prefaces II (1532–1545) | isbn 9780758613899
+Martin Luther — Prefaces II | | German and Latin — 1532–1545
+
+# note: the volume's own Library of Congress data says "Theological and Polemical Works"; some lists say "Theology and Polemics"
+volume: 61 | Theological and Polemical Works | isbn 9780758613905
+Martin Luther — Against King Henry of England | Contra Henricum regem Angliae | Latin — 1522 | trans. Eric G. Phillips
+Martin Luther — Defense of "Against the Robbing and Murdering Hordes of Peasants" | | German — 1525 | trans. Nicholas D. Proksch
+Martin Luther — Advice on the Establishment of an Enduring Order in a Christian Community | | German — 1526 | trans. James L. Langebartels
+Martin Luther — Instruction and Warning against the Truly Rebellious, Traitorous, and Murderous Counsel of the Clergy at Mainz | | German — 1526 | trans. Nicholas D. Proksch
+Martin Luther — Report to a Good Friend concerning Both Kinds in the Sacrament, at the Command of the Bishop of Meissen | | German — 1528 | trans. James L. Langebartels
+# note: printed 1557
+Martin Luther — Selected Fables of Aesop | Etliche Fabeln aus Esopo | German — 1530 | trans. Aaron Michael Jensen
+Martin Luther — Concerning Music | | Latin — 1530 | trans. Benjamin T. G. Mayes
+# note: printed 1907
+Martin Luther — Compilation or Ideas for a Book on the Article of Justification, with Other Things Added in Passing | | — 1530 | trans. Joshua J. Hayes and Christopher J. Neuendorf
+Martin Luther — A Recantation of Purgatory | Widerruf vom Fegefeuer | German — 1530 | trans. John A. Maxfield
+# note: the prospectus also lists "Luther's Preparations for His Instruction to Melanchthon" among the Kassel documents; the contents page does not name it
+Martin Luther — Instruction to Philip Melanchthon for the Kassel Negotiations | | — 1534 | trans. Joshua J. Hayes
+Martin Luther — Dr. Martin Luther's Glosses on the Statements of the Fathers concerning the Controversy over the Supper, Which Were Shown to Him by Dr. Philip Melanchthon | | — 1534 | trans. Joshua J. Hayes
+Martin Luther — A Letter of Beelzebub to the Holy Papal Church | | — 1537 | trans. Nicholas D. Proksch
+Martin Luther — An Admonition to All Pastors | | German — 1539–1546 | trans. Gerhard P. Maag
+Martin Luther — To Pastors, That They Should Preach against Usury | An die Pfarrherrn, wider den Wucher zu predigen | German — 1539 | trans. Matthew Carver
+# note: printed 1549
+Martin Luther — Against Johann Agricola of Eisleben | | German — 1540 | trans. Gerhard P. Maag
+Martin Luther — First Opinion on the Election of the Bishop of Naumburg | | German — 1541 | trans. James L. Langebartels
+Martin Luther — Second Opinion on the Election of the Bishop of Naumburg | | German — 1541 | trans. James L. Langebartels
+Martin Luther — Third Opinion on the Election of the Bishop of Naumburg | | German — 1541 | trans. James L. Langebartels
+Martin Luther — Advice to the Naumburg Representatives | | German — 1542 | trans. James L. Langebartels
+Martin Luther — Report on Martin Luther's Sermon at the Consecration of Nicolaus von Amsdorf as Bishop of Naumburg | | German — 1542 | trans. James L. Langebartels
+Martin Luther — Model for the Consecration of a True Christian Bishop | Exempel, einen rechten christlichen Bischof zu weihen | German — 1542 | trans. James L. Langebartels
+Martin Luther — The Latest News from the Rhine | Neue Zeitung vom Rhein | German — 1542 | trans. Nicholas D. Proksch
+Martin Luther — Admonition in the Absence of Dr. Pomeranus | | German — 1542 | trans. Gerhard P. Maag
+Martin Luther — Admonition to Pastors under the Supervision of the Church at Wittenberg | | German — 1543 | trans. Justin Doering Kane
+Martin Luther — On the Shem Hamphorash and on the Lineage of Christ | Vom Schem Hamphoras und vom Geschlecht Christi | German — 1543 | trans. Matthew Carver
+# note: the contents page says 1546, the prospectus 1545-46 (written 1545, printed 1546)
+Martin Luther — Against the Asses of Paris and Louvain | | Latin — 1545–1546 | trans. Joshua J. Hayes
+
+# note: Concordia's page says "Sermons on Exodus Chapters 1– 20"; some lists say "Sermons on Exodus 1-20"
+volume: 62 | Sermons on Exodus: Chapters 1–20 | isbn 9780758613912
+Martin Luther — Sermon and Introduction to Genesis | | German — 1523 | trans. Kevin G. Walker
+# note: the contents page dates it "1524-25/1564" (preached, then printed)
+Martin Luther — Exposition of Several Chapters of the Second Book of Moses (Exodus 1–18) | | German — 1524–1525 | trans. Kevin G. Walker
+# note: "1525/1528": preached 1525, printed with Luther's foreword 1528
+Martin Luther — Sermons on Exodus 19–20 | | German — 1525–1528 | trans. Kevin G. Walker
+Martin Luther — Preface to Volume 1 of Lectures on Genesis | | Latin — 1544 | trans. John A. Maxfield
+
+# note: Concordia's page says "Exodus 20–34 and Prophets"; some lists say "Sermons on Exodus 20-34; Prophets". The volume's copyright is 2024, Concordia's page says 2025
+volume: 63 | Exodus 20–34 and Prophets | isbn 9780758613929
+# note: "1525-27/1899": preached 1525-1527, first printed 1899
+Martin Luther — Sermons on Exodus 20–34 | | German — 1525–1527 | trans. Matthew Carver
+# note: "1543-44/1546": lectured 1543-1544, printed 1546
+Martin Luther — Exposition of Isaiah 9 | | Latin — 1543–1546 | trans. Heath R. Curtis
+# note: "1544/1550": printed after Luther's death
+Martin Luther — Exposition of Isaiah 53 | | Latin — 1544 | trans. Gert A. van den Brink
+# note: the parts of the 1541 and 1545 preface to Daniel left out of volume 35
+Martin Luther — Preface to Daniel (Chapter 12) | | German — 1541–1545 | trans. Kevin G. Walker
+Martin Luther — Additional Comment on Hosea 13:14 | | — 1545 | trans. Heath R. Curtis
+
+# note: the title page reads "Annotations on Matthew, Chapters 1–18; Sermons on the Gospel of St. Matthew, Chapter 18"; the contents here are from the prospectus only
+volume: 67 | Annotations on Matthew: Chapters 1–18; Sermons on the Gospel of St. Matthew: Chapter 18 | isbn 9780758613967
+# note: the prospectus dates it 1534-35; check the volume for a printing date
+Martin Luther — Annotations on Matthew, Chapters 1–18 | Annotationes in aliquot capita Matthaei | Latin — 1534–1535
+Martin Luther — Matthew 18–24, Expounded in Sermons | Matthäus 18–24 in Predigten ausgelegt | German — 1537–1540
+
+volume: 68 | Sermons on the Gospel of St. Matthew: Chapters 19–24 | isbn 9780758613974
+Martin Luther — Matthew 18–24, Expounded in Sermons | Matthäus 18–24 in Predigten ausgelegt | German — 1537–1540
+
+# note: Concordia's page says "Sermons on the Gospel of John 17-20"; Open Library "sermons on the Gospel of St. John". The contents are from the prospectus only
+volume: 69 | Sermons on the Gospel of St. John: Chapters 17–20 | isbn 9780758613981
+Martin Luther — The Seventeenth Chapter of St. John, on the Prayer of Christ | Das 17. Kapitel Johannis von dem Gebete Christi | German — 1528
+Martin Luther — The Eighteenth and Nineteenth Chapters of St. John and a Portion of the Twentieth, on the Passion, Death, and Resurrection of Our Lord Jesus Christ | | German — 1528–1529
+Martin Luther — Sermon for the First Sunday after Easter, John 20:21–29 | | — 1522 | piece
+Martin Luther — Sermon for the First Sunday after Easter, John 20:19–29 | | — 1523 | piece
+Martin Luther — Sermon for the First Sunday after Easter, John 20:19–23 | | — 1526 | piece
+Martin Luther — Sermon for Easter Tuesday Morning, John 20:19–23 | | — 1529 | piece
+Martin Luther — Sermon Outline for the First Sunday after Easter, John 20:19–31 | | — 1531 | piece
+Martin Luther — Sermon for the First Sunday after Easter, John 20:19–31 (April 16, 1531) | | — 1531 | piece
+Martin Luther — House Postil Sermon for the First Sunday after Easter, John 20:19–31 | | — 1531 | piece
+Martin Luther — Household Sermon for the First Sunday after Easter, John 20:19–29 | | — 1534 | piece
+Martin Luther — Sermon for the First Sunday after Easter, John 20:19–31 (April 23, 1536) | | — 1536 | piece
+Martin Luther — Sermon Sketch of Dr. Martin Luther Written Down for a Friend | | — 1534–1536 | piece
+Martin Luther — Sermon for the First Sunday after Easter, John 20:19–29 (April 4, 1540) | | — 1540 | piece
+
+# note: Concordia gives 2025, the volume's copyright page 2025
+volume: 72 | Disputations I | isbn 9780758614018
+Martin Luther — Preface to the Collected Wittenberg Theses | | Latin — 1538 | trans. Joshua J. Hayes
+# note: the contents page says 1530, the prospectus 1534
+Philip Melanchthon — Preface to the Collected Theses of Martin Luther | | Latin — 1530 | trans. Joshua J. Hayes
+Martin Luther — Preface to the Collected Theses of Philip Melanchthon | | Latin — 1534 | trans. Joshua J. Hayes
+Martin Luther — Dialectica | Dialectica | Latin — c. 1540 | trans. Roy Axel Coats
+Martin Luther — Table Talk on Dialectic | | — 1540 | piece
+Martin Luther — Disputation on the Powers and Will of Man without Grace (Sententiarius Disputation for Bartholomäus Bernhardi) | Quaestio de viribus et voluntate hominis sine gratia disputata | Latin — 1516 | trans. Christopher Boyd Brown
+Martin Luther — Theses for the Heidelberg Disputation with Proofs of the Philosophical Theses | | Latin — 1518 | trans. Eric G. Phillips
+Martin Luther — Luther's Comment on the Heidelberg Disputation | | — 1528 | piece
+Martin Luther — Theses for Investigating the Truth and Comforting Terrified Consciences (On the Remission of Sins) | Pro veritate inquirenda et timoratis conscientiis consolandis conclusiones | Latin — 1518 | trans. Sarah Hinlicky Wilson
+Martin Luther — Fifteen Conclusions Discussing Whether the Books of the Philosophers Are Useful for Theology or Useless | | Latin — 1519 | trans. Carl P. E. Springer
+Martin Luther — Disputation on the Law and Faith | | Latin — 1519 | trans. Mickey L. Mattox
+# note: "1519?/1890": the year is uncertain, first printed 1890
+Martin Luther — Theses on Excommunication | | Latin — c. 1519 | trans. Carl P. E. Springer and Heath R. Curtis
+Martin Luther — Disputation on Excommunication | | Latin — c. 1520 | trans. Carl P. E. Springer and Heath R. Curtis
+Martin Luther — Disputation on Circumcision | | Latin — 1520 | trans. Carl P. E. Springer
+Martin Luther — Question on the Natural Power of the Will of Man | | Latin — 1520 | trans. Mickey L. Mattox
+Martin Luther — Disputation on Infused and Acquired Faith (Biblicus Disputation for Heinrich Greiff von Zinna) | | Latin — 1520 | trans. Carl P. E. Springer
+Martin Luther — Theses on Faith and Ceremonies | | Latin — 1520 | trans. Carl P. E. Springer
+Martin Luther — Circular Disputation on the Signs of Grace | | Latin — 1520 | trans. Carl P. E. Springer
+Martin Luther — Disputation on the Baptism of the Law, of John, and of Christ | | Latin — 1520 | trans. Carl P. E. Springer
+Martin Luther — Disputation on Not Taking Vengeance | | Latin — 1520 | trans. Heath R. Curtis
+Martin Luther — Question: Whether Works Contribute to Justification | | Latin — 1520 | trans. Carl P. E. Springer
+Martin Luther — Disputation on the Sacraments against Peter Lombard, Sentences, Book 4, Distinction 2 | | Latin — 1520 | trans. Benjamin T. G. Mayes
+Martin Luther — Theses on Vows | Themata de votis | Latin — 1521 | trans. Duane Ernest Peters
+Martin Luther — Theses on the Remarriage of Bishops | | Latin — 1528 | trans. Heath R. Curtis
+Martin Luther — Basis and Reason Why Cloistered Life Is Unchristian and Harmful | | — 1528–1531 | trans. Mickey L. Mattox
+Martin Luther — Theses against the Whole Synagogue of Satan and All the Gates of Hell | | Latin — 1530 | trans. Christopher J. Neuendorf
+# note: the three disputations of 17 June 1533 have theses by Melanchthon; Luther presided
+Philip Melanchthon — Disputation on Justification (Doctoral Disputation for Caspar Cruciger Sr.) | | Latin — 1533 | trans. Christopher Boyd Brown
+Philip Melanchthon — Disputation on the Church (Doctoral Disputation for Johann Bugenhagen) | | Latin — 1533 | trans. Christopher Boyd Brown
+Philip Melanchthon — Disputation on Human Traditions (Doctoral Disputation for Johannes Aepinus) | | Latin — 1533 | trans. Christopher Boyd Brown
+Justus Jonas — Entry in the Wittenberg Decanal Register | | — 1533 | piece
+Martin Luther — Formula for Promotion to the Doctorate | | — 1533 | piece
+Martin Luther — Circular Disputation against the Council of Constance: Concerning Two Kinds in the Sacrament | | Latin — 1535 | trans. James L. Langebartels
+Martin Luther — Disputation on Daniel 4:27: Whether Daniel Attributes Justification to Works | | Latin — 1535 | trans. Christopher J. Neuendorf
+Martin Luther — Disputation on 1 Corinthians 13 | | Latin — 1535 | trans. Mickey L. Mattox
+Martin Luther — Disputation on Luke 7:47 | | Latin — 1535–1536 | trans. Duane Ernest Peters
+Martin Luther — Disputation against the Private Mass | | Latin — 1536 | trans. Joshua J. Hayes
+Martin Luther — Luther on the Adoration of the Sacrament | | — 1536 | piece
+Martin Luther — Disputation on the Power of a Council | | Latin — 1536 | trans. James L. Langebartels
+# note: "1536/1552": printed after Luther's death
+Martin Luther and Philip Melanchthon — Disputation between Martin Luther and Philip Melanchthon on Justification | | Latin — 1536 | trans. Timothy J. Wengert
+Martin Luther — Disputation on the Works of the Law and of Grace (Doctoral Disputation for Peter Palladius and Tilemann von Hussen; Fifth Disputation on Romans 3:28) | | Latin — 1537 | trans. Jeffrey G. Silcock
+Martin Luther — Oration for the Doctoral Promotion of Peter Palladius | | Latin — 1537 | trans. Christopher Boyd Brown
+Martin Luther — Circular Disputation on the Wedding Garment (Matthew 22:11–13) | | Latin — 1537 | trans. Joshua J. Hayes
+Martin Luther — Circular Disputation on the Right of Resistance against the Emperor: On the Three Hierarchies (Matthew 19:21) | | Latin — 1539 | trans. G. Brent McGuire and James L. Langebartels
+Martin Luther — Theses against Satan and His Synagogue | | Latin — c. 1542 | trans. Christopher Boyd Brown
+Martin Luther — Twelve Evangelical Counsels of the Papists | | — c. 1542 | trans. Christopher Boyd Brown
+
+# note: the contents are from the prospectus only; Open Library gives 2020
+volume: 73 | Disputations II | isbn 9780758614025
+Martin Luther — Theses against the Antinomians (six series) | | Latin — 1537–1540
+Martin Luther — First Disputation against the Antinomians | | Latin — 1537
+Martin Luther — Second Disputation against the Antinomians | | Latin — 1538
+Martin Luther — Fifth (Third) Disputation against the Antinomians | | Latin — 1538
+Martin Luther — Sixth Disputation against the Antinomians (Doctoral Disputation for Joachim Mörlin) | | Latin — 1540
+Martin Luther — Disputation on the Divinity and Humanity of Christ | | Latin — 1540
+Martin Luther — Disputation on the Church (Doctoral Disputation for Johannes Macchabaeus Scotus) | | Latin — 1542
+Martin Luther — Disputation on the Doctrine of the Church (Doctoral Disputation for Johann Marbach) | | Latin — 1543
+Martin Luther — Disputation on Justifying Faith and Miracle-Working Faith and That We Are Justified by Faith Alone (Doctoral Disputation for Friedrich Bachofen and Hieronymus Nopp) | | Latin — 1543
+Martin Luther — Disputation on the Unity of the Divine Essence (Doctoral Disputation for Erasmus Alber) | | Latin — 1543
+Martin Luther — A Question at the Doctoral Promotion of Dr. Alber | | Latin — 1543 | piece
+Martin Luther — Disputation on the Invocation of God and on Repentance (Doctoral Disputation for Theodor Fabricius and Stanislaus Rapagelanus) | | Latin — 1544
+Martin Luther — Disputation on the Mystery of the Holy Trinity and the Incarnation of the Son, and on the Law (Doctoral Disputation for Georg Major and Johann Faber) | | Latin — 1544
+Martin Luther — Disputation on the Distinction of Persons in the Trinity and on the Origin of Souls (Doctoral Disputation for Peter Hegemon) | | Latin — 1545
+
+# note: the Church Postil in the final form Luther approved, edited by Caspar Cruciger (1540-44); Luther wrote its parts from 1521 on.
+# One work across volumes 75-79, as the Genesis lectures are across 1-8. Concordia's page calls volume 75 "Church Postils I"
+volume: 75 | Church Postil I | isbn 9780758628169
+Martin Luther — Church Postil | Kirchenpostille | German — 1521–1544
+
+volume: 76 | Church Postil II | isbn 9780758628176
+Martin Luther — Church Postil | Kirchenpostille | German — 1521–1544
+
+volume: 77 | Church Postil III | isbn 9780758628183
+Martin Luther — Church Postil | Kirchenpostille | German — 1521–1544
+
+volume: 78 | Church Postil IV | isbn 9780758628190
+Martin Luther — Church Postil | Kirchenpostille | German — 1521–1544
+
+volume: 79 | Church Postil V | isbn 9780758628206
+Martin Luther — Church Postil | Kirchenpostille | German — 1521–1544
+
+# note: published 2026 (Concordia's page; an older list said 2027). Sermons preached at home, mainly 1532-1534, printed by Veit Dietrich 1544; volumes 81-82 will continue it
+volume: 80 | House Postil I | isbn 9780758628213
+Martin Luther — House Postil | Hauspostille | German — 1532–1544
+
+# note: unnumbered; Open Library gives 2018. The contents are from the prospectus only
+volume: Companion | Sixteenth-Century Biographies of Martin Luther | isbn 9780758614049
+Martin Luther — Catalog or Index of All the Books and Writings Published by Dr. Martin Luther, 1518–33 | | — 1533
+Justus Jonas and Michael Coelius and Johann Aurifaber — Report on the Christian Departure of the Reverend Dr. Martin Luther from This Mortal Life | | German — 1546
+Johann Bugenhagen — A Christian Sermon for the Funeral and Burial of the Reverend Dr. Martin Luther | | German — 1546
+Philip Melanchthon — Oration at the Funeral of Dr. Martin Luther | Oratio in funere D. Martini Lutheri | Latin — 1546
+Philip Melanchthon — Preface to the Second Volume of the Complete Edition of Luther's Latin Writings | | Latin — 1546
+Johann Walter — A New Spiritual Song about the Blessed, Precious, and Highly Gifted Man, Dr. Martin Luther, the Prophet and Apostle of Germany | | German — 1564 | piece
+Johann Mathesius — History of the Origins, Doctrine, Life, and Death of the Reverend, Blessed, Precious Man of God, Dr. Martin Luther | | German — 1566

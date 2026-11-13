@@ -92,6 +92,15 @@ export const tests = [
     },
   },
   {
+    name: 'a work whose language is not known keeps its date',
+    fn() {
+      const set = parseKnownSet('set: Luther\'s Works\nvolume: 61 | Theological and Polemical Works\nMartin Luther — A Letter of Beelzebub to the Holy Papal Church | | — 1537 | trans. Nicholas D. Proksch');
+      const work = set.volumes[0].works[0];
+      same([work.originalLanguage, work.date, work.translator], ['', '1537', 'Nicholas D. Proksch']);
+      same(set.problems, []);
+    },
+  },
+  {
     name: 'a list with a work before any volume, a bad ISBN or no set name says so, line by line',
     fn() {
       const problems = parseKnownSet('isbn: 12345\nPlato — Euthyphro').problems;

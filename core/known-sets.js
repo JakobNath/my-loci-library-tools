@@ -25,7 +25,8 @@
 // A work line is "Author — Title", then, separated by " | ": the original
 // title, "Language — date", and any of "trans. <name>", "pp. <pages>" and
 // "piece" (a short work kept inside the book: a poem, hymn, sermon or letter).
-// Empty parts keep their separators.
+// Empty parts keep their separators; a date whose language is not known is
+// written "— 1530".
 
 import { isbn13, datingsFromRows } from './entry.js';
 import { newRecord } from './records.js';
@@ -45,7 +46,8 @@ function authorAndTitle(text) {
 function workLine(line, number) {
   const [main, originalTitle = '', languageDate = '', ...extras] = line.split(PARTS).map(part => part.trim());
   const { author, title } = authorAndTitle(main);
-  const [language = '', date = ''] = languageDate.split(/\s+[—–]\s+/).map(part => part.trim());
+  // "Latin — 1530", or "— 1530" when the language is not known.
+  const [language = '', date = ''] = languageDate.split(/(?:^|\s+)[—–]\s+/).map(part => part.trim());
   const extra = prefix => (extras.find(part => part.startsWith(prefix)) || '').slice(prefix.length).trim();
   return {
     author, title, originalTitle, originalLanguage: language, date,
