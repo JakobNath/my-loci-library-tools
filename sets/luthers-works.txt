@@ -69,7 +69,8 @@ Martin Luther — First Lectures on the Psalms | Dictata super Psalterium | Lati
 volume: 11 | First Lectures on the Psalms II: Psalms 76–126 | isbn 9780570064114
 Martin Luther — First Lectures on the Psalms | Dictata super Psalterium | Latin — 1513–1515
 
-volume: 12 | Selected Psalms I | isbn 9780570064121
+volume: 12 | Selected Psalms I | isbn 9780570064121 | isbn 9780758675064
+# note: 9780758675064 is a later Concordia printing of this volume, found on a copy in our library (14 November 2026)
 # note: the seven psalms of this volume come from one table of contents (therebelgod.com) only
 Martin Luther — Psalm 2 | Enarratio Psalmi II | Latin — 1532
 Martin Luther — Psalm 8 | | German — 1537

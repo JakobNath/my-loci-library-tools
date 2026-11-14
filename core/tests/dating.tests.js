@@ -2,7 +2,7 @@
 // forms named in PLAN.md, and the historical century convention.
 
 import { parseDating, centurySpan, formatYear, formatYearRange, sortYearOf, workingDating } from '../dating.js';
-import { workDateQuestion, translationDateQuestion, webSearchUrl } from '../date-search.js';
+import { workDateQuestion, translationDateQuestion, webSearchUrl, searchTitle } from '../date-search.js';
 import { equal, same, ok } from './check.js';
 
 function reads(text, earliest, latest, certainty) {
@@ -139,6 +139,23 @@ export const tests = [
       equal(translationDateQuestion('The Odyssey', ['Robert Fagles']), "When was Robert Fagles' translation of The Odyssey first published?");
       equal(translationDateQuestion('Confessions', ['Henry Chadwick']), "When was Henry Chadwick's translation of Confessions first published?");
       equal(translationDateQuestion('The Iliad', []), 'When was the English translation of The Iliad first published?');
+    },
+  },
+  {
+    name: 'a translation by many names only the first two, and others',
+    fn() {
+      equal(translationDateQuestion('Selected Psalms I', ['L. W. Spitz Jr.', 'Jaroslav Pelikan', 'W. M. Miller', 'E. B. Koenker']),
+        'When was the translation of Selected Psalms I by L. W. Spitz Jr., Jaroslav Pelikan and others first published?');
+    },
+  },
+  {
+    name: 'a volume of a set is searched for by its own title, with the set and number',
+    fn() {
+      equal(searchTitle({ title: 'Selected Psalms I', set: "Luther's Works", volume: '12' }), "Selected Psalms I (Luther's Works, volume 12)");
+      // Open Library's record for a later printing of the same volume.
+      equal(searchTitle({ title: "Luther's Works", subtitle: 'Volume 12 - (Selected Psalms I)' }), "Selected Psalms I (Luther's Works, volume 12)");
+      equal(searchTitle({ title: "Luther's Works", set: "Luther's Works", volume: '12' }), "Luther's Works, volume 12");
+      equal(searchTitle({ title: 'Pride and Prejudice', subtitle: 'A Novel' }), 'Pride and Prejudice');
     },
   },
   {

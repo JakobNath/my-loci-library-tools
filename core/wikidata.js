@@ -70,11 +70,28 @@ export function wikidataDateText(time, precision) {
   return `${year}${bc}`;
 }
 
+// An item's number: Q170583 is 170583. Long-known works got low numbers early on.
+const itemNumber = work => Number(work.wikidata.slice(1));
+
+/**
+ * Of several dated items with one title and author, the work itself when it
+ * clearly stands out, else null. Jane Austen's "Pride and Prejudice" (Q170583,
+ * with its original title and other names) beside a 2015 item of the same
+ * name (Q108809625): the one with an original title or other names, if it is
+ * the only one; otherwise one whose number is under a tenth of every other's.
+ */
+function clearlyTheWork(dated) {
+  const described = dated.filter(work => work.originalTitle || work.otherTitles.size);
+  if (described.length === 1) return described[0];
+  const [first, ...rest] = [...dated].sort((a, b) => itemNumber(a) - itemNumber(b));
+  return rest.every(other => itemNumber(first) * 10 < itemNumber(other)) ? first : null;
+}
+
 /**
  * What Wikidata's answer says about each title asked: its item, the earliest
  * date given (written or first published), its original title and its other
  * English titles. A title matching more than one dated work is left out, since
- * Wikidata cannot tell which is meant ("Crito" names a dialogue and a later book).
+ * Wikidata cannot tell which is meant, unless one clearly stands out (clearlyTheWork).
  * @param {object} answer the query's JSON answer
  * @param {string[]} titles the titles asked (as in worksQuery)
  * @returns {Map<string, { wikidata: string, date: string, originalTitle: string, otherTitles: string[] }>} by the asked title
@@ -96,7 +113,7 @@ export function worksFromWikidata(answer, titles) {
   for (const title of titles) {
     const candidates = labelsFor(title).flatMap(label => [...(byLabel.get(label) || new Map()).values()]);
     const dated = candidates.filter(work => work.dates.length);
-    const work = dated.length === 1 ? dated[0] : dated.length === 0 && candidates.length === 1 ? candidates[0] : null;
+    const work = dated.length === 1 ? dated[0] : dated.length > 1 ? clearlyTheWork(dated) : candidates.length === 1 ? candidates[0] : null;
     if (!work) continue;
     // The earliest of the dates given: a work's composition comes before its later printings.
     const earliest = work.dates.map(date => ({ ...date, year: yearOf(date.time) })).sort((a, b) => a.year - b.year)[0];

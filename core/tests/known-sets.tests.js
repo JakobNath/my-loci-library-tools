@@ -1,6 +1,6 @@
 // Known sets (phase 15, step 8): reading a set's list, finding a volume, and set gaps.
 
-import { parseKnownSet, findKnownVolume, contentsLinesOf, setGaps, wishesForGaps, recordsForKnownVolume } from '../known-sets.js';
+import { parseKnownSet, findKnownVolume, volumeFromText, contentsLinesOf, setGaps, wishesForGaps, recordsForKnownVolume } from '../known-sets.js';
 import { parseContentsLines } from '../contents.js';
 import { validateRecord } from '../validate.js';
 import { equal, same, ok } from './check.js';
@@ -46,6 +46,21 @@ export const tests = [
       const shared = findKnownVolume(sets, { isbn: '9780852295311' });
       ok(shared && shared.volume === null, 'the set, without a volume');
       equal(findKnownVolume(sets, { isbn: '9780199537822' }), null, 'a book of no known set');
+    },
+  },
+  {
+    name: 'a later printing called by the set\'s name is found by the volume number in its subtitle or title',
+    fn() {
+      const sets = [parseKnownSet(SAMPLE)];
+      // As Open Library describes a reprint of Luther's Works 12: the set's name as title, the volume in the subtitle.
+      const reprint = findKnownVolume(sets, { isbn: '9780000000002', title: 'Great Books of the Western World', subtitle: 'Volume 7 - (Aristotle I)' });
+      equal(reprint.volume.title, 'Aristotle I');
+      equal(reprint.sharedIsbn, false, 'its own looked-up details are kept');
+      equal(findKnownVolume(sets, { title: "Great Books of the Western World, Vol. 6" }).volume.title, 'Plato');
+      ok(findKnownVolume(sets, { title: 'Great Books of the Western World' }).volume === null, 'no number: the set, and "Which volume?"');
+      equal(findKnownVolume(sets, { title: 'Great Books for Children', subtitle: 'Volume 6' }), null, 'another title that only begins alike');
+      equal(volumeFromText('Volume 12 - (Selected Psalms I)'), '12');
+      equal(volumeFromText('Career of the Reformer I'), '');
     },
   },
   {

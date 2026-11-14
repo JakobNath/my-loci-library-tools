@@ -290,6 +290,18 @@ export const tests = [
     },
   },
   {
+    name: 'of two dated items with one title, Wikidata\'s well-described, long-known one is taken; two alike are left out',
+    fn() {
+      // Shortened from Wikidata's answer of 14 November 2026 for "Pride and Prejudice" by Austen.
+      const row = (id, time, extra = {}) => ({ work: { value: `http://www.wikidata.org/entity/${id}` }, title: { value: 'Pride and Prejudice' },
+        time: { value: time }, precision: { value: '11' }, ...extra });
+      const answer = { results: { bindings: [row('Q108809625', '2015-01-01T00:00:00Z'), row('Q170583', '1813-01-28T00:00:00Z', { other: { value: 'First Impressions' } })] } };
+      equal(worksFromWikidata(answer, ['Pride and Prejudice']).get('Pride and Prejudice').date, '1813');
+      const alike = { results: { bindings: [row('Q500', '1813-01-28T00:00:00Z'), row('Q900', '2015-01-01T00:00:00Z')] } };
+      equal(worksFromWikidata(alike, ['Pride and Prejudice']).size, 0, 'neither stands out');
+    },
+  },
+  {
     name: 'a Wikidata date is written as a person types one, so the date parser reads it',
     fn() {
       same([wikidataDateText('-0360-01-01T00:00:00Z', 8), wikidataDateText('-0400-01-01T00:00:00Z', 7), wikidataDateText('+1845-01-29T00:00:00Z', 11), wikidataDateText('+1900-01-01T00:00:00Z', 7), wikidataDateText('+2000-01-01T00:00:00Z', 6)],

@@ -2,6 +2,8 @@
 // in Google Books' documented format), and the matching suggestions.
 
 import { fromOpenLibrary, fromGoogleBooks, combineFound, candidatesFromSearch, searchQueries, workFromOpenLibrary, suggestOriginalDates, yearFromText, titleCase } from '../lookup.js';
+import { emptyFound } from '../lookup.js';
+import { tidyPeople, translatorNames } from '../people.js';
 import { editionsWithIsbn, suggestWorks } from '../matching.js';
 import { buildLibrary } from '../library.js';
 import { equal, same, ok } from './check.js';
@@ -197,6 +199,61 @@ export const tests = [
       equal(titleCase('a history of the world in'), 'A History of the World In', 'a last word is capitalized');
       equal(titleCase('Greek New Testament: UBS5'), 'Greek New Testament: UBS5');
       equal(titleCase('Basics of Biblical Hebrew Grammar'), 'Basics of Biblical Hebrew Grammar');
+    },
+  },
+  // People in lookups: what Open Library answered on 14 November 2026 for real books, shortened.
+  {
+    name: 'a translator or introducer the record names is not also an author',
+    fn() {
+      const aeneid = { ...emptyFound('openlibrary'), year: '2010', authors: ['Publius Vergilius Maro', 'Robert Fagles', 'Bernard Knox'],
+        contributors: [{ name: 'Robert Fagles', role: 'translator' }, { name: 'Bernard Knox', role: 'introduction' }] };
+      same(tidyPeople(aeneid).authors, ['Publius Vergilius Maro']);
+    },
+  },
+  {
+    name: 'a publisher given as the author is dropped',
+    fn() {
+      const bekenntnisschriften = { ...emptyFound('openlibrary'), authors: ['Vandenhoeck & Ruprecht.'], publisher: 'Vandenhoeck & Ruprecht' };
+      same(tidyPeople(bekenntnisschriften).authors, []);
+    },
+  },
+  {
+    name: 'an author in Greek letters gets the Latin name most of the other forms share, or the one the library uses',
+    fn() {
+      const search = { docs: [{ author_name: ['Ὅμηρος'], author_alternative_name: ['Homère', 'Hómēros', 'Homeros', 'HOMER', 'Omero', 'Homer', 'Homere/', 'Homero', 'Homerus', 'Homer Staff'] }] };
+      const iliad = { ...emptyFound('openlibrary'), year: '2023', authors: ['Ὅμηρος'] };
+      same(tidyPeople(iliad, { search }).authors, ['Homer']);
+      same(tidyPeople(iliad, { search, known: ['Homerus'] }).authors, ['Homerus']);
+    },
+  },
+  {
+    name: 'an edition author the work record lacks becomes the translator of an old work, and another contributor of a new one',
+    fn() {
+      const search = { docs: [{ author_name: ['Ὅμηρος'], author_alternative_name: ['Homeros', 'Homer', 'Homerus'] }] };
+      const wilson = tidyPeople({ ...emptyFound('openlibrary'), year: '2023', authors: ['Emily Wilson', 'Ὅμηρος'] }, { search });
+      same([wilson.authors, wilson.contributors], [['Homer'], [{ name: 'Emily Wilson', role: 'translator' }]]);
+      const trueman = tidyPeople({ ...emptyFound('openlibrary'), year: '2020', authors: ['Carl R. Trueman', 'Rod Dreher'] },
+        { search: { docs: [{ author_name: ['Carl R. Trueman'] }] }, work: { author: { name: 'Carl R. Trueman', born: 1967, died: null } } });
+      same([trueman.authors, trueman.contributors], [['Carl R. Trueman'], [{ name: 'Rod Dreher', role: 'other' }]]);
+      const melville = tidyPeople({ ...emptyFound('openlibrary'), authors: ['A. D. Melville'] }, { search: { docs: [{ author_name: ['A. D. Melville'] }] } });
+      same(melville.authors, ['A. D. Melville'], 'a record wrong without a trace is left for a person to fix');
+    },
+  },
+  {
+    name: 'translators typed in one box are told apart by ";", "and" or "&"',
+    fn() {
+      same(translatorNames('L. W. Spitz Jr.; Jaroslav Pelikan;'), ['L. W. Spitz Jr.', 'Jaroslav Pelikan']);
+      same(translatorNames('Richard Pevear and Larissa Volokhonsky'), ['Richard Pevear', 'Larissa Volokhonsky']);
+      same(translatorNames(' '), []);
+    },
+  },
+  {
+    name: 'an editor\'s lifetime is not offered as the work\'s date, and a translation\'s year is said to be one',
+    fn() {
+      const pelikan = { workTitle: '', firstPublished: 1958, author: { name: 'Jaroslav Jan Pelikan', born: 1923, died: 2006 } };
+      same(suggestOriginalDates(pelikan, 1958, { authors: ['Martin Luther'] }).map(s => s.text), ['1958']);
+      const luther = { workTitle: '', firstPublished: 1955, author: null };
+      ok(suggestOriginalDates(luther, 1973, { authors: ['Martin Luther'], translated: true })[0].label.includes("translation's year"));
     },
   },
 ];

@@ -98,23 +98,43 @@ export function parseKnownSet(text) {
 const labelKey = label => normalizeForSearch(label).replace(/^(v|vol|volume)\s+/, '');
 
 /**
- * The known set and volume a book belongs to: by an ISBN of its own volume,
- * or by its set's title and volume label (a book without a barcode, or a
- * Logos copy of the set). An ISBN the whole set shares (Great Books prints one
- * on every volume) finds the set but not the volume: then `volume` is null,
- * and the person is asked which volume it is.
- * @param {ReturnType<parseKnownSet>[]} sets
- * @param {{ isbn?: string, set?: string, volume?: string }} book
- * @returns {{ set: object, volume: object|null }|null}
+ * A volume number written in a title or subtitle: "Volume 12 - (Selected
+ * Psalms I)", "Luther's Works, Vol. 12", "v. 31", "Band 4". Only numbers in
+ * digits, which is how records write them.
+ * @param {string} text
+ * @returns {string} the number, or '' when the text names none
  */
-export function findKnownVolume(sets, { isbn = '', set: setTitle = '', volume: label = '' }) {
+export function volumeFromText(text) {
+  const match = String(text || '').match(/\b(?:volume|vol|v|band|bd)\.?\s*(\d{1,3})\b/i);
+  return match ? match[1] : '';
+}
+
+/**
+ * The known set and volume a book belongs to: by an ISBN of its own volume,
+ * or by its set's title and volume label (a book without a barcode, a Logos
+ * copy, or a later printing with an ISBN the list does not have). A record
+ * that calls the book by the set's name ("Luther's Works", subtitle "Volume
+ * 12 - (Selected Psalms I)") counts as naming the set, and the volume is read
+ * from its words. An ISBN the whole set shares (Great Books prints one on
+ * every volume) finds the set but not the volume: then `volume` is null,
+ * `sharedIsbn` is true, and the person is asked which volume it is.
+ * @param {ReturnType<parseKnownSet>[]} sets
+ * @param {{ isbn?: string, set?: string, volume?: string, title?: string, subtitle?: string }} book
+ * @returns {{ set: object, volume: object|null, sharedIsbn: boolean }|null}
+ */
+export function findKnownVolume(sets, { isbn = '', set: setTitle = '', volume: label = '', title = '', subtitle = '' }) {
   for (const set of sets) {
     const byIsbn = isbn && set.volumes.find(item => item.isbns.includes(isbn));
-    if (byIsbn) return { set, volume: byIsbn };
-    const sameSet = (setTitle && normalizeForSearch(setTitle) === normalizeForSearch(set.set)) || (isbn && set.isbns.includes(isbn));
+    if (byIsbn) return { set, volume: byIsbn, sharedIsbn: false };
+    const setKey = normalizeForSearch(set.set);
+    const titleKey = normalizeForSearch(title);
+    const namedByTitle = titleKey === setKey || (titleKey.startsWith(`${setKey} `) && volumeFromText(title) !== '');
+    const sharedIsbn = Boolean(isbn && set.isbns.includes(isbn));
+    const sameSet = (setTitle && normalizeForSearch(setTitle) === setKey) || namedByTitle || sharedIsbn;
     if (!sameSet) continue;
-    const byLabel = label && set.volumes.find(item => labelKey(item.label) === labelKey(label));
-    return { set, volume: byLabel || null };
+    const wanted = label || (namedByTitle ? volumeFromText(subtitle) || volumeFromText(title) : '');
+    const byLabel = wanted && set.volumes.find(item => labelKey(item.label) === labelKey(wanted));
+    return { set, volume: byLabel || null, sharedIsbn };
   }
   return null;
 }

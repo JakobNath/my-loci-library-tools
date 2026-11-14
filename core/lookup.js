@@ -5,6 +5,8 @@
 // lookup (PLAN.md, "Original dates"): online dates are of an edition, not of
 // when a work was written.
 
+import { normalizeForSearch } from './search.js';
+
 /**
  * The shape every lookup is turned into. Empty values are '', null or [].
  * height and thickness are in millimeters. contents lists an anthology's
@@ -28,6 +30,19 @@ export function emptyFound(source) {
 
 /** Catalog text without doubled spaces ("The  cost of discipleship"). */
 export const tidy = text => String(text || '').replace(/\s+/g, ' ').trim();
+
+// The words of a name, for comparing "Luther, Martin" with "Martin Luther".
+const nameWords = name => normalizeForSearch(name).split(' ').filter(word => word.length > 1);
+
+/**
+ * Whether two names are written for the same person: every word of the
+ * shorter is in the longer ("Martin Luther" and "Luther, Martin"; "Augustine"
+ * and "Augustine of Hippo").
+ */
+export function samePerson(a, b) {
+  const [short, long] = [nameWords(a), nameWords(b)].sort((x, y) => x.length - y.length);
+  return short.length > 0 && short.every(word => long.includes(word));
+}
 
 /** The year in a publication date ("c1997.", "April 23, 1992"), as text. */
 export const yearOf = text => (String(text || '').match(/(?<!\d)(1[4-9]\d\d|20\d\d)(?!\d)/) || [''])[0];
@@ -202,10 +217,32 @@ export function searchQueries(text) {
 }
 
 // A name in Latin letters, from the forms Open Library knows: "Plato" rather than "Πλάτων".
-const latin = text => /^[\p{Script=Latin}\p{N}\s.,'’()-]+$/u.test(text);
-function nameInLatin(name, others) {
+export const latin = text => /^[\p{Script=Latin}\p{N}\s.,'’()-]+$/u.test(text);
+
+/**
+ * A name in Latin letters, from the other forms Open Library knows for it.
+ * A form already used in our library wins. Otherwise the plain form (no
+ * accents, no dates, not in capitals) that most of the other forms contain:
+ * "Homer" is inside "Homeros", "Homerus", "HOMER" and "Homer Staff", where
+ * "Omero" is inside one, so Ὅμηρος becomes Homer, and Πλάτων becomes Plato.
+ * @param {string} name as the record gives it
+ * @param {string[]} [others] the other forms
+ * @param {string[]} [known] author names already in the library
+ * @returns {string}
+ */
+export function nameInLatin(name, others, known = []) {
   if (latin(name)) return name;
-  const usable = (others || []).filter(other => latin(other) && other.trim().length > 2);
+  const forms = (others || []).map(other => tidy(other)).filter(Boolean);
+  const knownForm = forms.find(form => known.some(knownName => knownName.toLowerCase() === form.toLowerCase()));
+  if (knownForm) return known.find(knownName => knownName.toLowerCase() === knownForm.toLowerCase());
+  const plain = forms.filter(form => /^[A-Za-z][A-Za-z .'-]+$/.test(form) && form !== form.toUpperCase() && form.length > 2);
+  if (plain.length) {
+    const lower = forms.map(form => form.toLowerCase());
+    const score = form => lower.filter(other => other.includes(form.toLowerCase())).length;
+    return plain.map((form, i) => ({ form, i, score: score(form) }))
+      .sort((a, b) => b.score - a.score || a.form.length - b.form.length || a.i - b.i)[0].form;
+  }
+  const usable = forms.filter(other => latin(other) && other.length > 2);
   // The form written as a person would ("Plato"), before one in capitals ("PLATO").
   return usable.find(other => other !== other.toUpperCase()) || usable[0] || name;
 }
@@ -314,9 +351,12 @@ export function authorsFromWorkSearch(searchAnswer) {
  * @param {number|null} editionYear the year of the edition in hand
  * @returns {{ text: string, label: string }[]} most likely first
  */
-export function suggestOriginalDates(work, editionYear) {
+export function suggestOriginalDates(work, editionYear, { authors = null, translated = false } = {}) {
   const suggestions = [];
-  const { firstPublished, author } = work;
+  const { firstPublished } = work;
+  // Open Library's work record sometimes names an editor or translator as the author
+  // (Jaroslav Pelikan for Luther's Works): a lifetime is only offered for one of the book's own authors.
+  const author = work.author && (!authors || !latin(work.author.name) || authors.some(name => samePerson(name, work.author.name))) ? work.author : null;
   const lifetime = author && author.died !== null
     ? { text: author.born !== null ? lifeText(author.born, author.died) : `before ${yearText(author.died)}`, label: `written in ${author.name}'s lifetime` }
     : null;
@@ -329,7 +369,10 @@ export function suggestOriginalDates(work, editionYear) {
   // that year is an early printing, never when the work was written (Ovid's Metamorphoses, 1479).
   if (firstPublished !== null && firstPublished > LAST_EARLY_PRINTING_YEAR) {
     const same = editionYear && Number(editionYear) === firstPublished;
-    suggestions.push({ text: String(firstPublished), label: same ? 'first published, the same year as this printing (Open Library): check it is not an older work' : 'first published (Open Library)' });
+    // With a translator and no lifetime to check it against, the year is often the translation's.
+    const label = same ? 'first published, the same year as this printing (Open Library): check it is not an older work'
+      : translated && !lifetime ? 'first published (Open Library); with a translator, this may be the translation\'s year' : 'first published (Open Library)';
+    suggestions.push({ text: String(firstPublished), label });
   }
   if (lifetime) suggestions.push(lifetime);
   return suggestions;

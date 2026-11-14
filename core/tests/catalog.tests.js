@@ -4,7 +4,7 @@ import { anthologyRange } from '../anthology.js';
 import { countPages } from '../pages.js';
 import { estimateSize } from '../sizes.js';
 import { normalizeForSearch, searchTextOf, matchesSearch } from '../search.js';
-import { parseContentsLines, contentsLine } from '../contents.js';
+import { parseContentsLines, contentsLine, tidyPastedContents } from '../contents.js';
 import { buildLibrary, viewEntries, searchEntries, searchPieces, originalTextHolders, authorLineOf, sortEntries, filterChoices, missingDetails, SORTS } from '../library.js';
 import { equal, same, ok } from './check.js';
 import { newRecord } from '../records.js';
@@ -195,6 +195,9 @@ export const tests = [
       same(viewEntries(entries, { needsDetails: true, medium: 'all' }).map(entry => entry.id), [bare.id]);
       const withFound = { ...find(chadwick.id), edition: { ...chadwick, foundContents: [{ author: 'Augustine', title: 'Soliloquies', extent: null }] } };
       same(missingDetails(withFound), ['works found inside'], 'works the laptop found wait for a person');
+      const page = { id: 'pag300000001', kind: 'contents', source: 'photo', color: null, ratio: 0.75, master: true, waiting: null };
+      const photographed = { ...find(chadwick.id), edition: { ...chadwick, images: [page] } };
+      same(missingDetails(photographed), ['contents'], 'contents photographed while adding wait to be typed in');
     },
   },
   {
@@ -289,6 +292,15 @@ export const tests = [
     fn() {
       same(parseContentsLines('Augustine — Confessions — A New Translation'), [{ author: 'Augustine', title: 'Confessions — A New Translation', date: null }]);
       same(parseContentsLines('Augustine — Confessions — c. 397'), [{ author: 'Augustine', title: 'Confessions', date: 'c. 397' }]);
+    },
+  },
+  {
+    name: 'a pasted contents page loses its heading, dotted leaders and page column, but a number in a title stays',
+    fn() {
+      // As a phone's text reading copies a contents page of Luther's Works 12.
+      const copied = 'CONTENTS\n\nGeneral Introduction . . . . . . ix\nPsalm 2 ........ 3\nPsalm 8 41\nPsalm 19 139\nPsalm 23 147\n183\nPsalm 26 183';
+      equal(tidyPastedContents(copied), 'General Introduction\nPsalm 2\nPsalm 8\nPsalm 19\nPsalm 23\nPsalm 26');
+      equal(tidyPastedContents('Psalm 23\nPsalm 51'), 'Psalm 23\nPsalm 51', 'no page column: the numbers belong to the titles');
     },
   },
 ];

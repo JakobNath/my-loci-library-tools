@@ -123,8 +123,8 @@ function toolsHtml() {
     <label class="check"><input type="checkbox" name="full"> it lists the whole Logos library</label> ${button('logos')} ${button('covers')}</p>
   <p>${button('zotero', ' data-confirm="This sends the catalog into your Zotero library (the &quot;My Loci Library&quot; collection). On the first run, books already in Zotero with the same ISBN or title are linked to it: their empty fields are filled, and nothing you entered is replaced. Go on?"')}</p>
   <p class="pages">Laptop pages of the app, opened in this browser where the app is synced:
-    <a href="${APP_URL}laptop/covers.html" target="_blank" rel="noopener">Covers from the inbox</a> ·
-    <a href="${APP_URL}laptop/contents.html" target="_blank" rel="noopener">Contents to enter</a></p>
+    <a href="${APP_URL}laptop/covers.html" target="_blank" rel="noopener">Covers from the inbox</a>.
+    Contents photographed while adding are under the app's Library filter "Needs details".</p>
   <pre class="output" aria-live="polite" hidden></pre>
 </div>`;
 }
